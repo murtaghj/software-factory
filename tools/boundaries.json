@@ -1,5 +1,5 @@
 {
-  "$comment": "Package boundary rules (W-002). Workspace packages may import only the workspace packages listed in allowWorkspace and must declare them in package.json. Apps are never importable. denyExternal lists module prefixes a package must not import (I/O-free deterministic packages). Restricted paths apply stricter allow-lists to file globs, e.g. Temporal workflow code (INV-01).",
+  "$comment": "Package boundary rules (W-002). Workspace packages may import only the workspace packages listed in allowWorkspace and must declare them in package.json. Apps are never importable. denyExternal lists module prefixes a package's shipped src/ code must not import (I/O-free deterministic packages); tests and build scripts are exempt. Restricted paths apply stricter allow-lists to file globs, e.g. Temporal workflow code (INV-01).",
   "packages": {
     "@factory/contracts": { "allowWorkspace": [], "denyExternal": ["pg", "@temporalio/", "fastify", "node:fs", "node:net", "node:http", "node:child_process"] },
     "@factory/domain": { "allowWorkspace": ["@factory/contracts"], "denyExternal": ["node:", "pg", "@temporalio/", "fastify", "ajv"] },

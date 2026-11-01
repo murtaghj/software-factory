@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://factory.example/spec/factory-tools/1.0.0",
+  "title": "Factory tool-set contract manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "toolSetVersion": {
+      "const": "1.0.0"
+    }
+  },
+  "required": [
+    "toolSetVersion"
+  ],
+  "x-tools": {
+    "verify": {
+      "inputSchema": {
+        "$ref": "./domain.schema.json#/$defs/VerifyToolInputFrozenToolsV1"
+      },
+      "outputSchema": {
+        "$ref": "./domain.schema.json#/$defs/VerifyToolOutputFrozenToolsV1"
+      }
+    },
+    "submit_result": {
+      "inputSchema": {
+        "$ref": "./domain.schema.json#/$defs/SubmitResultToolInputFrozenToolsV1"
+      },
+      "outputSchema": {
+        "$ref": "./domain.schema.json#/$defs/SubmitResultToolOutputFrozenToolsV1"
+      }
+    },
+    "request_decision": {
+      "inputSchema": {
+        "$ref": "./domain.schema.json#/$defs/RequestDecisionToolInputFrozenToolsV1"
+      },
+      "outputSchema": {
+        "$ref": "./domain.schema.json#/$defs/RequestDecisionToolOutputFrozenToolsV1"
+      }
+    },
+    "get_evidence": {
+      "inputSchema": {
+        "$ref": "./domain.schema.json#/$defs/GetEvidenceToolInputFrozenToolsV1"
+      },
+      "outputSchema": {
+        "$ref": "./domain.schema.json#/$defs/GetEvidenceToolOutputFrozenToolsV1"
+      }
+    }
+  },
+  "x-errorSchema": {
+    "$ref": "./domain.schema.json#/$defs/FactoryToolErrorFrozenToolsV1"
+  }
+}

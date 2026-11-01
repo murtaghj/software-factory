@@ -1,0 +1,12 @@
+{
+  "specRevision": "1.13",
+  "sources": {
+    "domain.schema.json": "33e440dbdb35eade92893fb32a38a871e8a1ce6ab1ee18163273a9ad9c542c7d",
+    "factory-tools.schema.json": "7dca2789fc0b64871f2a29de7674c2213ef87971e885c2f763ea8a24fa707972",
+    "factory-tools.v1.0.schema.json": "76817952c28ffd831d1a4fa371477173f9f94e10ee2f7df2cb098a0cdbf9538b",
+    "factory-tools.v1.1.schema.json": "e63bb09630e70010630c10a291cb4c06a861b6e295cff35534ac2e3085cf01f2",
+    "api.openapi.json": "5624987d106051e606a7d3c8e25b3935339a61e7a02b8a6a6ef89477520e188e",
+    "schemas.generated.ts": "04067fecc08a484ac6207ef3d8aa0d930d79e487dff22879b7c043ec93a51708",
+    "interfaces.ts": "9bb1750288a7491fafa590d77507416847c79d2e1a6ccaf737177d824646b4f9"
+  }
+}

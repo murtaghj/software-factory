@@ -95,6 +95,7 @@ export function checkBoundaries(root: string): string[] {
           continue;
         }
         const normalized = builtinModules.includes(packageOf(spec)) ? `node:${spec}` : spec;
+        if (!rel.startsWith('src/')) continue; // denyExternal governs shipped runtime code, not tests or build scripts
         for (const denied of rule.denyExternal) {
           if (normalized === denied || normalized.startsWith(denied)) violations.push(`${where}: imports denied module ${spec}`);
         }

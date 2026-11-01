@@ -1,0 +1,2806 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Software factory API",
+    "version": "2.5.0",
+    "description": "Reference API contract. Authentication issuer, provider webhooks and deployment binding are installation configuration."
+  },
+  "servers": [
+    {
+      "url": "/v2"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/applications/{applicationId}/review-mode": {
+      "get": {
+        "operationId": "get_applications_applicationId_review_mode",
+        "summary": "get applications applicationId review mode",
+        "parameters": [
+          {
+            "name": "applicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/ReviewModeStatus"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}/ai-reviews": {
+      "get": {
+        "operationId": "get_tasks_taskId_ai_reviews",
+        "summary": "get tasks taskId ai reviews",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/AIReviewPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}/pr-review": {
+      "get": {
+        "operationId": "get_tasks_taskId_pr_review",
+        "summary": "get tasks taskId pr review",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/PRReviewView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications/{applicationId}/health-ledger": {
+      "get": {
+        "operationId": "get_applications_applicationId_health_ledger",
+        "summary": "get applications applicationId health ledger",
+        "parameters": [
+          {
+            "name": "applicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/ApplicationHealthPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}/plan-review": {
+      "get": {
+        "operationId": "get_tasks_taskId_plan_review",
+        "summary": "get tasks taskId plan review",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/PlanReviewView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}/plan-review/comments": {
+      "get": {
+        "operationId": "get_tasks_taskId_plan_review_comments",
+        "summary": "get tasks taskId plan review comments",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/PlanReviewCommentPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "post_tasks_taskId_plan_review_comments",
+        "summary": "post tasks taskId plan review comments",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted command/resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/CommandReceipt"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./domain.schema.json#/$defs/PlanReviewCommentRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}/intent": {
+      "get": {
+        "operationId": "get_tasks_taskId_intent",
+        "summary": "get tasks taskId intent",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/IntentInterviewView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}/intent/answers": {
+      "post": {
+        "operationId": "post_tasks_taskId_intent_answers",
+        "summary": "post tasks taskId intent answers",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted command/resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/CommandReceipt"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./domain.schema.json#/$defs/IntentAnswerRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/application-drafts": {
+      "post": {
+        "operationId": "post_application_drafts",
+        "summary": "post application drafts",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/ApplicationDraftView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./domain.schema.json#/$defs/ApplicationDraftRequest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "get_application_drafts",
+        "summary": "get application drafts",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/ApplicationDraftPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/application-drafts/{applicationId}": {
+      "get": {
+        "operationId": "get_application_drafts_applicationId",
+        "summary": "get application drafts applicationId",
+        "parameters": [
+          {
+            "name": "applicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/ApplicationDraftView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/application-drafts/{applicationId}/revisions": {
+      "post": {
+        "operationId": "post_application_drafts_applicationId_revisions",
+        "summary": "post application drafts applicationId revisions",
+        "parameters": [
+          {
+            "name": "applicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/ApplicationDraftView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./domain.schema.json#/$defs/ApplicationDraftRevisionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks": {
+      "post": {
+        "operationId": "post_tasks",
+        "summary": "post tasks",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted command/resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/TaskAccepted"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Incident priority or security scope is not authorized for the authenticated caller. No task is admitted.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./domain.schema.json#/$defs/TaskRequest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "get_tasks",
+        "summary": "get tasks",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "reviewMode",
+            "in": "query",
+            "schema": {
+              "$ref": "./domain.schema.json#/$defs/ReviewMode"
+            }
+          },
+          {
+            "name": "deliveryScope",
+            "in": "query",
+            "schema": {
+              "$ref": "./domain.schema.json#/$defs/DeliveryScope"
+            }
+          },
+          {
+            "name": "applicationId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "workType",
+            "in": "query",
+            "schema": {
+              "$ref": "./domain.schema.json#/$defs/WorkType"
+            }
+          },
+          {
+            "name": "targetKind",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "new_application",
+                "existing_application"
+              ]
+            }
+          },
+          {
+            "name": "workflowTemplateId",
+            "in": "query",
+            "schema": {
+              "$ref": "./domain.schema.json#/$defs/WorkflowTemplateId"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "./domain.schema.json#/$defs/TaskStatus"
+            }
+          },
+          {
+            "name": "creatorId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ownerPrincipalId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "createdAfter",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "createdBefore",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/TaskPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}": {
+      "get": {
+        "operationId": "get_tasks_taskId",
+        "summary": "get tasks taskId",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/TaskView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}/commands": {
+      "post": {
+        "operationId": "post_tasks_taskId_commands",
+        "summary": "post tasks taskId commands",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted command/resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/CommandReceipt"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./domain.schema.json#/$defs/CommandEnvelope"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/commands/{commandId}": {
+      "get": {
+        "operationId": "get_commands_commandId",
+        "summary": "get commands commandId",
+        "parameters": [
+          {
+            "name": "commandId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/CommandReceipt"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}/events": {
+      "get": {
+        "operationId": "get_tasks_taskId_events",
+        "summary": "get tasks taskId events",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "Last-Event-ID",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "Resume after this task event sequence; ignored when Last-Event-ID is present."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Cursor predates retained events; fetch the snapshot and resume from its sequence",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "format": "uri-reference"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/EventCursorExpired"
+                }
+              }
+            }
+          }
+        },
+        "description": "SSE data fields are serialized TaskEvent records; id is per-task sequence."
+      }
+    },
+    "/tasks/{taskId}/runs": {
+      "get": {
+        "operationId": "get_tasks_taskId_runs",
+        "summary": "get tasks taskId runs",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "nodeId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "./domain.schema.json#/$defs/StageStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/RunPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{runId}": {
+      "get": {
+        "operationId": "get_runs_runId",
+        "summary": "get runs runId",
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/RunView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{runId}/logs": {
+      "get": {
+        "operationId": "get_runs_runId_logs",
+        "summary": "get runs runId logs",
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/RunLogPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}/gates": {
+      "get": {
+        "operationId": "get_tasks_taskId_gates",
+        "summary": "get tasks taskId gates",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "inputHash",
+            "in": "query",
+            "schema": {
+              "$ref": "./domain.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "includeHistorical",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/GatePage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}/findings": {
+      "get": {
+        "operationId": "get_tasks_taskId_findings",
+        "summary": "get tasks taskId findings",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "critical",
+                "high",
+                "medium",
+                "low"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "open",
+                "fixed",
+                "rejected",
+                "accepted_risk"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/FindingPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/decisions": {
+      "get": {
+        "operationId": "get_decisions",
+        "summary": "get decisions",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "applicationId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "approved",
+                "rejected",
+                "changes_requested",
+                "expired",
+                "superseded"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/DecisionPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/decisions/{decisionId}": {
+      "get": {
+        "operationId": "get_decisions_decisionId",
+        "summary": "get decisions decisionId",
+        "parameters": [
+          {
+            "name": "decisionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/DecisionView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/decisions/{decisionId}/responses": {
+      "post": {
+        "operationId": "post_decisions_decisionId_responses",
+        "summary": "post decisions decisionId responses",
+        "parameters": [
+          {
+            "name": "decisionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted command/resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/CommandReceipt"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./domain.schema.json#/$defs/DecisionResponse"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications": {
+      "get": {
+        "operationId": "get_applications",
+        "summary": "get applications",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "reviewMode",
+            "in": "query",
+            "schema": {
+              "$ref": "./domain.schema.json#/$defs/ReviewMode"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/ApplicationPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications/{applicationId}": {
+      "get": {
+        "operationId": "get_applications_applicationId",
+        "summary": "get applications applicationId",
+        "parameters": [
+          {
+            "name": "applicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "definitionId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/ApplicationView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications/{applicationId}/relationships": {
+      "get": {
+        "operationId": "get_applications_applicationId_relationships",
+        "summary": "get applications applicationId relationships",
+        "parameters": [
+          {
+            "name": "applicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "in",
+                "out",
+                "both"
+              ]
+            }
+          },
+          {
+            "name": "depth",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/RelationshipPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications/{applicationId}/profiles": {
+      "get": {
+        "operationId": "get_applications_applicationId_profiles",
+        "summary": "get applications applicationId profiles",
+        "parameters": [
+          {
+            "name": "applicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "purpose",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/ProfilePage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/registry/imports": {
+      "post": {
+        "operationId": "post_registry_imports",
+        "summary": "post registry imports",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted command/resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/ImportView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./domain.schema.json#/$defs/ImportRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/registry/imports/{importId}": {
+      "get": {
+        "operationId": "get_registry_imports_importId",
+        "summary": "get registry imports importId",
+        "parameters": [
+          {
+            "name": "importId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/ImportView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/context-snapshots": {
+      "post": {
+        "operationId": "post_context_snapshots",
+        "summary": "post context snapshots",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted command/resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/AsyncReceipt"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./domain.schema.json#/$defs/SnapshotRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/{operationId}": {
+      "get": {
+        "operationId": "get_operations_operationId",
+        "summary": "get operations operationId",
+        "parameters": [
+          {
+            "name": "operationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/AsyncReceipt"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/knowledge": {
+      "get": {
+        "operationId": "get_knowledge",
+        "summary": "get knowledge",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "applicableVersion",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "proposed",
+                "reviewed",
+                "verified",
+                "disputed",
+                "superseded",
+                "expired"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/KnowledgePage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/knowledge/proposals": {
+      "post": {
+        "operationId": "post_knowledge_proposals",
+        "summary": "post knowledge proposals",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted command/resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/AsyncReceipt"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./domain.schema.json#/$defs/KnowledgeProposal"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/artifacts/{artifactId}": {
+      "get": {
+        "operationId": "get_artifacts_artifactId",
+        "summary": "get artifacts artifactId",
+        "parameters": [
+          {
+            "name": "artifactId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/ArtifactView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/artifacts/{artifactId}/access": {
+      "post": {
+        "operationId": "post_artifacts_artifactId_access",
+        "summary": "post artifacts artifactId access",
+        "parameters": [
+          {
+            "name": "artifactId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/ArtifactAccess"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./domain.schema.json#/$defs/ArtifactAccessRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/environments": {
+      "get": {
+        "operationId": "get_environments",
+        "summary": "get environments",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "applicationId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "expiresBefore",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/EnvironmentPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/environments/{environmentId}": {
+      "get": {
+        "operationId": "get_environments_environmentId",
+        "summary": "get environments environmentId",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/EnvironmentView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/environments/{environmentId}/commands": {
+      "post": {
+        "operationId": "post_environments_environmentId_commands",
+        "summary": "post environments environmentId commands",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted command/resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/CommandReceipt"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./domain.schema.json#/$defs/EnvironmentCommand"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers": {
+      "get": {
+        "operationId": "get_providers",
+        "summary": "get providers",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "harness",
+                "git",
+                "deployment",
+                "observability",
+                "storage"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/ProviderPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/policies/{policyId}": {
+      "get": {
+        "operationId": "get_policies_policyId",
+        "summary": "get policies policyId",
+        "parameters": [
+          {
+            "name": "policyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/PolicyProfile"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/{provider}": {
+      "post": {
+        "operationId": "post_webhooks_provider",
+        "summary": "post webhooks provider",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted command/resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/WebhookReceipt"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "description": "Provider-specific signature and installation validation is mandatory before inbox persistence. Raw body schema is provider-owned, not trusted domain input.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/live": {
+      "get": {
+        "operationId": "get_health_live",
+        "summary": "get health live",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Health"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "get_health_ready",
+        "summary": "get health ready",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Health"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependencies cannot accept work",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/HealthNotReady"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/tasks/{taskId}/design-delivery": {
+      "get": {
+        "operationId": "get_tasks_taskId_design_delivery",
+        "summary": "get tasks taskId design delivery",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/DesignDeliveryView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications/{applicationId}/designs": {
+      "get": {
+        "operationId": "get_applications_applicationId_designs",
+        "summary": "get applications applicationId designs",
+        "parameters": [
+          {
+            "name": "applicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/DesignDeliveryPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./domain.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
