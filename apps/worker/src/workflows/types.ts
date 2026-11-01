@@ -20,6 +20,8 @@ export type PlanSnapshot = {
   nodes: PlanNodeSnapshot[];
   // Added with gate-engine-v1. Absent in plans resolved by earlier builds.
   criteriaRef?: ArtifactRefLike;
+  // Pinned ApplicationSnapshot (added in W-014; absent in plans resolved by earlier builds).
+  applicationSnapshotRef?: ArtifactRefLike;
   // Added with budget-v1: the accepted TaskSpec budget.
   budget?: { maxMicroUsd: number; maxActiveSeconds: number; maxCalendarSeconds: number; maxAuthoringInvocations: number; maxSemanticAttemptsPerNode: number; invocationMode: 'one' | 'bounded' };
 };

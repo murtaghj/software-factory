@@ -130,7 +130,7 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
       if (authoring) state.authoringInvocations = (state.authoringInvocations ?? 0) + 1;
     }
     const dependencies = node.dependsOn.map((d) => ({ nodeId: d, resultRef: state.nodes[d]?.resultRef ?? null }));
-    const binding = { taskSpecVersion: state.specVersion, planVersion, planHash: state.plan.planHash, policyRef: state.plan.policyRef, workflowTemplateRef: state.plan.templateRef, nodeId: node.id, semanticAttempt: ns.attempt, dependencies };
+    const binding = { taskSpecVersion: state.specVersion, planVersion, planHash: state.plan.planHash, policyRef: state.plan.policyRef, workflowTemplateRef: state.plan.templateRef, nodeId: node.id, semanticAttempt: ns.attempt, dependencies, ...(state.plan.applicationSnapshotRef ? { applicationSnapshotRef: state.plan.applicationSnapshotRef } : {}) };
     const inputHash = canonicalHash(binding);
     const { stageRunId } = await persist.startStage({ orgId: launch.orgId, taskId: launch.taskId, planVersion, nodeId: node.id, attempt: ns.attempt, role: node.role, logicalId, inputHash, binding });
     state.nodes[node.id] = { ...ns, status: 'running', stageRunId, inputHash };

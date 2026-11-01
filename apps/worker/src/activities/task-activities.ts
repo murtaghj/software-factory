@@ -65,12 +65,17 @@ export function createTaskActivities(deps: ActivityDeps): TaskActivities {
       const definitionRef = await store(orgId, taskId, template, 'workflow_template');
       const policyRef = await store(orgId, taskId, M1_POLICY, 'policy_snapshot');
       const criteria = ((spec.rows[0]?.spec as { acceptanceCriteria?: string[] }).acceptanceCriteria ?? []).map((text, i) => ({ id: `C${String(i + 1)}`, text }));
+      // The pinned ApplicationSnapshot: the accepted target context. No registry import exists yet
+      // (W-037), so it carries no definition refs (A-10).
+      const snapshot = { schemaVersion: '2.0', snapshotId: randomUUID(), targetContext: (spec.rows[0]?.spec as { targetContext?: unknown }).targetContext, applicationDefinitionRefs: [], applicationDraftRefs: [], createdAt: new Date().toISOString() };
+      if (!validateContract('ApplicationSnapshot', snapshot).ok) throw ApplicationFailure.nonRetryable('cannot build a valid ApplicationSnapshot', 'invalid_snapshot');
+      const applicationSnapshotRef = await store(orgId, taskId, snapshot, 'application_snapshot');
       const criteriaRef = await store(orgId, taskId, { schemaVersion: '2.0', specVersion, criteria }, 'criteria');
       const nodes = template.nodes.map((n) => ({ id: n.id, stageKind: n.stageKind, role: n.role, dependsOn: n.dependsOn, requiredGateIds: n.requiredGateIds, timeoutClass: n.timeoutClass, mandatory: n.mandatory }));
       const body = { taskId, version: planVersion, specVersion, templateRef: { id: template.id, version: template.version, definitionRef }, policyRef, nodes };
       const b = (spec.rows[0]?.spec as { budget?: PlanSnapshot['budget'] }).budget;
       const budget = b ? { maxMicroUsd: b.maxMicroUsd, maxActiveSeconds: b.maxActiveSeconds, maxCalendarSeconds: b.maxCalendarSeconds, maxAuthoringInvocations: b.maxAuthoringInvocations, maxSemanticAttemptsPerNode: b.maxSemanticAttemptsPerNode, invocationMode: b.invocationMode } : undefined;
-      const plan: PlanSnapshot = { version: planVersion, specVersion, planHash: canonicalHash({ ...body, criteriaRef, budget }), policyRef, templateRef: body.templateRef, nodes, criteriaRef, ...(budget ? { budget } : {}) };
+      const plan: PlanSnapshot = { version: planVersion, specVersion, planHash: canonicalHash({ ...body, criteriaRef, budget, applicationSnapshotRef }), policyRef, templateRef: body.templateRef, nodes, criteriaRef, applicationSnapshotRef, ...(budget ? { budget } : {}) };
       const planRef = await store(orgId, taskId, plan, 'execution_plan');
       await tenant(orgId, (tx) => tx.query(`INSERT INTO factory.execution_plan (org_id, id, task_id, version, spec_version, plan_ref, policy_ref, plan_hash, template_id, template_version, template_ref)
         VALUES ($1, $11, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT (org_id, task_id, version) DO NOTHING`,

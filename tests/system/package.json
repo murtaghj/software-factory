@@ -3,6 +3,26 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "dependencies": { "@factory/contracts": "workspace:*" }
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@factory/api": "workspace:*",
+    "@factory/artifacts": "workspace:*",
+    "@factory/contracts": "workspace:*",
+    "@factory/dashboard": "workspace:*",
+    "@factory/database": "workspace:*",
+    "@factory/dispatcher": "workspace:*",
+    "@factory/domain": "workspace:*",
+    "@factory/policy": "workspace:*",
+    "@factory/test-support": "workspace:*",
+    "@factory/worker": "workspace:*",
+    "@temporalio/client": "1.25.0",
+    "@temporalio/testing": "1.25.0",
+    "@temporalio/worker": "1.25.0",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1"
+  }
 }

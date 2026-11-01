@@ -11,7 +11,9 @@
     "fixtures/**/*.ts",
     "tools/**/*.ts",
     "vitest.config.ts",
-    "eslint.config.ts"
+    "eslint.config.ts",
+    "apps/*/src/**/*.tsx",
+    "apps/*/test/**/*.tsx"
   ],
   "exclude": [
     "**/node_modules/**",

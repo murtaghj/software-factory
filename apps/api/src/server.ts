@@ -5,17 +5,19 @@ import { randomUUID } from 'node:crypto';
 import { validateContract } from '@factory/contracts';
 import type { Database } from '@factory/database';
 import { ArtifactError, type ArtifactService, type AuthContext } from '@factory/artifacts';
-import { AuthenticationError, type OidcVerifier } from './auth/oidc.ts';
+import { AuthenticationError, type OidcVerifier, type VerifiedIdentity } from './auth/oidc.ts';
 import { AuthorizationError, resolvePrincipal } from './auth/principal.ts';
 import type { Principal } from './auth/rbac.ts';
 import { problem, sendProblem } from './http/problem.ts';
 import { ApiError, type TaskService } from './tasks/service.ts';
+import { listGates, listRuns } from './tasks/views.ts';
+import { streamTaskEvents, type StreamOptions } from './events/sse.ts';
 
 declare module 'fastify' {
-  interface FastifyRequest { principal?: Principal; requestId: string }
+  interface FastifyRequest { principal?: Principal; identity?: VerifiedIdentity; requestId: string }
 }
 
-export type ApiDeps = { db: Database; verifier: OidcVerifier; artifacts: ArtifactService; tasks: TaskService; dashboardOrigin: string };
+export type ApiDeps = { db: Database; verifier: OidcVerifier; artifacts: ArtifactService; tasks: TaskService; dashboardOrigin: string; events?: StreamOptions };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -44,7 +46,8 @@ export function buildApi(deps: ApiDeps): FastifyInstance {
     }
     if (req.url.startsWith('/v2/health/')) return;
     try {
-      req.principal = await resolvePrincipal(deps.db, await deps.verifier.verify(req.headers.authorization));
+      req.identity = await deps.verifier.verify(req.headers.authorization);
+      req.principal = await resolvePrincipal(deps.db, req.identity);
     } catch (e) {
       if (e instanceof AuthenticationError) return sendProblem(reply, problem(401, 'unauthenticated', 'a valid bearer token from a trusted issuer is required', req.id));
       if (e instanceof AuthorizationError) return sendProblem(reply, problem(403, 'no_principal', 'the authenticated identity has no active principal', req.id));
@@ -93,6 +96,44 @@ export function buildApi(deps: ApiDeps): FastifyInstance {
     const view = UUID.test(req.params.taskId) ? await deps.tasks.get(principal, req.params.taskId) : undefined;
     if (!view) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
     return view;
+  });
+
+  const readableTask = async (req: FastifyRequest<{ Params: { taskId: string } }>): Promise<{ principal: Principal } | undefined> => {
+    const principal = req.principal;
+    if (!principal) throw new AuthorizationError('unauthenticated');
+    if (!UUID.test(req.params.taskId)) return undefined;
+    return (await deps.tasks.get(principal, req.params.taskId)) ? { principal } : undefined;
+  };
+  const limitOf = (raw: string | undefined): number => {
+    const n = raw === undefined ? 100 : Number(raw);
+    if (!Number.isInteger(n) || n < 1 || n > 100) throw new ApiError(422, 'invalid_limit', 'limit must be 1-100');
+    return n;
+  };
+
+  app.get<{ Params: { taskId: string }; Querystring: { nodeId?: string; status?: string; limit?: string } }>('/v2/tasks/:taskId/runs', async (req, reply) => {
+    const ok = await readableTask(req);
+    if (!ok) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
+    const limit = limitOf(req.query.limit);
+    return deps.db.withTenant({ orgId: ok.principal.orgId, principalId: ok.principal.principalId }, (tx) => listRuns(tx, req.params.taskId, { limit, ...(req.query.nodeId ? { nodeId: req.query.nodeId } : {}), ...(req.query.status ? { status: req.query.status } : {}) }));
+  });
+
+  app.get<{ Params: { taskId: string }; Querystring: { includeHistorical?: string; inputHash?: string; limit?: string } }>('/v2/tasks/:taskId/gates', async (req, reply) => {
+    const ok = await readableTask(req);
+    if (!ok) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
+    const limit = limitOf(req.query.limit);
+    return deps.db.withTenant({ orgId: ok.principal.orgId, principalId: ok.principal.principalId }, (tx) => listGates(tx, req.params.taskId, { limit, includeHistorical: req.query.includeHistorical === 'true', ...(req.query.inputHash ? { inputHash: req.query.inputHash } : {}) }));
+  });
+
+  app.get<{ Params: { taskId: string }; Querystring: { after?: string } }>('/v2/tasks/:taskId/events', async (req, reply) => {
+    const ok = await readableTask(req);
+    if (!ok) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
+    const identity = req.identity;
+    // Re-resolve the principal and its current grants on every check: revocation ends the stream.
+    const canRead = async (): Promise<boolean> => {
+      if (!identity) return false;
+      try { return (await deps.tasks.get(await resolvePrincipal(deps.db, identity), req.params.taskId)) !== undefined; } catch { return false; }
+    };
+    return streamTaskEvents(req, reply, { db: deps.db, principal: ok.principal, canRead, options: deps.events ?? { retentionMs: 30 * 24 * 60 * 60 * 1000 } });
   });
 
   app.get<{ Querystring: Record<string, string | undefined> }>('/v2/tasks', async (req) => {

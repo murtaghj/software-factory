@@ -8,3 +8,4 @@ export * from './auth/release-authority.ts';
 export * from './auth/artifact-reads.ts';
 export * from './http/problem.ts';
 export * from './tasks/service.ts';
+export type { StreamOptions } from './events/sse.ts';
