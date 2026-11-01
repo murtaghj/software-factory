@@ -3,9 +3,10 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, relative, resolve, dirname, sep } from 'node:path';
 import { builtinModules } from 'node:module';
+import ts from 'typescript';
 
 type PackageRule = { allowWorkspace: string[]; denyExternal: string[] };
-type RestrictedPath = { package: string; glob: string; allowOnly: string[]; reason: string };
+type RestrictedPath = { package: string; glob: string; allowPackages: string[]; allowRelativeWithin: string; reason: string };
 type Rules = {
   packages: Record<string, PackageRule>;
   importableApps: Record<string, string[]>;
@@ -14,7 +15,36 @@ type Rules = {
 type WorkspacePackage = { name: string; dir: string; isApp: boolean; deps: Set<string> };
 
 const SOURCE_DIRS = ['src', 'test', 'scripts'];
-const IMPORT_RE = /(?:^|[\s;])(?:import|export)\s+(?:type\s+)?(?:[^'";]*?\s+from\s+)?['"]([^'"]+)['"]|import\(\s*['"]([^'"]+)['"]\s*\)/gm;
+
+// Every module reference in a file, found with the TypeScript parser (not a regex), so import
+// forms such as `import{x}from'pg'`, `export * as n from 'm'` and template-literal `import()` are
+// all seen. A dynamic import or require() whose argument is not a string literal is reported
+// as unresolvable and fails the check.
+export type ModuleReference = { specifier: string | undefined; line: number };
+
+export function moduleReferences(fileName: string, text: string): ModuleReference[] {
+  const source = ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true);
+  const out: ModuleReference[] = [];
+  const lineOf = (n: ts.Node): number => source.getLineAndCharacterOfPosition(n.getStart(source)).line + 1;
+  const literal = (n: ts.Node | undefined): string | undefined =>
+    n && (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) ? n.text : undefined;
+  const visit = (node: ts.Node): void => {
+    if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier) {
+      out.push({ specifier: literal(node.moduleSpecifier), line: lineOf(node) });
+    } else if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) {
+      out.push({ specifier: literal(node.moduleReference.expression), line: lineOf(node) });
+    } else if (ts.isCallExpression(node)) {
+      const isImport = node.expression.kind === ts.SyntaxKind.ImportKeyword;
+      const isRequire = ts.isIdentifier(node.expression) && node.expression.text === 'require';
+      if (isImport || isRequire) out.push({ specifier: literal(node.arguments[0]), line: lineOf(node) });
+    } else if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument)) {
+      out.push({ specifier: literal(node.argument.literal), line: lineOf(node) });
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return out;
+}
 
 function listTs(dir: string): string[] {
   if (!existsSync(dir)) return [];
@@ -70,12 +100,15 @@ export function checkBoundaries(root: string): string[] {
       const rel = relative(pkg.dir, file).split(sep).join('/');
       const text = readFileSync(file, 'utf8');
       const restricted = rules.restrictedPaths.filter((r) => r.package === pkg.name && rel.startsWith(r.glob));
-      for (const match of text.matchAll(IMPORT_RE)) {
-        const spec = match[1] ?? match[2];
-        if (!spec) continue;
-        const where = `${pkg.name}/${rel}`;
+      for (const ref of moduleReferences(file, text)) {
+        const spec = ref.specifier;
+        const where = `${pkg.name}/${rel}:${String(ref.line)}`;
+        if (spec === undefined) { violations.push(`${where}: module reference is not a string literal and cannot be checked`); continue; }
         for (const r of restricted) {
-          if (!r.allowOnly.some((allowed) => spec === allowed || spec.startsWith(allowed.endsWith('/') ? allowed : allowed + '/'))) {
+          if (spec.startsWith('.')) {
+            const allowedDir = resolve(pkg.dir, r.allowRelativeWithin);
+            if (!resolve(dirname(file), spec).startsWith(allowedDir + sep)) violations.push(`${where}: imports ${spec}, outside ${r.allowRelativeWithin} (${r.reason})`);
+          } else if (!r.allowPackages.some((allowed) => spec === allowed || spec.startsWith(allowed + '/'))) {
             violations.push(`${where}: imports ${spec}, outside the allow-list for ${r.glob} (${r.reason})`);
           }
         }

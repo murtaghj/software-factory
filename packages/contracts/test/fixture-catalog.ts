@@ -15,6 +15,7 @@ import type { DomainDefinitionName } from '../src/generated/domain.ts';
 export const examplesDir = join(import.meta.dirname, '..', '..', '..', 'docs', 'spec', 'examples');
 
 export type ExpectedError = { path: string; keyword: string; missingProperty?: string };
+type NamedNegative = ExpectedError & { statedReason: string; part?: string };
 export type WirePart = { label: string; definition: DomainDefinitionName; value: unknown };
 export type Classified =
   | { file: string; kind: 'schema-positive'; parts: WirePart[] }
@@ -110,7 +111,7 @@ export const RETAINED_TOOL_FIXTURES: Record<string, Array<{ toolSet: '1.0.0' | '
 };
 
 // Negatives whose stated reason is only their name; the expected schema error is derived from it.
-export const NAMED_SCHEMA_NEGATIVES: Record<string, ExpectedError & { statedReason: string }> = {
+export const NAMED_SCHEMA_NEGATIVES: Record<string, NamedNegative> = {
   'ai-review/negative-outcomemanifest-ai-fields-human-mode.json': { path: '/reviewMode', keyword: 'const', statedReason: 'AI review fields require reviewMode ai_only' },
   'ai-review/negative-outcomemanifest-without-reviewMarker.json': { path: '', keyword: 'required', missingProperty: 'reviewMarker', statedReason: 'ai_only outcome without review marker' },
   'ai-review/negative-outcomemanifest-without-reviewMode-reviewMarker.json': { path: '', keyword: 'required', missingProperty: 'reviewMode', statedReason: 'AI fields without reviewMode' },
@@ -118,10 +119,24 @@ export const NAMED_SCHEMA_NEGATIVES: Record<string, ExpectedError & { statedReas
   'ai-review/negative-pullrequest-without-reviewMarker.json': { path: '', keyword: 'required', missingProperty: 'reviewMarker', statedReason: 'ai_only PR without review marker' },
   'ai-review/negative-pullrequest-without-reviewMode-reviewMarker.json': { path: '', keyword: 'required', missingProperty: 'reviewMode', statedReason: 'AI fields without reviewMode' },
   'ai-review/negative-pre-repository-fabricated-id.json': { path: '', keyword: 'not', statedReason: 'pre_repository decision cannot carry a fabricated repository identity' },
-  'ai-review/negative-pre-repository-without-policy.json': { path: '', keyword: 'required', statedReason: 'pre_repository decision requires its bootstrap policy' },
+  'ai-review/negative-pre-repository-without-policy.json': { path: '', keyword: 'required', missingProperty: 'repositoryIntentPolicyRef', statedReason: 'pre_repository decision requires its bootstrap policy' },
+  'ai-review/negative-audit-rate-0.json': { path: '/sampleBasisPoints', keyword: 'minimum', statedReason: 'audit sampling rate must be positive' },
   // Raw panel case: its embedded ReviewModeDecision lacks the required application-owner approval.
-  'ai-review/invalid-missing-owner.json': { path: '/ownerApprovals', keyword: 'contains', statedReason: 'ai_only establishment requires the application owner approval' },
+  'ai-review/invalid-missing-owner.json': { part: 'decision', path: '/ownerApprovals', keyword: 'contains', statedReason: 'ai_only establishment requires the application owner approval' },
+  'ai-review/invalid-adjudication-over-bound.json': { part: 'adjudications[0]', path: '/adjudicationRound', keyword: 'const', statedReason: 'adjudication beyond the bounded round' },
+  'ai-review/invalid-enhanced-small-panel.json': { part: 'assignment', path: '/slots/2/role', keyword: 'enum', statedReason: 'enhanced tier requires the larger specialist panel' },
+  'ai-review/invalid-incomplete-primary.json': { part: 'assignment', path: '/slots/0/sectionIds/0', keyword: 'const', statedReason: 'primary reviewer must cover the whole packet' },
+  'ai-review/invalid-majority-label.json': { part: 'approvalSet', path: '/aggregation', keyword: 'const', statedReason: 'approval set must be unanimous, not majority' },
+  'ai-review/invalid-missing-adversarial.json': { part: 'assignment', path: '/slots/0/role', keyword: 'const', statedReason: 'panel lacks the adversarial reviewer' },
+  'ai-review/invalid-no-primary.json': { part: 'assignment', path: '/slots/0/role', keyword: 'const', statedReason: 'panel lacks a primary reviewer' },
+  'ai-review/invalid-release.json': { part: 'assignment', path: '/gateId', keyword: 'enum', statedReason: 'release authority can never be AI-reviewed' },
+  'ai-review/invalid-shared-verdicts.json': { part: 'assignment', path: '/verdictVisibility', keyword: 'const', statedReason: 'verdicts stay isolated until all are submitted' },
 };
+
+// Wire parts that are invalid by construction in the specification's fixtures, unrelated to the
+// fixture's stated reason (docs/spec-issues.md SI-03). They are excluded from the wire-validity check.
+export const INCIDENTALLY_INVALID_PARTS: Record<string, string[]> = Object.fromEntries(
+  ['automated-ai_only', 'automated-human', 'human_sampled-ai_only', 'human_sampled-human'].map((m) => [`ai-review/negative-enhanced-oracle-${m}.json`, ['assignment']]));
 
 const AI_REVIEW_OWNER = 'W-141–W-143 (ai_only review mode; out of scope for M1)';
 const DESIGN_OWNER = 'W-144 (design-only delivery; out of scope for M1)';
@@ -154,6 +169,36 @@ export function readFixture(file: string): unknown {
   return JSON.parse(readFileSync(join(examplesDir, file), 'utf8'));
 }
 
+// Wire documents embedded in an ai-review predicate bundle.
+function panelBundleParts(bundle: unknown): WirePart[] {
+  if (!isRecord(bundle)) return [];
+  const parts: WirePart[] = [];
+  const one = (key: string, definition: DomainDefinitionName): void => { if (isRecord(bundle[key])) parts.push({ label: key, definition, value: bundle[key] }); };
+  // Bundle arrays hold { ref: ArtifactRef, value: document } entries.
+  const many = (key: string, definition: DomainDefinitionName): void => {
+    const v = bundle[key];
+    if (!Array.isArray(v)) return;
+    (v as unknown[]).forEach((entry, i) => {
+      const item = isRecord(entry) && 'value' in entry ? entry.value : entry;
+      parts.push({ label: `${key}[${String(i)}]`, definition, value: item });
+      if (isRecord(entry) && 'ref' in entry) parts.push({ label: `${key}[${String(i)}].ref`, definition: 'ArtifactRef', value: entry.ref });
+    });
+  };
+  one('decision', 'ReviewModeDecision');
+  one('subject', 'AIReviewSubject');
+  one('assignment', 'AIReviewPanelAssignment');
+  one('approvalSet', 'AIReviewApprovalSet');
+  many('configurations', 'ReviewerConfiguration');
+  many('qualifications', 'ReviewerQualification');
+  many('decisions', 'AIReviewDecision');
+  many('findings', 'AIReviewFinding');
+  many('adjudications', 'AIReviewAdjudication');
+  many('findingResolutions', 'AIReviewFindingResolution');
+  many('priorDecisions', 'AIReviewDecision');
+  many('priorAssignments', 'AIReviewPanelAssignment');
+  return parts;
+}
+
 function designParts(kind: string, value: Record<string, unknown>): WirePart[] {
   const parts: WirePart[] = [];
   const add = (label: string, definition: DomainDefinitionName, v: unknown): void => { if (v !== undefined) parts.push({ label, definition, value: v }); };
@@ -184,7 +229,12 @@ export function classify(file: string): Classified {
   const statedReason = typeof statedRaw === 'string' ? statedRaw : '';
   if (kind !== undefined && doc.value !== undefined) {
     const value = doc.value;
-    const parts: WirePart[] = kind && isDomainDefinition(kind) ? [{ label: 'value', definition: kind, value }] : isRecord(value) && kind ? designParts(kind, value) : [];
+    const parts: WirePart[] = isDomainDefinition(kind) ? [{ label: 'value', definition: kind, value }, ...panelBundleParts(doc.bundle)]
+      : !isRecord(value) ? []
+      : kind === 'audit' ? [{ label: 'value', definition: 'ReviewAuditSelection', value }]
+      : kind === 'gate' ? [...(isRecord(value.rule) ? [{ label: 'rule', definition: 'GateModeRule' as const, value: value.rule }] : []), ...panelBundleParts(value.bundle)]
+      : kind === 'panel' || kind === 'repository' ? panelBundleParts(value)
+      : designParts(kind, value);
     if (negative) {
       const named = NAMED_SCHEMA_NEGATIVES[file];
       const parsed = folder === 'design' ? parseStatedReason(statedReason) : undefined;
@@ -194,7 +244,8 @@ export function classify(file: string): Classified {
         if (!target) throw new Error(`No wire part for schema negative ${file}`);
         return { file, kind: 'schema-negative', part: target, expected, statedReason: named?.statedReason ?? statedReason };
       }
-      return { file, kind: 'semantic', polarity: 'negative', owner, statedReason, parts };
+      const excluded = INCIDENTALLY_INVALID_PARTS[file] ?? [];
+      return { file, kind: 'semantic', polarity: 'negative', owner, statedReason, parts: parts.filter((p) => !excluded.includes(p.label)) };
     }
     return { file, kind: 'semantic', polarity: 'positive', owner, statedReason: statedReason || 'accept', parts };
   }
@@ -205,13 +256,18 @@ export function classify(file: string): Classified {
     if (isRecord(doc.binding)) parts.push({ label: 'binding', definition: 'DesignBuildBinding', value: doc.binding });
     if (isRecord(doc.buildTask)) parts.push({ label: 'buildTask', definition: 'TaskRequest', value: doc.buildTask });
     if (isRecord(doc.delivery)) parts.push({ label: 'delivery', definition: 'DesignDeliveryRecord', value: doc.delivery });
+    if (Array.isArray(doc.ai)) (doc.ai as unknown[]).forEach((bundle, i) => { parts.push(...panelBundleParts(bundle).map((p) => ({ ...p, label: `ai[${String(i)}].${p.label}` }))); });
+    if (isRecord(doc.human)) {
+      for (const [k, bundle] of Object.entries(doc.human)) parts.push(...panelBundleParts(bundle).map((p) => ({ ...p, label: `human.${k}.${p.label}` })));
+    }
     return { file, kind: 'semantic', polarity: negative ? 'negative' : 'positive', owner, statedReason: negative ? name : 'accept', parts };
   }
   if (folder === 'ai-review') {
-    const parts: WirePart[] = isRecord(doc.decision) ? [{ label: 'decision', definition: 'ReviewModeDecision', value: doc.decision }] : [];
+    const parts = panelBundleParts(doc);
     const named = NAMED_SCHEMA_NEGATIVES[file];
-    const decisionPart = parts[0];
-    if (named && decisionPart) return { file, kind: 'schema-negative', part: decisionPart, expected: named, statedReason: named.statedReason };
+    const namedPart = named ? parts.find((p) => p.label === named.part) : undefined;
+    if (named && !namedPart) throw new Error(`Named negative ${file} has no part ${String(named.part)}`);
+    if (named && namedPart) return { file, kind: 'schema-negative', part: namedPart, expected: named, statedReason: named.statedReason };
     return { file, kind: 'semantic', polarity: negative ? 'negative' : 'positive', owner, statedReason: negative ? name.replace(/\.json$/, '') : 'accept', parts };
   }
   throw new Error(`Unclassified fixture ${file}`);

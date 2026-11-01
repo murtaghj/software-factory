@@ -1,25 +1,167 @@
 {
   "$comment": "Package boundary rules (W-002). Workspace packages may import only the workspace packages listed in allowWorkspace and must declare them in package.json. Apps are never importable. denyExternal lists module prefixes a package's shipped src/ code must not import (I/O-free deterministic packages); tests and build scripts are exempt. Restricted paths apply stricter allow-lists to file globs, e.g. Temporal workflow code (INV-01).",
   "packages": {
-    "@factory/contracts": { "allowWorkspace": [], "denyExternal": ["pg", "@temporalio/", "fastify", "node:fs", "node:net", "node:http", "node:child_process"] },
-    "@factory/domain": { "allowWorkspace": ["@factory/contracts"], "denyExternal": ["node:", "pg", "@temporalio/", "fastify", "ajv"] },
-    "@factory/policy": { "allowWorkspace": ["@factory/contracts", "@factory/domain"], "denyExternal": ["node:", "pg", "@temporalio/", "fastify"] },
-    "@factory/database": { "allowWorkspace": ["@factory/contracts", "@factory/domain", "@factory/test-support"], "denyExternal": ["@temporalio/", "fastify"] },
-    "@factory/artifacts": { "allowWorkspace": ["@factory/contracts", "@factory/domain", "@factory/database", "@factory/test-support"], "denyExternal": ["@temporalio/", "fastify"] },
-    "@factory/test-support": { "allowWorkspace": ["@factory/contracts"], "denyExternal": [] },
-    "@factory/api": { "allowWorkspace": ["@factory/contracts", "@factory/domain", "@factory/policy", "@factory/database", "@factory/artifacts", "@factory/test-support"], "denyExternal": ["@temporalio/worker", "@temporalio/workflow"] },
-    "@factory/dispatcher": { "allowWorkspace": ["@factory/contracts", "@factory/domain", "@factory/database", "@factory/test-support"], "denyExternal": ["@temporalio/worker", "@temporalio/workflow", "fastify"] },
-    "@factory/worker": { "allowWorkspace": ["@factory/contracts", "@factory/domain", "@factory/policy", "@factory/database", "@factory/artifacts", "@factory/test-support"], "denyExternal": ["fastify"] },
-    "@factory/dashboard": { "allowWorkspace": ["@factory/contracts"], "denyExternal": ["pg", "@temporalio/", "node:"] },
-    "@factory/fixtures": { "allowWorkspace": ["@factory/contracts", "@factory/test-support"], "denyExternal": ["@temporalio/"] },
-    "@factory/system-tests": { "allowWorkspace": ["@factory/contracts", "@factory/domain", "@factory/policy", "@factory/database", "@factory/artifacts", "@factory/test-support", "@factory/api", "@factory/dispatcher", "@factory/worker", "@factory/dashboard", "@factory/fixtures"], "denyExternal": [] }
+    "@factory/contracts": {
+      "allowWorkspace": [],
+      "denyExternal": [
+        "pg",
+        "@temporalio/",
+        "fastify",
+        "node:fs",
+        "node:net",
+        "node:http",
+        "node:child_process"
+      ]
+    },
+    "@factory/domain": {
+      "allowWorkspace": [
+        "@factory/contracts"
+      ],
+      "denyExternal": [
+        "node:",
+        "pg",
+        "@temporalio/",
+        "fastify",
+        "ajv"
+      ]
+    },
+    "@factory/policy": {
+      "allowWorkspace": [
+        "@factory/contracts",
+        "@factory/domain"
+      ],
+      "denyExternal": [
+        "node:",
+        "pg",
+        "@temporalio/",
+        "fastify"
+      ]
+    },
+    "@factory/database": {
+      "allowWorkspace": [
+        "@factory/contracts",
+        "@factory/domain",
+        "@factory/test-support"
+      ],
+      "denyExternal": [
+        "@temporalio/",
+        "fastify"
+      ]
+    },
+    "@factory/artifacts": {
+      "allowWorkspace": [
+        "@factory/contracts",
+        "@factory/domain",
+        "@factory/database",
+        "@factory/test-support"
+      ],
+      "denyExternal": [
+        "@temporalio/",
+        "fastify"
+      ]
+    },
+    "@factory/test-support": {
+      "allowWorkspace": [
+        "@factory/contracts"
+      ],
+      "denyExternal": []
+    },
+    "@factory/api": {
+      "allowWorkspace": [
+        "@factory/contracts",
+        "@factory/domain",
+        "@factory/policy",
+        "@factory/database",
+        "@factory/artifacts",
+        "@factory/test-support"
+      ],
+      "denyExternal": [
+        "@temporalio/worker",
+        "@temporalio/workflow"
+      ]
+    },
+    "@factory/dispatcher": {
+      "allowWorkspace": [
+        "@factory/contracts",
+        "@factory/domain",
+        "@factory/database",
+        "@factory/test-support"
+      ],
+      "denyExternal": [
+        "@temporalio/worker",
+        "@temporalio/workflow",
+        "fastify"
+      ]
+    },
+    "@factory/worker": {
+      "allowWorkspace": [
+        "@factory/contracts",
+        "@factory/domain",
+        "@factory/policy",
+        "@factory/database",
+        "@factory/artifacts",
+        "@factory/test-support"
+      ],
+      "denyExternal": [
+        "fastify"
+      ]
+    },
+    "@factory/dashboard": {
+      "allowWorkspace": [
+        "@factory/contracts"
+      ],
+      "denyExternal": [
+        "pg",
+        "@temporalio/",
+        "node:"
+      ]
+    },
+    "@factory/fixtures": {
+      "allowWorkspace": [
+        "@factory/contracts",
+        "@factory/domain",
+        "@factory/test-support"
+      ],
+      "denyExternal": [
+        "@temporalio/"
+      ]
+    },
+    "@factory/system-tests": {
+      "allowWorkspace": [
+        "@factory/contracts",
+        "@factory/domain",
+        "@factory/policy",
+        "@factory/database",
+        "@factory/artifacts",
+        "@factory/test-support",
+        "@factory/api",
+        "@factory/dispatcher",
+        "@factory/worker",
+        "@factory/dashboard",
+        "@factory/fixtures"
+      ],
+      "denyExternal": []
+    }
   },
-  "importableApps": { "@factory/system-tests": ["@factory/api", "@factory/dispatcher", "@factory/worker", "@factory/dashboard"] },
+  "importableApps": {
+    "@factory/system-tests": [
+      "@factory/api",
+      "@factory/dispatcher",
+      "@factory/worker",
+      "@factory/dashboard"
+    ]
+  },
   "restrictedPaths": [
     {
       "package": "@factory/worker",
       "glob": "src/workflows/",
-      "allowOnly": ["@temporalio/workflow", "@factory/domain", "@factory/policy", "@factory/contracts", "./", "../workflows/"],
+      "allowPackages": [
+        "@temporalio/workflow",
+        "@factory/domain",
+        "@factory/policy",
+        "@factory/contracts"
+      ],
+      "allowRelativeWithin": "src/workflows",
       "reason": "INV-01: workflow code is deterministic coordination; I/O happens in Activities"
     }
   ]

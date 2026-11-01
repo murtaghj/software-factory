@@ -117,6 +117,17 @@ describe('AC-260 toolchain and contract generation', () => {
         `export const y = [Pool, readFileSync, worker, secret];`,
       ].join('\n'));
       sb.write('apps/worker/src/workflows/task.ts', `import { Client } from 'pg';\nexport const p = Client;\n`);
+      sb.write('apps/worker/src/workflows/sneaky.ts', [
+        `import{Pool}from'pg';`,
+        `/*c*/import fs from 'node:fs';`,
+        `export * as cp from 'node:child_process';`,
+        `export{x}from'fastify';`,
+        `import a from './../activities/io.ts';`,
+        `import b from './../../src/activities/io.ts';`,
+        'const m = await import(`pg`);',
+        `const name = 'pg'; const n = await import(name);`,
+        `export const all = [Pool, fs, a, b, m, n];`,
+      ].join('\n'));
       const violations = checkBoundaries(sb.dir);
       expect(violations).toEqual(expect.arrayContaining([
         expect.stringContaining('imports denied module pg'),
@@ -125,9 +136,22 @@ describe('AC-260 toolchain and contract generation', () => {
         expect.stringContaining('escapes the package root'),
         expect.stringContaining('outside the allow-list for src/workflows/'),
       ]));
+      const sneaky = violations.filter((v) => v.includes('workflows/sneaky.ts'));
+      for (const line of [1, 2, 3, 4, 5, 6, 7, 8]) expect(sneaky.some((v) => v.includes(`sneaky.ts:${String(line)}:`)), `line ${String(line)}: ${sneaky.join(' | ')}`).toBe(true);
+      expect(sneaky.some((v) => v.includes('not a string literal'))).toBe(true);
       const cli = run('node', [join(repoRoot, 'tools', 'check-boundaries.ts'), sb.dir], sb.dir);
       expect(cli.status).toBe(1);
     } finally { sb.dispose(); }
+  });
+
+  it('CI runs the frozen install, lint, typecheck, tests and the contract-generation check on the pinned runtime', () => {
+    const ci = readFileSync(join(repoRoot, 'scripts', 'ci.sh'), 'utf8');
+    const steps = ci.split('\n').filter((l) => l.startsWith('pnpm '));
+    expect(steps).toEqual(['pnpm install --frozen-lockfile', 'pnpm lint', 'pnpm typecheck', 'pnpm test', 'pnpm contracts:check']);
+    const workflow = readFileSync(join(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8');
+    expect(workflow).toContain('node-version-file: .node-version');
+    expect(workflow).toContain('sh scripts/ci.sh');
+    expect(workflow).toMatch(/postgres:18\.\d+@sha256:[0-9a-f]{64}/);
   });
 
   it('the repository itself passes its boundary rules', () => {

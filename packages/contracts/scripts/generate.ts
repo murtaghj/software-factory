@@ -1,7 +1,7 @@
 // Contract generator (W-003). Reads the read-only reference contracts in docs/spec/contracts and
 // writes packages/contracts/src/generated/. Output is a pure function of the inputs: a re-run on
 // unchanged inputs produces byte-identical files (checked by scripts/check-generated.sh).
-// Usage: node packages/contracts/scripts/generate.ts [--check]
+// Usage: node packages/contracts/scripts/generate.ts [--out <dir>]
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -181,8 +181,9 @@ function generateReferenceCompat(): string {
     '// Compatibility check: every generated domain type must be mutually assignable with the',
     '// reference schemas.generated.ts shipped in the specification. A mismatch fails typecheck.',
     `import type * as G from './domain.ts';`, `import type * as R from './reference/schemas.generated.ts';`, '',
+    '// Mutual assignability alone cannot see a missing optional property, so key sets are compared too.',
     'type Mutual<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;', 'type Assert<T extends true> = T;', ''];
-  for (const name of Object.keys(schema.$defs)) out.push(`export type Compat_${name} = Assert<Mutual<G.${name}, R.${name}>>;`);
+  for (const name of Object.keys(schema.$defs)) out.push(`export type Compat_${name} = Assert<Mutual<G.${name}, R.${name}>>;`, `export type CompatKeys_${name} = Assert<Mutual<keyof G.${name}, keyof R.${name}>>;`);
   out.push('');
   return out.join('\n');
 }
@@ -213,14 +214,16 @@ export function generate(): Map<string, string> {
 
 function main(): void {
   const files = generate();
-  if (existsSync(outDir)) rmSync(outDir, { recursive: true });
+  const flag = process.argv.indexOf('--out');
+  const target = flag >= 0 && process.argv[flag + 1] ? process.argv[flag + 1] ?? outDir : outDir;
+  if (existsSync(target)) rmSync(target, { recursive: true });
   for (const [rel, text] of files) {
-    const path = join(outDir, rel);
+    const path = join(target, rel);
     mkdirSync(join(path, '..'), { recursive: true });
     writeFileSync(path, text);
   }
-  const count = readdirSync(outDir, { recursive: true }).length;
-  console.log(`Generated ${String(files.size)} contract files (${String(count)} entries) in packages/contracts/src/generated`);
+  const count = readdirSync(target, { recursive: true }).length;
+  console.log(`Generated ${String(files.size)} contract files (${String(count)} entries) in ${target}`);
 }
 
 if (import.meta.url === `file://${process.argv[1] ?? ''}`) main();

@@ -56,7 +56,9 @@ describe('AC-260 toolchain and contract generation', () => {
       for (const r of Object.values(op.responses as Record<string, { schema: string | null }>)) if (r.schema !== null) expect(names.has(r.schema)).toBe(true);
     }
     const apiText = readFileSync(join(specContracts, 'api.openapi.json'), 'utf8');
-    for (const m of apiText.matchAll(/"\$ref": "\.\/domain\.schema\.json#\/\$defs\/([A-Za-z0-9_]+)"/g)) expect(names.has(m[1] ?? ''), m[1]).toBe(true);
+    const refs = [...apiText.matchAll(/"\$ref": "\.\/domain\.schema\.json#\/\$defs\/([A-Za-z0-9_]+)"/g)].map((m) => m[1] ?? '');
+    expect(refs.length).toBeGreaterThan(100);
+    for (const ref of refs) expect(names.has(ref), ref).toBe(true);
     for (const [version, tools] of Object.entries(factoryToolSets)) {
       for (const [tool, io] of Object.entries(tools as Record<string, { input: string; output: string }>)) {
         expect(names.has(io.input), `${version} ${tool} input`).toBe(true);
@@ -70,12 +72,19 @@ describe('AC-260 toolchain and contract generation', () => {
     for (const name of domainDefinitionNames) expect(compat).toContain(`export type Compat_${name} = Assert<Mutual<G.${name}, R.${name}>>;`);
   });
 
-  it('the fixture catalogue classifies every example file', () => {
-    const files = allFixtureFiles();
-    expect(files.length).toBe(catalogue.length);
-    expect(files.length).toBeGreaterThan(390);
-    const counts = Object.fromEntries((['schema-positive', 'schema-negative', 'semantic', 'external'] as const).map((k) => [k, byKind(k).length]));
-    expect(counts['schema-negative']).toBeGreaterThanOrEqual(27);
+  it('the fixture catalogue classifies every example file into a declared bucket', () => {
+    // Exact counts make any reclassification a visible, reviewed change.
+    expect(allFixtureFiles().length).toBe(403);
+    const semantic = byKind('semantic');
+    expect({
+      schemaPositive: byKind('schema-positive').length,
+      schemaNegative: byKind('schema-negative').length,
+      semanticPositive: semantic.filter((c) => c.polarity === 'positive').length,
+      semanticNegative: semantic.filter((c) => c.polarity === 'negative').length,
+      external: byKind('external').length,
+    }).toEqual({ schemaPositive: 94, schemaNegative: 45, semanticPositive: 46, semanticNegative: 217, external: 1 });
+    // Every semantic fixture carries at least one wire document that is checked below.
+    expect(semantic.filter((c) => c.parts.length === 0).map((c) => c.file)).toEqual([]);
   });
 
   it('positive fixtures validate against their contract', () => {
@@ -185,21 +194,36 @@ describe('AC-260 toolchain and contract generation', () => {
     type Defs = Record<string, Record<string, unknown>>;
     const baseline = readJson(join(pkgRoot, 'baseline', '1.13', 'domain.schema.json')) as { $defs: Defs };
     const current = readJson(join(specContracts, 'domain.schema.json')) as { $defs: Defs };
-    expect(breakingSchemaChanges(baseline.$defs, current.$defs)).toEqual([]);
+    expect(breakingSchemaChanges(baseline.$defs, current.$defs)).toEqual([]); // neither breaking nor reader_first
     const baseApi = readJson(join(pkgRoot, 'baseline', '1.13', 'api.openapi.json')) as { paths: Parameters<typeof breakingApiChanges>[0] };
     const curApi = readJson(join(specContracts, 'api.openapi.json')) as { paths: Parameters<typeof breakingApiChanges>[0] };
     expect(breakingApiChanges(baseApi.paths, curApi.paths)).toEqual([]);
 
     const mutate = (edit: (d: Defs) => void): Defs => { const d = structuredClone(current.$defs); edit(d); return d; };
     const prop = (d: Defs, def: string): Record<string, Record<string, unknown>> => d[def]?.properties as Record<string, Record<string, unknown>>;
-    const detect = (d: Defs): string[] => breakingSchemaChanges(current.$defs, d).map((c) => `${c.location}: ${c.change}`);
-    expect(detect(mutate((d) => { delete d.TaskEvent; }))).toContain('TaskEvent: definition removed');
-    expect(detect(mutate((d) => { (d.TaskRequest?.required as string[]).push('extraField'); }))).toContain('TaskRequest: property extraField became required');
-    expect(detect(mutate((d) => { d.Assurance = { type: 'string', enum: ['fast', 'standard'] }; }))).toContain('Assurance: enum value "enhanced" removed');
-    expect(detect(mutate((d) => { const p = prop(d, 'ArtifactRef'); delete p.sizeBytes; }))).toContain('ArtifactRef.sizeBytes: property removed from a closed object');
-    expect(detect(mutate((d) => { const p = prop(d, 'ArtifactRef'); p.sizeBytes = { type: 'string' }; }))).toContain('ArtifactRef.sizeBytes: type changed from "integer" to "string"');
-    const apiBroken = structuredClone(curApi.paths);
-    delete apiBroken['/tasks'];
-    expect(breakingApiChanges(curApi.paths, apiBroken).map((c) => c.change)).toContain('operation removed');
+    const breaking = (d: Defs): string[] => breakingSchemaChanges(current.$defs, d).filter((c) => c.severity === 'breaking').map((c) => `${c.location}: ${c.change}`);
+    const expectBreak = (d: Defs, fragment: string): void => { expect(breaking(d).some((c) => c.includes(fragment)), `${fragment} in ${breaking(d).join(' | ')}`).toBe(true); };
+    expectBreak(mutate((d) => { Reflect.deleteProperty(d, 'TaskEvent'); }), 'TaskEvent: definition removed');
+    expectBreak(mutate((d) => { (d.TaskRequest?.required as string[]).push('extraField'); }), 'property extraField became required');
+    expectBreak(mutate((d) => { d.Assurance = { type: 'string', enum: ['fast', 'standard'] }; }), 'enum value "enhanced" removed');
+    expectBreak(mutate((d) => { Reflect.deleteProperty(prop(d, 'ArtifactRef'), 'sizeBytes'); }), 'ArtifactRef.sizeBytes: property removed from a closed object');
+    expectBreak(mutate((d) => { prop(d, 'ArtifactRef').sizeBytes = { type: 'string' }; }), 'ArtifactRef.sizeBytes: type changed');
+    expectBreak(mutate((d) => { prop(d, 'ArtifactRef').artifactId = { type: 'string', format: 'date-time' }; }), 'ArtifactRef.artifactId: format changed');
+    expectBreak(mutate((d) => { prop(d, 'ArtifactRef').mediaType = { type: 'string', minLength: 1, const: 'application/json' }; }), 'ArtifactRef.mediaType: const changed');
+    expectBreak(mutate((d) => { prop(d, 'ArtifactRef').mediaType = { type: 'string', minLength: 1, not: { const: 'text/html' } }; }), 'ArtifactRef.mediaType: not changed');
+    expectBreak(mutate((d) => { prop(d, 'TaskRequest').applicationIds = { ...prop(d, 'TaskRequest').applicationIds, uniqueItems: true }; }), 'TaskRequest.applicationIds: uniqueItems changed');
+    expectBreak(mutate((d) => { prop(d, 'TaskRequest').applicationIds = { ...prop(d, 'TaskRequest').applicationIds, contains: { const: 'x' } }; }), 'TaskRequest.applicationIds: contains changed');
+    expectBreak(mutate((d) => { prop(d, 'ArtifactRef').sizeBytes = { type: 'integer', exclusiveMinimum: 10 }; }), 'exclusiveMinimum tightened');
+    expectBreak(mutate((d) => { (prop(d, 'ArtifactRef').sizeBytes as Record<string, unknown>)['x-unknown-but-ignored'] = 1; (prop(d, 'ArtifactRef').sizeBytes as Record<string, unknown>).someNewKeyword = true; }), 'someNewKeyword changed');
+    const additive = breakingSchemaChanges(current.$defs, mutate((d) => { prop(d, 'TaskView').extraOptional = { type: 'string' }; }));
+    expect(additive).toEqual([{ location: 'TaskView.extraOptional', change: 'optional property added', severity: 'reader_first' }]);
+
+    type Paths = Parameters<typeof breakingApiChanges>[0];
+    const apiMutate = (edit: (p: Paths) => void): string[] => { const p = structuredClone(curApi.paths); edit(p); return breakingApiChanges(curApi.paths, p).filter((c) => c.severity === 'breaking').map((c) => `${c.location}: ${c.change}`); };
+    expect(apiMutate((p) => { Reflect.deleteProperty(p, '/tasks'); })).toContain('POST /tasks: operation removed');
+    expect(apiMutate((p) => { const op = p['/tasks']?.post; if (op?.requestBody) op.requestBody.content = { 'application/json': { schema: { $ref: './domain.schema.json#/$defs/TaskView' } } }; })).toContain('POST /tasks: request body schema changed');
+    expect(apiMutate((p) => { const op = p['/tasks/{taskId}']?.get; const r = op?.responses['200']; if (r) r.content = { 'application/json': { schema: { $ref: './domain.schema.json#/$defs/TaskPage' } } }; })).toContain('GET /tasks/{taskId}: response 200 content changed');
+    expect(apiMutate((p) => { const op = p['/tasks/{taskId}/commands']?.post; if (op) op.parameters = [...(op.parameters ?? []), { name: 'X-New', in: 'header', required: true }]; })).toContain('POST /tasks/{taskId}/commands: new required header parameter X-New');
+    expect(apiMutate((p) => { const op = p['/tasks/{taskId}/commands']?.post; if (op?.requestBody) op.requestBody = { ...op.requestBody, required: false }; })).toEqual([]);
   });
 });
