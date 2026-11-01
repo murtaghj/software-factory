@@ -1,0 +1,12 @@
+{
+  "commandId": "00000000-0000-4000-8000-000000000114",
+  "expectedRevision": 2,
+  "interviewRevision": 2,
+  "answers": [
+    {
+      "questionId": "refund-boundary-v1",
+      "kind": "answer",
+      "text": "Record and track only; refund execution is outside this first slice."
+    }
+  ]
+}

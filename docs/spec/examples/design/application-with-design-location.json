@@ -1,0 +1,72 @@
+{
+  "schemaVersion": "2.0",
+  "applicationId": "00000000-0000-4000-8000-000000000010",
+  "key": "orders-api",
+  "name": "Orders API",
+  "ownerIds": [
+    "team:commerce"
+  ],
+  "lifecycle": "production",
+  "repositories": [
+    {
+      "repositoryId": "00000000-0000-4000-8000-000000000020",
+      "subpath": "services/orders",
+      "purpose": "service"
+    }
+  ],
+  "providedInterfaceIds": [
+    "orders-http-v1"
+  ],
+  "consumedInterfaceIds": [
+    "inventory-http-v1"
+  ],
+  "dependencies": [
+    {
+      "applicationId": "00000000-0000-4000-8000-000000000011",
+      "mode": "deploy",
+      "releaseRef": "inventory-compatible-v4"
+    }
+  ],
+  "telemetryServiceNames": [
+    "orders-api"
+  ],
+  "setupProfileRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000030",
+    "sha256": "000000000000000000000000000000000000000000000000000000000000001e",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "verificationProfileRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000000031",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000001f",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ],
+  "deploymentProfileRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000000032",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000020",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ],
+  "minimumAssurance": "standard",
+  "runbookPaths": [
+    "docs/runbooks/orders.md"
+  ],
+  "secretRefs": [
+    "secret:orders-preview-db"
+  ],
+  "designDocsLocation": {
+    "repositoryId": "00000000-0000-4000-8000-000000000020",
+    "subpath": "docs/design",
+    "baseBranch": "main",
+    "adrIndexPath": "docs/adr/README.md"
+  },
+  "dataClassification": "internal"
+}

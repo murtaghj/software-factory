@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "2.0",
+  "taskId": "00000000-0000-4000-8000-000000000073",
+  "interviewRevision": 3,
+  "baseTaskSpecVersion": 1,
+  "briefRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000115",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000073",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "reviewRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000116",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000074",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "operationState": "succeeded",
+  "environmentState": "ready",
+  "endpoints": [
+    "https://orders-r20-pr123.preview.example"
+  ],
+  "previewUrl": "https://orders-r20-pr123.preview.example",
+  "observedRevision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "imageDigestVerification": "match",
+  "observedReleaseRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000067",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000043",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  }
+}

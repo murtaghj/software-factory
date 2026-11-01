@@ -1,0 +1,76 @@
+{
+  "kind": "OutcomeManifest",
+  "value": {
+    "schemaVersion": "2.0",
+    "taskId": "00000000-0000-4000-8000-000000000002",
+    "status": "succeeded",
+    "deliveryScope": "pr",
+    "outcomeKind": "no_change_compliant",
+    "recipeOutcomeRef": {
+      "artifactId": "00000000-0000-4000-8000-000000002510",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000009ce",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "prReviewStateRef": {
+      "artifactId": "00000000-0000-4000-8000-000000002511",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000009cf",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "deliveredArtifactRefs": [
+      {
+        "artifactId": "00000000-0000-4000-8000-000000002510",
+        "sha256": "00000000000000000000000000000000000000000000000000000000000009ce",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      }
+    ],
+    "providerHandles": [],
+    "gateEvaluationRefs": [
+      {
+        "artifactId": "00000000-0000-4000-8000-000000002512",
+        "sha256": "00000000000000000000000000000000000000000000000000000000000009d0",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      }
+    ],
+    "decisionRefs": [],
+    "usage": [],
+    "limitations": [
+      "Synthetic static fixture; runtime no-change completion is not yet proven."
+    ],
+    "knowledgeProposalIds": [],
+    "cleanupObligationRefs": [],
+    "completedAt": "2026-10-29T12:01:00Z",
+    "reviewMode": "ai_only",
+    "reviewModeDecisionRef": {
+      "artifactId": "00000000-0000-4000-8000-000000001615",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000064f",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "reviewSubjectRef": {
+      "artifactId": "00000000-0000-4000-8000-000000001620",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000654",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "aiReviewApprovalSetRefs": [
+      {
+        "artifactId": "00000000-0000-4000-8000-000000001740",
+        "sha256": "00000000000000000000000000000000000000000000000000000000000006cc",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      }
+    ],
+    "voluntaryHumanReviewRefs": []
+  }
+}

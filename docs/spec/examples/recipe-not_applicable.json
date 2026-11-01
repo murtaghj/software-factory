@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "2.0",
+  "taskId": "00000000-0000-4000-8000-000000000002",
+  "recipeRef": {
+    "artifactId": "00000000-0000-4000-8000-000000002503",
+    "sha256": "00000000000000000000000000000000000000000000000000000000000009c7",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "repositoryId": "00000000-0000-4000-8000-000000000020",
+  "sourceCommit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "inputBinding": {
+    "taskSpecVersion": 1,
+    "planVersion": 1,
+    "policyRef": {
+      "artifactId": "00000000-0000-4000-8000-000000002500",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000009c4",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "applicationSnapshotRef": {
+      "artifactId": "00000000-0000-4000-8000-000000002501",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000009c5",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "workflowTemplateRef": {
+      "artifactId": "00000000-0000-4000-8000-000000002502",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000009c6",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  },
+  "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "outcome": "not_applicable",
+  "evidenceRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000002504",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000009c8",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ]
+}

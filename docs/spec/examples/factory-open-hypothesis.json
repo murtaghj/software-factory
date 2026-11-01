@@ -1,0 +1,11 @@
+{
+  "callId": "00000000-0000-4000-8000-000000001340",
+  "statement": "Retry may duplicate the reservation.",
+  "prediction": "A repeated logical request yields two reservations.",
+  "killCriterion": "Both attempts resolve to the same stored reservation.",
+  "plannedExperiment": "Run the granted duplicate-request fixture.",
+  "timebox": {
+    "toolCalls": 5,
+    "minutes": 10
+  }
+}

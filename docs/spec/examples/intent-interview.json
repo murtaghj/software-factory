@@ -1,0 +1,42 @@
+{
+  "taskId": "00000000-0000-4000-8000-000000000073",
+  "revision": 2,
+  "phase": "waiting_input",
+  "stateRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000112",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000070",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "briefRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000113",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000071",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "pendingQuestions": [
+    {
+      "id": "refund-boundary-v1",
+      "topic": "scope_non_goals",
+      "prompt": "Should this first slice execute refunds or only record and track a return?",
+      "whyItMatters": "Refund execution changes payment authority, integration and acceptance scope.",
+      "blocking": true,
+      "sourceRefs": [
+        {
+          "artifactId": "00000000-0000-4000-8000-000000000071",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000047",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      ],
+      "suggestedAnswers": [
+        "Record and track only",
+        "Include refund execution"
+      ]
+    }
+  ],
+  "blockingIssueCount": 1
+}

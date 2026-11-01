@@ -1,0 +1,190 @@
+{
+  "kind": "template",
+  "expect": "missing/ambiguous mandatory gate intent_aligned",
+  "value": {
+    "schemaVersion": "2.0",
+    "id": "greenfield_design",
+    "version": "1.0.0",
+    "workType": "feature",
+    "targetKind": "new_application",
+    "deliveryScope": "design",
+    "designProfile": "design-delivery/1.0",
+    "nodes": [
+      {
+        "id": "brief",
+        "stageKind": "product_brief",
+        "role": "discovery",
+        "dependsOn": [],
+        "inputArtifactRefs": [],
+        "requiredGateIds": [],
+        "requiredCapabilities": [],
+        "timeoutClass": "execute",
+        "sessionPolicy": "fresh",
+        "returnTargets": [],
+        "mandatory": true
+      },
+      {
+        "id": "interview",
+        "stageKind": "intent_interview",
+        "role": "discovery",
+        "dependsOn": [
+          "brief"
+        ],
+        "inputArtifactRefs": [],
+        "requiredGateIds": [],
+        "requiredCapabilities": [],
+        "timeoutClass": "human_wait",
+        "sessionPolicy": "fresh",
+        "returnTargets": [
+          "brief"
+        ],
+        "mandatory": true
+      },
+      {
+        "id": "challenge",
+        "stageKind": "intent_challenge",
+        "role": "reviewer",
+        "dependsOn": [
+          "interview"
+        ],
+        "inputArtifactRefs": [],
+        "requiredGateIds": [],
+        "requiredCapabilities": [],
+        "timeoutClass": "execute",
+        "sessionPolicy": "fresh",
+        "returnTargets": [
+          "interview"
+        ],
+        "mandatory": true
+      },
+      {
+        "id": "confirm_intent",
+        "stageKind": "intent_confirmation",
+        "role": "publisher",
+        "dependsOn": [
+          "challenge"
+        ],
+        "inputArtifactRefs": [],
+        "requiredGateIds": [
+          "scope_accepted"
+        ],
+        "requiredCapabilities": [],
+        "timeoutClass": "human_wait",
+        "sessionPolicy": "fresh",
+        "returnTargets": [
+          "interview"
+        ],
+        "mandatory": true
+      },
+      {
+        "id": "design",
+        "stageKind": "foundation_design",
+        "role": "planner",
+        "dependsOn": [
+          "confirm_intent"
+        ],
+        "inputArtifactRefs": [],
+        "requiredGateIds": [],
+        "requiredCapabilities": [],
+        "timeoutClass": "execute",
+        "sessionPolicy": "fresh",
+        "returnTargets": [
+          "interview"
+        ],
+        "mandatory": true
+      },
+      {
+        "id": "design_review",
+        "stageKind": "plan_peer_review",
+        "role": "reviewer",
+        "dependsOn": [
+          "design"
+        ],
+        "inputArtifactRefs": [],
+        "requiredGateIds": [
+          "architecture_accepted",
+          "plan_peer_approved",
+          "plan_accepted"
+        ],
+        "requiredCapabilities": [],
+        "timeoutClass": "human_wait",
+        "sessionPolicy": "fresh",
+        "returnTargets": [
+          "design",
+          "interview"
+        ],
+        "mandatory": true
+      },
+      {
+        "id": "render",
+        "stageKind": "render_design",
+        "role": "publisher",
+        "dependsOn": [
+          "design_review"
+        ],
+        "inputArtifactRefs": [],
+        "requiredGateIds": [],
+        "requiredCapabilities": [],
+        "timeoutClass": "resolve",
+        "sessionPolicy": "fresh",
+        "returnTargets": [
+          "design_review"
+        ],
+        "mandatory": true
+      },
+      {
+        "id": "deliver",
+        "stageKind": "deliver",
+        "role": "publisher",
+        "dependsOn": [
+          "render"
+        ],
+        "inputArtifactRefs": [],
+        "requiredGateIds": [],
+        "requiredCapabilities": [],
+        "timeoutClass": "provider",
+        "sessionPolicy": "fresh",
+        "returnTargets": [
+          "render"
+        ],
+        "mandatory": true
+      },
+      {
+        "id": "pr_review",
+        "stageKind": "pr_review",
+        "role": "publisher",
+        "dependsOn": [
+          "deliver"
+        ],
+        "inputArtifactRefs": [],
+        "requiredGateIds": [
+          "delivery_complete"
+        ],
+        "requiredCapabilities": [],
+        "timeoutClass": "provider",
+        "sessionPolicy": "fresh",
+        "returnTargets": [
+          "render"
+        ],
+        "mandatory": true
+      },
+      {
+        "id": "close",
+        "stageKind": "learn_close",
+        "role": "knowledge_curator",
+        "dependsOn": [
+          "pr_review"
+        ],
+        "inputArtifactRefs": [],
+        "requiredGateIds": [
+          "outcome_recorded"
+        ],
+        "requiredCapabilities": [],
+        "timeoutClass": "execute",
+        "sessionPolicy": "fresh",
+        "returnTargets": [],
+        "mandatory": true
+      }
+    ]
+  }
+}

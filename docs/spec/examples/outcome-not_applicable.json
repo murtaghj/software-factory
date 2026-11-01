@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "2.0",
+  "taskId": "00000000-0000-4000-8000-000000000002",
+  "status": "succeeded",
+  "deliveryScope": "pr",
+  "outcomeKind": "no_change_not_applicable",
+  "recipeOutcomeRef": {
+    "artifactId": "00000000-0000-4000-8000-000000002520",
+    "sha256": "00000000000000000000000000000000000000000000000000000000000009d8",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "prReviewStateRef": {
+    "artifactId": "00000000-0000-4000-8000-000000002521",
+    "sha256": "00000000000000000000000000000000000000000000000000000000000009d9",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "deliveredArtifactRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000002520",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000009d8",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ],
+  "providerHandles": [],
+  "gateEvaluationRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000002522",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000009da",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ],
+  "decisionRefs": [],
+  "usage": [],
+  "limitations": [
+    "Synthetic static fixture; runtime no-change completion is not yet proven."
+  ],
+  "knowledgeProposalIds": [],
+  "cleanupObligationRefs": [],
+  "completedAt": "2026-10-09T12:00:00Z"
+}

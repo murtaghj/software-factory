@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "2.0",
+  "taskId": "00000000-0000-4000-8000-000000000002",
+  "revision": 1,
+  "completionPolicy": {
+    "mode": "review_completed",
+    "maxReviewRounds": 3,
+    "maxWaitSeconds": 604800
+  },
+  "phase": "preview_only",
+  "pullRequests": [
+    {
+      "repositoryId": "00000000-0000-4000-8000-000000000020",
+      "providerId": "github-reference",
+      "externalId": "184",
+      "expectedHead": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "observedHead": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "state": "open",
+      "draft": true,
+      "reviewState": "pending",
+      "requiredReviewPolicyRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000209",
+        "sha256": "00000000000000000000000000000000000000000000000000000000000000d1",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "observationRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000210",
+        "sha256": "00000000000000000000000000000000000000000000000000000000000000d2",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "observedAt": "2026-10-01T12:00:00Z",
+      "headRepository": {
+        "providerId": "github-reference",
+        "installationRef": "installation:demo",
+        "externalId": "repo20"
+      },
+      "baseRepository": {
+        "providerId": "github-reference",
+        "installationRef": "installation:demo",
+        "externalId": "repo20"
+      }
+    }
+  ],
+  "reviewRound": 0,
+  "processedReviewKeys": [],
+  "findingRefs": [],
+  "pendingDecisionIds": [],
+  "deadline": "2026-10-08T12:00:00Z",
+  "lastCandidateRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000211",
+    "sha256": "00000000000000000000000000000000000000000000000000000000000000d3",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  }
+}

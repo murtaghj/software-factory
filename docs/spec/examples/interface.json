@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "2.0",
+  "interfaceId": "orders-http-v1",
+  "protocol": "http",
+  "contractSource": {
+    "repositoryId": "00000000-0000-4000-8000-000000000020",
+    "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "path": "contracts/orders.openapi.json"
+  },
+  "contractDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "compatibilityPolicy": "additive_only",
+  "authMechanism": "OIDC bearer token",
+  "ownerApplicationId": "00000000-0000-4000-8000-000000000010",
+  "knownConsumerApplicationIds": [
+    "00000000-0000-4000-8000-000000000011"
+  ]
+}

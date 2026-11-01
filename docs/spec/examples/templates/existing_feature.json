@@ -1,0 +1,213 @@
+{
+  "schemaVersion": "2.0",
+  "id": "existing_feature",
+  "version": "3.0.0",
+  "workType": "feature",
+  "targetKind": "existing_application",
+  "nodes": [
+    {
+      "id": "impact",
+      "stageKind": "feature_impact",
+      "role": "discovery",
+      "dependsOn": [],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "scope_accepted"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "execute",
+      "sessionPolicy": "fresh",
+      "returnTargets": [],
+      "mandatory": true
+    },
+    {
+      "id": "plan",
+      "stageKind": "plan",
+      "role": "planner",
+      "dependsOn": [
+        "impact"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [],
+      "requiredCapabilities": [],
+      "timeoutClass": "execute",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "impact"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "plan_review",
+      "stageKind": "plan_peer_review",
+      "role": "reviewer",
+      "dependsOn": [
+        "plan"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "plan_accepted",
+        "plan_peer_approved"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "human_wait",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "plan"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "criteria",
+      "stageKind": "criteria",
+      "role": "criteria_author",
+      "dependsOn": [
+        "plan_review"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "oracle_accepted"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "execute",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "plan"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "implement",
+      "stageKind": "execute",
+      "role": "implementer",
+      "dependsOn": [
+        "criteria"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [],
+      "requiredCapabilities": [],
+      "timeoutClass": "execute",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "plan"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "verify",
+      "stageKind": "verify",
+      "role": "verifier",
+      "dependsOn": [
+        "implement"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "outcome_verified"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "verify",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "implement",
+        "criteria"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "compatibility",
+      "stageKind": "compatibility_verify",
+      "role": "verifier",
+      "dependsOn": [
+        "verify"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "integration_passed"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "verify",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "implement",
+        "plan"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "review",
+      "stageKind": "review",
+      "role": "reviewer",
+      "dependsOn": [
+        "compatibility"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "review_passed"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "execute",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "implement",
+        "plan"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "deliver",
+      "stageKind": "deliver",
+      "role": "publisher",
+      "dependsOn": [
+        "review"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [],
+      "requiredCapabilities": [],
+      "timeoutClass": "provider",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "compatibility"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "pr_review",
+      "stageKind": "pr_review",
+      "role": "publisher",
+      "dependsOn": [
+        "deliver"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "delivery_complete"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "human_wait",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "impact",
+        "plan",
+        "criteria",
+        "implement"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "close",
+      "stageKind": "learn_close",
+      "role": "knowledge_curator",
+      "dependsOn": [
+        "pr_review"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "outcome_recorded"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "execute",
+      "sessionPolicy": "fresh",
+      "returnTargets": [],
+      "mandatory": true
+    }
+  ]
+}

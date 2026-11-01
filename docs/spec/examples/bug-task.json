@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "2.0",
+  "title": "Prevent duplicate stock reservation",
+  "intent": "Repair retry handling after an uncertain reservation response.",
+  "applicationIds": [
+    "00000000-0000-4000-8000-000000000010"
+  ],
+  "targetContext": {
+    "kind": "existing_application",
+    "applicationId": "00000000-0000-4000-8000-000000000010"
+  },
+  "workType": "bug",
+  "acceptanceCriteria": [
+    "A repeated logical request reserves stock only once."
+  ],
+  "assurance": "enhanced",
+  "deliveryScope": "pr",
+  "prCompletion": {
+    "mode": "pr_created",
+    "maxReviewRounds": 3,
+    "maxWaitSeconds": 604800
+  },
+  "budget": {
+    "maxMicroUsd": 25000000,
+    "maxActiveSeconds": 14400,
+    "maxCalendarSeconds": 604800,
+    "maxAuthoringInvocations": 8,
+    "maxSemanticAttemptsPerNode": 3,
+    "maxDesignReturns": 2,
+    "invocationMode": "bounded"
+  }
+}

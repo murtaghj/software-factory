@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "2.0",
+  "exceptionRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001331",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000533",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "decisionRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000001309",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000051d",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ]
+}

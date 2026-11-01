@@ -1,0 +1,236 @@
+{
+  "schemaVersion": "2.0",
+  "taskId": "00000000-0000-4000-8000-000000000073",
+  "revision": 3,
+  "applicationDraftRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000071",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000047",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "problem": "Customers currently ask support to request and track eligible returns.",
+  "targetUsers": [
+    "Authenticated customer",
+    "Returns support operator"
+  ],
+  "desiredOutcomes": [
+    "A customer can submit an eligible return and see its recorded status."
+  ],
+  "journeys": [
+    {
+      "id": "return-request",
+      "actor": "Authenticated customer",
+      "trigger": "Customer opens an eligible fulfilled order",
+      "steps": [
+        "Choose an eligible item",
+        "Submit a return request",
+        "Read the recorded return status"
+      ],
+      "successExamples": [
+        "One return record is visible to the customer after submission.",
+        "A repeated logical request shows the same return."
+      ],
+      "failureExamples": [
+        "Another customer cannot read or return the item.",
+        "An expired item is rejected with an explanation.",
+        "An unavailable order source leaves no accepted return and allows a safe retry."
+      ]
+    }
+  ],
+  "criteria": [
+    {
+      "id": "return-create",
+      "statement": "An eligible item produces one visible return record, including repeated requests.",
+      "journeyIds": [
+        "return-request"
+      ]
+    },
+    {
+      "id": "return-access",
+      "statement": "Unauthorized or expired requests are rejected and upstream failure cannot produce a false accepted return.",
+      "journeyIds": [
+        "return-request"
+      ]
+    }
+  ],
+  "firstSliceJourneyIds": [
+    "return-request"
+  ],
+  "nonGoals": [
+    "Execute refunds",
+    "Arrange shipping",
+    "Write production data in the initial PR"
+  ],
+  "constraints": [
+    "Use the existing identity and order contracts.",
+    "Return eligibility is supplied by the order service.",
+    "The requested outcome is a reviewed PR with independent fixture evidence."
+  ],
+  "tradeoffs": [
+    "Use current order-service eligibility rules; custom return policy is deferred."
+  ],
+  "assumptions": [],
+  "issues": [],
+  "coverage": [
+    {
+      "topic": "problem_outcome",
+      "status": "answered",
+      "reason": "Support-mediated returns are the problem; self-service request and tracking is the first outcome.",
+      "evidenceRefs": [
+        {
+          "artifactId": "00000000-0000-4000-8000-000000000109",
+          "sha256": "000000000000000000000000000000000000000000000000000000000000006d",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      ]
+    },
+    {
+      "topic": "users_ownership",
+      "status": "answered",
+      "reason": "Customer and support roles are distinguished; the named product owner resolves scope.",
+      "evidenceRefs": [
+        {
+          "artifactId": "00000000-0000-4000-8000-000000000109",
+          "sha256": "000000000000000000000000000000000000000000000000000000000000006d",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      ]
+    },
+    {
+      "topic": "journeys_failures",
+      "status": "answered",
+      "reason": "Eligible, expired, duplicate, unauthorized and upstream-unavailable scenarios are included.",
+      "evidenceRefs": [
+        {
+          "artifactId": "00000000-0000-4000-8000-000000000109",
+          "sha256": "000000000000000000000000000000000000000000000000000000000000006d",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      ]
+    },
+    {
+      "topic": "scope_non_goals",
+      "status": "answered",
+      "reason": "One request/status journey is in scope; refunds and shipping are excluded.",
+      "evidenceRefs": [
+        {
+          "artifactId": "00000000-0000-4000-8000-000000000109",
+          "sha256": "000000000000000000000000000000000000000000000000000000000000006d",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      ]
+    },
+    {
+      "topic": "data_permissions",
+      "status": "answered",
+      "reason": "Customer identity scopes access to their own order and return; fixture data is synthetic.",
+      "evidenceRefs": [
+        {
+          "artifactId": "00000000-0000-4000-8000-000000000109",
+          "sha256": "000000000000000000000000000000000000000000000000000000000000006d",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      ]
+    },
+    {
+      "topic": "dependencies",
+      "status": "answered",
+      "reason": "Identity and order eligibility contracts are supplied as pinned discovery inputs.",
+      "evidenceRefs": [
+        {
+          "artifactId": "00000000-0000-4000-8000-000000000109",
+          "sha256": "000000000000000000000000000000000000000000000000000000000000006d",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      ]
+    },
+    {
+      "topic": "experience_accessibility",
+      "status": "answered",
+      "reason": "Use existing app interaction patterns with keyboard access and explicit error/status text.",
+      "evidenceRefs": [
+        {
+          "artifactId": "00000000-0000-4000-8000-000000000109",
+          "sha256": "000000000000000000000000000000000000000000000000000000000000006d",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      ]
+    },
+    {
+      "topic": "operational_constraints",
+      "status": "answered",
+      "reason": "Initial acceptance uses representative fixture load; production sizing is a later explicitly excluded release concern.",
+      "evidenceRefs": [
+        {
+          "artifactId": "00000000-0000-4000-8000-000000000109",
+          "sha256": "000000000000000000000000000000000000000000000000000000000000006d",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      ]
+    },
+    {
+      "topic": "delivery_budget",
+      "status": "answered",
+      "reason": "PR delivery under the accepted bounded task budget; no implicit merge or deployment.",
+      "evidenceRefs": [
+        {
+          "artifactId": "00000000-0000-4000-8000-000000000109",
+          "sha256": "000000000000000000000000000000000000000000000000000000000000006d",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      ]
+    },
+    {
+      "topic": "success_measures",
+      "status": "answered",
+      "reason": "Acceptance demonstrates the listed journeys; support workload reduction is a later product measure.",
+      "evidenceRefs": [
+        {
+          "artifactId": "00000000-0000-4000-8000-000000000109",
+          "sha256": "000000000000000000000000000000000000000000000000000000000000006d",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      ]
+    }
+  ],
+  "intentOwnerIds": [
+    "00000000-0000-4000-8000-000000000100"
+  ],
+  "humanAnswerRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000000109",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000006d",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ],
+  "proposedTaskSpecRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000110",
+    "sha256": "000000000000000000000000000000000000000000000000000000000000006e",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  }
+}

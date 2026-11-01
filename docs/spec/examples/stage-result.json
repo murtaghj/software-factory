@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "2.0",
+  "orgId": "00000000-0000-4000-8000-000000000001",
+  "taskId": "00000000-0000-4000-8000-000000000002",
+  "stageRunId": "task-00000000-0000-4000-8000-000000000002/plan-1/implement/attempt-1",
+  "producerKind": "runner",
+  "inputHash": "bef27d2e5e4eab972c0c05092fad161f8f589a6cb3d22f40d3b6a9af72eb0be3",
+  "allocationEpoch": 3,
+  "status": "completed",
+  "outputRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000000043",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000002b",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ],
+  "checkpointRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000045",
+    "sha256": "000000000000000000000000000000000000000000000000000000000000002d",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "usage": [
+    {
+      "provider": "example-harness",
+      "modelProfile": "standard-author",
+      "quality": "unavailable",
+      "observedAt": "2026-09-28T12:00:00Z"
+    }
+  ],
+  "producerId": "runner-checkpoint:allocation-3",
+  "completedAt": "2026-09-28T12:00:00Z"
+}

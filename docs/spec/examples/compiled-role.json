@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "2.0",
+  "rolePackageRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001313",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000521",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "resolvedRulesRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001314",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000522",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "adapterProfileRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001315",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000523",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "compilerVersion": "1.0.0",
+  "factoryConfigurationRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001316",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000524",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "deliveredContentRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001317",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000525",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "mechanism": "prompt_append"
+}

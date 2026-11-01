@@ -1,0 +1,72 @@
+{
+  "callId": "00000000-0000-4000-8000-000000000201",
+  "output": {
+    "role": "implementer",
+    "changeSummaryRef": {
+      "artifactId": "00000000-0000-4000-8000-000000000202",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000000ca",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "workspaceSourceDigest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "limitations": [
+      "Duplicate request behavior still fails the visible check."
+    ]
+  },
+  "feedbackClaims": [
+    {
+      "verificationRunId": "00000000-0000-4000-8000-000000001327",
+      "receiptRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001330",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000532",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "workspaceSourceDigest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "visiblePackageRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001328",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000530",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "recipeRefs": [
+        {
+          "artifactId": "00000000-0000-4000-8000-000000001401",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000579",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      ],
+      "status": "failed",
+      "scope": "current_source"
+    }
+  ],
+  "deferredWork": [
+    {
+      "id": "D1",
+      "kind": "limitation",
+      "description": "Duplicate request behavior still fails the visible check.",
+      "impact": "Acceptance criterion C2 remains unmet; this is not a success claim.",
+      "criterionIds": [
+        "C2"
+      ],
+      "ruleIds": [],
+      "evidenceRefs": [
+        {
+          "artifactId": "00000000-0000-4000-8000-000000001330",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000532",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      ]
+    }
+  ],
+  "missingContext": [
+    "No authorized production trace was available; this is an untrusted context-gap report."
+  ]
+}

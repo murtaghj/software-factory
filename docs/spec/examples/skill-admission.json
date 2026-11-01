@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "2.0",
+  "id": "00000000-0000-4000-8000-000000001322",
+  "sourceUrl": "https://example.com/fixture-skill",
+  "sourceCommit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "license": "MIT",
+  "sourceTreeDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "adaptedContentRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001323",
+    "sha256": "000000000000000000000000000000000000000000000000000000000000052b",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "inventoryRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001324",
+    "sha256": "000000000000000000000000000000000000000000000000000000000000052c",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "reviewRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001325",
+    "sha256": "000000000000000000000000000000000000000000000000000000000000052d",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "qualificationRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001326",
+    "sha256": "000000000000000000000000000000000000000000000000000000000000052e",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "allowedRoles": [
+    "implementer",
+    "reviewer"
+  ],
+  "executableContent": false
+}

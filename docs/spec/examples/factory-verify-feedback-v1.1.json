@@ -1,0 +1,53 @@
+{
+  "callId": "00000000-0000-4000-8000-000000000204",
+  "classification": "feedback_only",
+  "contentTrust": "untrusted_data",
+  "snapshotRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000205",
+    "sha256": "00000000000000000000000000000000000000000000000000000000000000cd",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "discovered": 4,
+  "executed": 4,
+  "passed": 3,
+  "failed": 1,
+  "skipped": 0,
+  "firstFailures": [
+    {
+      "scenarioId": "S2",
+      "message": "Repeated request emitted two events."
+    }
+  ],
+  "logRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000206",
+    "sha256": "00000000000000000000000000000000000000000000000000000000000000ce",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "wallSeconds": 19,
+  "status": "failed",
+  "verificationRunId": "00000000-0000-4000-8000-000000001327",
+  "stageRunId": "task-2/plan-1/implement/attempt-1",
+  "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "workspaceSourceDigest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "visiblePackageRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001328",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000530",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "recipeRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000001401",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000579",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ],
+  "completedAt": "2026-10-02T12:00:00Z"
+}

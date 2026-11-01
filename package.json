@@ -1,0 +1,28 @@
+{
+  "name": "software-factory",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.16.1",
+  "engines": {
+    "node": "24.22.2",
+    "pnpm": "12.16.1"
+  },
+  "scripts": {
+    "lint": "eslint --max-warnings=0 . && node tools/check-boundaries.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "services:up": "sh scripts/services.sh up",
+    "services:down": "sh scripts/services.sh down",
+    "contracts:generate": "node packages/contracts/scripts/generate.ts",
+    "contracts:check": "sh scripts/check-generated.sh",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm contracts:check"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.19.2",
+    "eslint": "10.14.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1",
+    "vitest": "4.1.12"
+  }
+}

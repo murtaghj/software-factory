@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "2.0",
+  "ruleId": "architecture.layer-direction",
+  "revision": 1,
+  "ownerPrincipalId": "00000000-0000-4000-8000-000000001301",
+  "layer": "organization",
+  "statement": "Domain modules must not import transport handlers.",
+  "authoritativeSourceRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001302",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000516",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "applicabilityRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001303",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000517",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "severity": "blocking",
+  "waivable": true,
+  "enforcementRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000001304",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000518",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ]
+}

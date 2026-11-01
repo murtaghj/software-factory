@@ -1,0 +1,95 @@
+{
+  "id": "00000000-0000-4000-8000-000000000050",
+  "taskId": "00000000-0000-4000-8000-000000000002",
+  "gateId": "outcome_verified",
+  "inputBinding": {
+    "behaviorReleaseRef": {
+      "artifactId": "00000000-0000-4000-8000-000000000220",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000000dc",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "resolvedGatePolicyRef": {
+      "artifactId": "00000000-0000-4000-8000-000000000221",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000000dd",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "factoryToolSetRef": {
+      "artifactId": "00000000-0000-4000-8000-000000000222",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000000de",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "workflowTemplateRef": {
+      "artifactId": "00000000-0000-4000-8000-000000000090",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000005a",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "taskSpecVersion": 1,
+    "planVersion": 1,
+    "policyRef": {
+      "artifactId": "00000000-0000-4000-8000-000000000040",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000028",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "applicationSnapshotRef": {
+      "artifactId": "00000000-0000-4000-8000-000000000041",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000029",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "criteriaRef": {
+      "artifactId": "00000000-0000-4000-8000-000000000042",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000002a",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "candidateRef": {
+      "artifactId": "00000000-0000-4000-8000-000000000043",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000002b",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "canonicalPackageRef": {
+      "artifactId": "00000000-0000-4000-8000-000000000044",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000002c",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "setupProfileRef": {
+      "artifactId": "00000000-0000-4000-8000-000000000030",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000001e",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  },
+  "inputHash": "bef27d2e5e4eab972c0c05092fad161f8f589a6cb3d22f40d3b6a9af72eb0be3",
+  "verdict": "passed",
+  "evidenceRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000000051",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000033",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ],
+  "evaluatorId": "trusted-verifier:v1",
+  "reasonCodes": [
+    "required_checks_passed"
+  ],
+  "evaluatedAt": "2026-09-28T12:10:00Z"
+}

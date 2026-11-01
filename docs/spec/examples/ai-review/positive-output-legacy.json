@@ -1,0 +1,1429 @@
+{
+  "kind": "OutcomeManifest",
+  "value": {
+    "schemaVersion": "2.0",
+    "taskId": "00000000-0000-4000-8000-000000000002",
+    "status": "succeeded",
+    "deliveryScope": "pr",
+    "outcomeKind": "no_change_compliant",
+    "recipeOutcomeRef": {
+      "artifactId": "00000000-0000-4000-8000-000000002510",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000009ce",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "prReviewStateRef": {
+      "artifactId": "00000000-0000-4000-8000-000000002511",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000009cf",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "deliveredArtifactRefs": [
+      {
+        "artifactId": "00000000-0000-4000-8000-000000002510",
+        "sha256": "00000000000000000000000000000000000000000000000000000000000009ce",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      }
+    ],
+    "providerHandles": [],
+    "gateEvaluationRefs": [
+      {
+        "artifactId": "00000000-0000-4000-8000-000000002512",
+        "sha256": "00000000000000000000000000000000000000000000000000000000000009d0",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      }
+    ],
+    "decisionRefs": [],
+    "usage": [],
+    "limitations": [
+      "Synthetic static fixture; runtime no-change completion is not yet proven."
+    ],
+    "knowledgeProposalIds": [],
+    "cleanupObligationRefs": [],
+    "completedAt": "2026-10-29T12:01:00Z",
+    "voluntaryHumanReviewRefs": [
+      {
+        "artifactId": "00000000-0000-4000-8000-000000001774",
+        "sha256": "00000000000000000000000000000000000000000000000000000000000006ee",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      }
+    ]
+  },
+  "bundle": {
+    "now": "2026-10-29T12:01:00Z",
+    "reviewMode": "ai_only",
+    "decisionRef": {
+      "artifactId": "00000000-0000-4000-8000-000000001615",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000064f",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "decision": {
+      "schemaVersion": "2.0",
+      "id": "00000000-0000-4000-8000-000000001602",
+      "reviewMode": "ai_only",
+      "scope": {
+        "applicationId": "00000000-0000-4000-8000-000000000010",
+        "workTypes": [
+          "feature",
+          "bug",
+          "maintenance"
+        ],
+        "changeClasses": [
+          "fixture"
+        ],
+        "pathProfileRef": {
+          "artifactId": "00000000-0000-4000-8000-000000001601",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000641",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "assuranceTiers": [
+          "fast",
+          "standard",
+          "enhanced"
+        ]
+      },
+      "revision": 1,
+      "subjectRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001603",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000643",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "subjectHash": "0000000000000000000000000000000000000000000000000000000000000643",
+      "ownerApprovals": [
+        {
+          "actorKind": "human",
+          "role": "policy_owner",
+          "principalId": "00000000-0000-4000-8000-000000001610",
+          "subjectRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001603",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000643",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "subjectHash": "0000000000000000000000000000000000000000000000000000000000000643",
+          "approvedAt": "2026-10-29T00:00:00Z",
+          "authenticationRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001612",
+            "sha256": "000000000000000000000000000000000000000000000000000000000000064c",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          }
+        },
+        {
+          "actorKind": "human",
+          "role": "application_owner",
+          "principalId": "00000000-0000-4000-8000-000000001611",
+          "subjectRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001603",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000643",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "subjectHash": "0000000000000000000000000000000000000000000000000000000000000643",
+          "approvedAt": "2026-10-29T00:00:00Z",
+          "authenticationRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001613",
+            "sha256": "000000000000000000000000000000000000000000000000000000000000064d",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          }
+        }
+      ],
+      "policyRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001604",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000644",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "validFrom": "2026-10-29T00:00:00Z",
+      "expiresAt": "2026-11-29T00:00:00Z",
+      "qualificationCohortRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001605",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000645",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "reviewerQualificationRefs": [
+        {
+          "artifactId": "00000000-0000-4000-8000-000000001690",
+          "sha256": "000000000000000000000000000000000000000000000000000000000000069a",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        {
+          "artifactId": "00000000-0000-4000-8000-000000001691",
+          "sha256": "000000000000000000000000000000000000000000000000000000000000069b",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        {
+          "artifactId": "00000000-0000-4000-8000-000000001692",
+          "sha256": "000000000000000000000000000000000000000000000000000000000000069c",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        {
+          "artifactId": "00000000-0000-4000-8000-000000001693",
+          "sha256": "000000000000000000000000000000000000000000000000000000000000069d",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      ],
+      "degradationPolicyRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001606",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000646",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "repositoryBindingState": "bound",
+      "devRepositoryId": "00000000-0000-4000-8000-000000000020",
+      "devRepositoryIdentity": {
+        "providerId": "github-reference",
+        "installationRef": "installation:demo",
+        "externalId": "repo20"
+      },
+      "devBranch": "dev",
+      "factoryGitIdentityRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001607",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000647",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "branchProtectionEvidenceRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001608",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000648",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "auditSampleBasisPoints": 2000,
+      "auditPolicyRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001609",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000649",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      }
+    },
+    "state": "active",
+    "emergencyStop": false,
+    "embargoed": false,
+    "urgentHotfix": false,
+    "workType": "feature",
+    "changeClass": "fixture",
+    "pathProfileRef": {
+      "artifactId": "00000000-0000-4000-8000-000000001601",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000641",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "currentCohortRef": {
+      "artifactId": "00000000-0000-4000-8000-000000001605",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000645",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "subjectRef": {
+      "artifactId": "00000000-0000-4000-8000-000000001620",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000654",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "subject": {
+      "schemaVersion": "2.0",
+      "taskId": "00000000-0000-4000-8000-000000000002",
+      "gateId": "plan_peer_approved",
+      "providerId": "github-reference",
+      "headRepository": {
+        "providerId": "github-reference",
+        "installationRef": "installation:demo",
+        "externalId": "repo20"
+      },
+      "baseRepository": {
+        "providerId": "github-reference",
+        "installationRef": "installation:demo",
+        "externalId": "repo20"
+      },
+      "contentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001621",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000655",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "assignmentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001710",
+        "sha256": "00000000000000000000000000000000000000000000000000000000000006ae",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "policyRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001604",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000644",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "inputBindingRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001622",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000656",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      }
+    },
+    "assignmentRef": {
+      "artifactId": "00000000-0000-4000-8000-000000001710",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000006ae",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "assignment": {
+      "schemaVersion": "2.0",
+      "taskId": "00000000-0000-4000-8000-000000000002",
+      "applicationId": "00000000-0000-4000-8000-000000000010",
+      "gateId": "plan_peer_approved",
+      "contentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001621",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000655",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "policyRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001604",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000644",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "reviewModeDecisionRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001615",
+        "sha256": "000000000000000000000000000000000000000000000000000000000000064f",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "authorModelFamily": "fixture-family-a",
+      "authorConfigurationRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001623",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000657",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "assurance": "standard",
+      "slots": [
+        {
+          "id": "slot-0",
+          "role": "primary",
+          "sectionIds": [
+            "intent_scope",
+            "current_state",
+            "design",
+            "interfaces_data",
+            "implementation",
+            "acceptance_tests",
+            "quality_security",
+            "delivery_recovery",
+            "operations",
+            "risks_decisions",
+            "definition_of_done",
+            "review_ownership"
+          ],
+          "configurationRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001680",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000690",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "modelFamily": "fixture-family-a"
+        },
+        {
+          "id": "slot-1",
+          "role": "peer",
+          "sectionIds": [
+            "design",
+            "quality_security"
+          ],
+          "configurationRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001681",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000691",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "modelFamily": "fixture-family-b"
+        },
+        {
+          "id": "slot-2",
+          "role": "adversarial",
+          "sectionIds": [
+            "design",
+            "quality_security"
+          ],
+          "configurationRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001682",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000692",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "modelFamily": "fixture-family-b"
+        },
+        {
+          "id": "slot-3",
+          "role": "specialist",
+          "sectionIds": [
+            "design",
+            "quality_security"
+          ],
+          "configurationRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001683",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000693",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "modelFamily": "fixture-family-b",
+          "specialistRole": "security"
+        }
+      ],
+      "requiredSpecialistRoles": [
+        "security"
+      ],
+      "verdictVisibility": "isolated_until_all_submitted",
+      "round": 1
+    },
+    "configurations": [
+      {
+        "ref": {
+          "artifactId": "00000000-0000-4000-8000-000000001680",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000690",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "value": {
+          "schemaVersion": "2.0",
+          "modelFamily": "fixture-family-a",
+          "modelReleaseRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001630",
+            "sha256": "000000000000000000000000000000000000000000000000000000000000065e",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "promptRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001640",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000668",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "toolSetRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001650",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000672",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "evaluatorRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001651",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000673",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "rolePackageRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001660",
+            "sha256": "000000000000000000000000000000000000000000000000000000000000067c",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "behaviorReleaseRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001670",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000686",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "qualificationCohortRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001605",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000645",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          }
+        }
+      },
+      {
+        "ref": {
+          "artifactId": "00000000-0000-4000-8000-000000001681",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000691",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "value": {
+          "schemaVersion": "2.0",
+          "modelFamily": "fixture-family-b",
+          "modelReleaseRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001631",
+            "sha256": "000000000000000000000000000000000000000000000000000000000000065f",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "promptRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001641",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000669",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "toolSetRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001650",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000672",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "evaluatorRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001651",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000673",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "rolePackageRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001661",
+            "sha256": "000000000000000000000000000000000000000000000000000000000000067d",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "behaviorReleaseRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001670",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000686",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "qualificationCohortRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001605",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000645",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          }
+        }
+      },
+      {
+        "ref": {
+          "artifactId": "00000000-0000-4000-8000-000000001682",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000692",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "value": {
+          "schemaVersion": "2.0",
+          "modelFamily": "fixture-family-b",
+          "modelReleaseRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001632",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000660",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "promptRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001642",
+            "sha256": "000000000000000000000000000000000000000000000000000000000000066a",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "toolSetRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001650",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000672",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "evaluatorRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001651",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000673",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "rolePackageRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001662",
+            "sha256": "000000000000000000000000000000000000000000000000000000000000067e",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "behaviorReleaseRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001670",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000686",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "qualificationCohortRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001605",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000645",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          }
+        }
+      },
+      {
+        "ref": {
+          "artifactId": "00000000-0000-4000-8000-000000001683",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000693",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "value": {
+          "schemaVersion": "2.0",
+          "modelFamily": "fixture-family-b",
+          "modelReleaseRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001633",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000661",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "promptRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001643",
+            "sha256": "000000000000000000000000000000000000000000000000000000000000066b",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "toolSetRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001650",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000672",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "evaluatorRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001651",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000673",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "rolePackageRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001663",
+            "sha256": "000000000000000000000000000000000000000000000000000000000000067f",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "behaviorReleaseRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001670",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000686",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "qualificationCohortRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001605",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000645",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          }
+        }
+      }
+    ],
+    "qualifications": [
+      {
+        "ref": {
+          "artifactId": "00000000-0000-4000-8000-000000001690",
+          "sha256": "000000000000000000000000000000000000000000000000000000000000069a",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "value": {
+          "schemaVersion": "2.0",
+          "configurationRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001680",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000690",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "corpusRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001700",
+            "sha256": "00000000000000000000000000000000000000000000000000000000000006a4",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "thresholdsRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001701",
+            "sha256": "00000000000000000000000000000000000000000000000000000000000006a5",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "minimumCatchBasisPoints": 9000,
+          "maximumFalseApprovalBasisPoints": 1000,
+          "results": [
+            {
+              "kind": "plan",
+              "cleanCount": 10,
+              "seededDefectCount": 10,
+              "caughtDefects": 10,
+              "falseApprovals": 0,
+              "breakdownRef": {
+                "artifactId": "00000000-0000-4000-8000-000000001702",
+                "sha256": "00000000000000000000000000000000000000000000000000000000000006a6",
+                "mediaType": "application/json",
+                "schemaVersion": "2.0",
+                "sizeBytes": 1024
+              }
+            },
+            {
+              "kind": "pr",
+              "cleanCount": 10,
+              "seededDefectCount": 10,
+              "caughtDefects": 10,
+              "falseApprovals": 0,
+              "breakdownRef": {
+                "artifactId": "00000000-0000-4000-8000-000000001702",
+                "sha256": "00000000000000000000000000000000000000000000000000000000000006a6",
+                "mediaType": "application/json",
+                "schemaVersion": "2.0",
+                "sizeBytes": 1024
+              }
+            }
+          ],
+          "result": "passed",
+          "evaluatedAt": "2026-10-28T12:00:00Z",
+          "qualificationCohortRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001605",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000645",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "roleCoverageRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001703",
+            "sha256": "00000000000000000000000000000000000000000000000000000000000006a7",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          }
+        }
+      },
+      {
+        "ref": {
+          "artifactId": "00000000-0000-4000-8000-000000001691",
+          "sha256": "000000000000000000000000000000000000000000000000000000000000069b",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "value": {
+          "schemaVersion": "2.0",
+          "configurationRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001681",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000691",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "corpusRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001700",
+            "sha256": "00000000000000000000000000000000000000000000000000000000000006a4",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "thresholdsRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001701",
+            "sha256": "00000000000000000000000000000000000000000000000000000000000006a5",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "minimumCatchBasisPoints": 9000,
+          "maximumFalseApprovalBasisPoints": 1000,
+          "results": [
+            {
+              "kind": "plan",
+              "cleanCount": 10,
+              "seededDefectCount": 10,
+              "caughtDefects": 10,
+              "falseApprovals": 0,
+              "breakdownRef": {
+                "artifactId": "00000000-0000-4000-8000-000000001702",
+                "sha256": "00000000000000000000000000000000000000000000000000000000000006a6",
+                "mediaType": "application/json",
+                "schemaVersion": "2.0",
+                "sizeBytes": 1024
+              }
+            },
+            {
+              "kind": "pr",
+              "cleanCount": 10,
+              "seededDefectCount": 10,
+              "caughtDefects": 10,
+              "falseApprovals": 0,
+              "breakdownRef": {
+                "artifactId": "00000000-0000-4000-8000-000000001702",
+                "sha256": "00000000000000000000000000000000000000000000000000000000000006a6",
+                "mediaType": "application/json",
+                "schemaVersion": "2.0",
+                "sizeBytes": 1024
+              }
+            }
+          ],
+          "result": "passed",
+          "evaluatedAt": "2026-10-28T12:00:00Z",
+          "qualificationCohortRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001605",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000645",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "roleCoverageRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001703",
+            "sha256": "00000000000000000000000000000000000000000000000000000000000006a7",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          }
+        }
+      },
+      {
+        "ref": {
+          "artifactId": "00000000-0000-4000-8000-000000001692",
+          "sha256": "000000000000000000000000000000000000000000000000000000000000069c",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "value": {
+          "schemaVersion": "2.0",
+          "configurationRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001682",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000692",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "corpusRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001700",
+            "sha256": "00000000000000000000000000000000000000000000000000000000000006a4",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "thresholdsRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001701",
+            "sha256": "00000000000000000000000000000000000000000000000000000000000006a5",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "minimumCatchBasisPoints": 9000,
+          "maximumFalseApprovalBasisPoints": 1000,
+          "results": [
+            {
+              "kind": "plan",
+              "cleanCount": 10,
+              "seededDefectCount": 10,
+              "caughtDefects": 10,
+              "falseApprovals": 0,
+              "breakdownRef": {
+                "artifactId": "00000000-0000-4000-8000-000000001702",
+                "sha256": "00000000000000000000000000000000000000000000000000000000000006a6",
+                "mediaType": "application/json",
+                "schemaVersion": "2.0",
+                "sizeBytes": 1024
+              }
+            },
+            {
+              "kind": "pr",
+              "cleanCount": 10,
+              "seededDefectCount": 10,
+              "caughtDefects": 10,
+              "falseApprovals": 0,
+              "breakdownRef": {
+                "artifactId": "00000000-0000-4000-8000-000000001702",
+                "sha256": "00000000000000000000000000000000000000000000000000000000000006a6",
+                "mediaType": "application/json",
+                "schemaVersion": "2.0",
+                "sizeBytes": 1024
+              }
+            }
+          ],
+          "result": "passed",
+          "evaluatedAt": "2026-10-28T12:00:00Z",
+          "qualificationCohortRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001605",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000645",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "roleCoverageRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001703",
+            "sha256": "00000000000000000000000000000000000000000000000000000000000006a7",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          }
+        }
+      },
+      {
+        "ref": {
+          "artifactId": "00000000-0000-4000-8000-000000001693",
+          "sha256": "000000000000000000000000000000000000000000000000000000000000069d",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "value": {
+          "schemaVersion": "2.0",
+          "configurationRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001683",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000693",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "corpusRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001700",
+            "sha256": "00000000000000000000000000000000000000000000000000000000000006a4",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "thresholdsRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001701",
+            "sha256": "00000000000000000000000000000000000000000000000000000000000006a5",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "minimumCatchBasisPoints": 9000,
+          "maximumFalseApprovalBasisPoints": 1000,
+          "results": [
+            {
+              "kind": "plan",
+              "cleanCount": 10,
+              "seededDefectCount": 10,
+              "caughtDefects": 10,
+              "falseApprovals": 0,
+              "breakdownRef": {
+                "artifactId": "00000000-0000-4000-8000-000000001702",
+                "sha256": "00000000000000000000000000000000000000000000000000000000000006a6",
+                "mediaType": "application/json",
+                "schemaVersion": "2.0",
+                "sizeBytes": 1024
+              }
+            },
+            {
+              "kind": "pr",
+              "cleanCount": 10,
+              "seededDefectCount": 10,
+              "caughtDefects": 10,
+              "falseApprovals": 0,
+              "breakdownRef": {
+                "artifactId": "00000000-0000-4000-8000-000000001702",
+                "sha256": "00000000000000000000000000000000000000000000000000000000000006a6",
+                "mediaType": "application/json",
+                "schemaVersion": "2.0",
+                "sizeBytes": 1024
+              }
+            }
+          ],
+          "result": "passed",
+          "evaluatedAt": "2026-10-28T12:00:00Z",
+          "qualificationCohortRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001605",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000645",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "roleCoverageRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001703",
+            "sha256": "00000000000000000000000000000000000000000000000000000000000006a7",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          }
+        }
+      }
+    ],
+    "decisions": [
+      {
+        "ref": {
+          "artifactId": "00000000-0000-4000-8000-000000001730",
+          "sha256": "00000000000000000000000000000000000000000000000000000000000006c2",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "value": {
+          "schemaVersion": "2.0",
+          "decisionKind": "ai_review",
+          "taskId": "00000000-0000-4000-8000-000000000002",
+          "gateId": "plan_peer_approved",
+          "subjectRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001620",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000654",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "subjectHash": "0000000000000000000000000000000000000000000000000000000000000654",
+          "assignmentRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001710",
+            "sha256": "00000000000000000000000000000000000000000000000000000000000006ae",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "reviewerSlotId": "slot-0",
+          "reviewerConfigurationRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001680",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000690",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "modelFamily": "fixture-family-a",
+          "round": 1,
+          "verdict": "approve",
+          "findingRefs": [],
+          "reviewedSectionIds": [
+            "intent_scope",
+            "current_state",
+            "design",
+            "interfaces_data",
+            "implementation",
+            "acceptance_tests",
+            "quality_security",
+            "delivery_recovery",
+            "operations",
+            "risks_decisions",
+            "definition_of_done",
+            "review_ownership"
+          ],
+          "reviewEvidenceRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001720",
+            "sha256": "00000000000000000000000000000000000000000000000000000000000006b8",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "submittedAt": "2026-10-29T12:00:00Z"
+        }
+      },
+      {
+        "ref": {
+          "artifactId": "00000000-0000-4000-8000-000000001731",
+          "sha256": "00000000000000000000000000000000000000000000000000000000000006c3",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "value": {
+          "schemaVersion": "2.0",
+          "decisionKind": "ai_review",
+          "taskId": "00000000-0000-4000-8000-000000000002",
+          "gateId": "plan_peer_approved",
+          "subjectRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001620",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000654",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "subjectHash": "0000000000000000000000000000000000000000000000000000000000000654",
+          "assignmentRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001710",
+            "sha256": "00000000000000000000000000000000000000000000000000000000000006ae",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "reviewerSlotId": "slot-1",
+          "reviewerConfigurationRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001681",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000691",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "modelFamily": "fixture-family-b",
+          "round": 1,
+          "verdict": "approve",
+          "findingRefs": [],
+          "reviewedSectionIds": [
+            "design",
+            "quality_security"
+          ],
+          "reviewEvidenceRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001721",
+            "sha256": "00000000000000000000000000000000000000000000000000000000000006b9",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "submittedAt": "2026-10-29T12:00:00Z"
+        }
+      },
+      {
+        "ref": {
+          "artifactId": "00000000-0000-4000-8000-000000001732",
+          "sha256": "00000000000000000000000000000000000000000000000000000000000006c4",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "value": {
+          "schemaVersion": "2.0",
+          "decisionKind": "ai_review",
+          "taskId": "00000000-0000-4000-8000-000000000002",
+          "gateId": "plan_peer_approved",
+          "subjectRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001620",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000654",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "subjectHash": "0000000000000000000000000000000000000000000000000000000000000654",
+          "assignmentRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001710",
+            "sha256": "00000000000000000000000000000000000000000000000000000000000006ae",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "reviewerSlotId": "slot-2",
+          "reviewerConfigurationRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001682",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000692",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "modelFamily": "fixture-family-b",
+          "round": 1,
+          "verdict": "approve",
+          "findingRefs": [],
+          "reviewedSectionIds": [
+            "design",
+            "quality_security"
+          ],
+          "reviewEvidenceRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001722",
+            "sha256": "00000000000000000000000000000000000000000000000000000000000006ba",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "submittedAt": "2026-10-29T12:00:00Z"
+        }
+      },
+      {
+        "ref": {
+          "artifactId": "00000000-0000-4000-8000-000000001733",
+          "sha256": "00000000000000000000000000000000000000000000000000000000000006c5",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "value": {
+          "schemaVersion": "2.0",
+          "decisionKind": "ai_review",
+          "taskId": "00000000-0000-4000-8000-000000000002",
+          "gateId": "plan_peer_approved",
+          "subjectRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001620",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000654",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "subjectHash": "0000000000000000000000000000000000000000000000000000000000000654",
+          "assignmentRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001710",
+            "sha256": "00000000000000000000000000000000000000000000000000000000000006ae",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "reviewerSlotId": "slot-3",
+          "reviewerConfigurationRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001683",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000693",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "modelFamily": "fixture-family-b",
+          "round": 1,
+          "verdict": "approve",
+          "findingRefs": [],
+          "reviewedSectionIds": [
+            "design",
+            "quality_security"
+          ],
+          "reviewEvidenceRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001723",
+            "sha256": "00000000000000000000000000000000000000000000000000000000000006bb",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "submittedAt": "2026-10-29T12:00:00Z"
+        }
+      }
+    ],
+    "approvalSet": {
+      "schemaVersion": "2.0",
+      "taskId": "00000000-0000-4000-8000-000000000002",
+      "gateId": "plan_peer_approved",
+      "subjectRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001620",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000654",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "subjectHash": "0000000000000000000000000000000000000000000000000000000000000654",
+      "assignmentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001710",
+        "sha256": "00000000000000000000000000000000000000000000000000000000000006ae",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "reviewModeDecisionRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001615",
+        "sha256": "000000000000000000000000000000000000000000000000000000000000064f",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "aiDecisionRefs": [
+        {
+          "artifactId": "00000000-0000-4000-8000-000000001730",
+          "sha256": "00000000000000000000000000000000000000000000000000000000000006c2",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        {
+          "artifactId": "00000000-0000-4000-8000-000000001731",
+          "sha256": "00000000000000000000000000000000000000000000000000000000000006c3",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        {
+          "artifactId": "00000000-0000-4000-8000-000000001732",
+          "sha256": "00000000000000000000000000000000000000000000000000000000000006c4",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        {
+          "artifactId": "00000000-0000-4000-8000-000000001733",
+          "sha256": "00000000000000000000000000000000000000000000000000000000000006c5",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      ],
+      "aggregation": "unanimous",
+      "round": 1
+    },
+    "openBlockingFindings": [],
+    "humanApprovals": [],
+    "voluntaryHumanReviews": [
+      {
+        "artifactId": "00000000-0000-4000-8000-000000001774",
+        "sha256": "00000000000000000000000000000000000000000000000000000000000006ee",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024,
+        "actorKind": "human"
+      }
+    ],
+    "humanArtifacts": [
+      {
+        "ref": {
+          "artifactId": "00000000-0000-4000-8000-000000001774",
+          "sha256": "00000000000000000000000000000000000000000000000000000000000006ee",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "value": {
+          "id": "00000000-0000-4000-8000-000000001774",
+          "taskId": "00000000-0000-4000-8000-000000000002",
+          "action": "approve_plan",
+          "subjectHash": "0000000000000000000000000000000000000000000000000000000000000654",
+          "subjectRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001620",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000654",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "policyRef": {
+            "artifactId": "00000000-0000-4000-8000-000000001604",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000644",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "evidenceRefs": [
+            {
+              "artifactId": "00000000-0000-4000-8000-000000001775",
+              "sha256": "00000000000000000000000000000000000000000000000000000000000006ef",
+              "mediaType": "application/json",
+              "schemaVersion": "2.0",
+              "sizeBytes": 1024
+            }
+          ],
+          "eligibleRoles": [
+            "engineering_peer"
+          ],
+          "state": "approved",
+          "reason": "Separate voluntary human review of this exact subject.",
+          "expiresAt": "2026-11-29T00:00:00Z",
+          "deciderId": "00000000-0000-4000-8000-000000001776",
+          "requiredPrincipalId": "00000000-0000-4000-8000-000000001776",
+          "actorKind": "human"
+        }
+      }
+    ],
+    "reviewMarker": "AI-reviewed \u2014 no human review",
+    "approvalSetRef": {
+      "artifactId": "00000000-0000-4000-8000-000000001740",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000006cc",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "priorDecisions": [],
+    "priorAssignments": [],
+    "findings": [],
+    "adjudications": [],
+    "findingResolutions": [],
+    "requiredSpecialistScopes": {
+      "security": [
+        "quality_security"
+      ]
+    },
+    "executionStartedAt": "2026-10-29T01:00:00Z",
+    "taskView": {
+      "id": "00000000-0000-4000-8000-000000000002",
+      "orgId": "00000000-0000-4000-8000-000000000001",
+      "creatorId": "00000000-0000-4000-8000-000000000001",
+      "ownerPrincipalId": "00000000-0000-4000-8000-000000000001",
+      "spec": {
+        "schemaVersion": "2.0",
+        "title": "Add order cancellation",
+        "intent": "Allow an authorized customer to cancel an unfulfilled order while preserving audit history.",
+        "applicationIds": [
+          "00000000-0000-4000-8000-000000000010"
+        ],
+        "targetContext": {
+          "kind": "existing_application",
+          "applicationId": "00000000-0000-4000-8000-000000000010"
+        },
+        "workType": "feature",
+        "acceptanceCriteria": [
+          "Authorized customer can cancel an unfulfilled order.",
+          "Repeated cancellation is idempotent.",
+          "Another customer cannot cancel the order.",
+          "Audit history remains queryable."
+        ],
+        "assurance": "standard",
+        "deliveryScope": "pr",
+        "prCompletion": {
+          "mode": "pr_created",
+          "maxReviewRounds": 3,
+          "maxWaitSeconds": 604800
+        },
+        "budget": {
+          "maxMicroUsd": 25000000,
+          "maxActiveSeconds": 14400,
+          "maxCalendarSeconds": 604800,
+          "maxAuthoringInvocations": 8,
+          "maxSemanticAttemptsPerNode": 3,
+          "maxDesignReturns": 2,
+          "invocationMode": "bounded"
+        },
+        "repositoryIds": [
+          "00000000-0000-4000-8000-000000000020"
+        ]
+      },
+      "status": "running",
+      "revision": 1,
+      "planVersion": 1,
+      "projectionSequence": 1,
+      "projectedAt": "2026-10-29T12:01:00Z",
+      "createdAt": "2026-10-29T00:00:00Z",
+      "updatedAt": "2026-10-29T12:01:00Z",
+      "cleanupState": "pending",
+      "lastEventSequence": 1,
+      "priorityClass": "normal",
+      "changeClass": "fixture"
+    }
+  }
+}

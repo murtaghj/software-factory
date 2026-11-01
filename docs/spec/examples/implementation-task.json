@@ -1,0 +1,29 @@
+{
+  "id": "T1",
+  "outcome": "Add atomic cancellation, ownership and audit behavior.",
+  "dependsOn": [],
+  "pathsOrResources": [
+    "services/orders",
+    "db/migrations"
+  ],
+  "criterionIds": [
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "checkStrategy": {
+    "kind": "recipe",
+    "recipeRefs": [
+      {
+        "artifactId": "00000000-0000-4000-8000-000000001401",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000579",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      }
+    ],
+    "evidenceRequirementRefs": [],
+    "rationale": "Visible transaction, ownership and audit checks."
+  }
+}

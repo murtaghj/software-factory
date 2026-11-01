@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "2.0",
+  "stageRunId": "task-00000000-0000-4000-8000-000000000002/plan-1/implement/attempt-1",
+  "adapterId": "example-harness",
+  "adapterVersion": "1.0.0",
+  "allocationEpoch": 3,
+  "terminationReason": "provider_error",
+  "providerErrorClass": "unavailable",
+  "outputRefs": [],
+  "usage": [
+    {
+      "provider": "example-harness",
+      "modelProfile": "standard-author",
+      "quality": "unavailable",
+      "source": "adapter-events",
+      "intervalStart": "2026-10-09T11:59:00Z",
+      "intervalEnd": "2026-10-09T12:00:00Z",
+      "observedAt": "2026-10-09T12:00:00Z"
+    }
+  ],
+  "diagnosticRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000046",
+    "sha256": "000000000000000000000000000000000000000000000000000000000000002e",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "producerKind": "adapter"
+}

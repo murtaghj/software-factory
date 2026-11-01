@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "2.0",
+  "key": "returns-service",
+  "name": "Returns service",
+  "ownerIds": [
+    "team:commerce"
+  ],
+  "purpose": "Let customers request and track a return.",
+  "constraints": [
+    "Reuse the existing identity service.",
+    "No production writes in the initial slice."
+  ],
+  "providedInterfaceIntents": [
+    "Returns HTTP API"
+  ],
+  "dependencyApplicationIds": [
+    "00000000-0000-4000-8000-000000000011"
+  ],
+  "minimumAssurance": "standard"
+}

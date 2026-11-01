@@ -1,0 +1,123 @@
+# 15 — Decisions, integration register and sources
+
+## Product-owner decision
+
+D5 — 29 October 2026 (adopted product policy): amends D1 for opted-in applications only. Both the policy owner and application owner may explicitly establish qualified ai_only review at fast, standard or enhanced assurance, replacing every mandatory human review gate including all specialist sign-offs and human PR review. The ceiling is the configured dev/integration branch and qualified branch previews; release_authorized always stays human. D2 urgent hotfixes and D4/INT-15 embargoed work remain human. ADR-33 records the implementation design; adoption is not proof of reviewer effectiveness.
+
+## Decision register
+
+Status is proposed until the listed owner records adoption. Closure requires evidence at the listed gate; adoption alone does not prove implementation acceptance. Where a decision spans milestones, earlier prerequisites remain due at their own package gates.
+
+| ID | Decision/default | Closure requirement | Closing gate (milestone / W-IDs / AC-IDs) | Owner role | Status |
+| --- | --- | --- | --- | --- | --- |
+| ADR-01 | Temporal coordinates stages; runner owns process/resource lifecycle. | Adopt with INV-01/02/09 recovery tests. | M1; W-011, W-079; AC-04, AC-09, AC-103 | backend | proposed |
+| ADR-02 | Versioned artifacts and exact input bindings cross stage boundaries. | Schema/manifest and invalidation acceptance. | M1; W-007, W-012; AC-06, AC-24 | backend | proposed |
+| ADR-03 | Git definitions + Postgres index/operation ledger + object artifacts. | Migration, access and restore qualification. | M7; W-006, W-007, W-056; AC-05, AC-06, AC-50, AC-58 | platform/data | proposed |
+| ADR-04 | Private task clones/worktrees; separate evaluation source stores. | Workspace/verification isolation tests. | M2; W-018, W-022; AC-12, AC-22 | execution | proposed |
+| ADR-05 | Claude Agent SDK pilot; Codex is the first portability adapter; fresh execution and portable handoff mandatory, native resume optional. | Two-harness conformance. | M4; W-026, W-034; AC-16, AC-17, AC-53 | execution | proposed |
+| ADR-06 | Work type, target context, assurance, invocation budget and delivery scope are independent axes. | Policy truth-table and all-type acceptance. | M8; W-013, W-059; AC-33, AC-34, AC-60 | backend | proposed |
+| ADR-07 | Typed workflows with a validated internal plan DAG; no arbitrary user-authored executable workflow DSL in v1. | Unknown stage/tool rejection tests. | M1; W-003, W-063; AC-18, AC-69, AC-70 | backend | proposed |
+| ADR-08 | The existing MCP deployment alternative sits behind DeploymentProvider with explicit capabilities. | If selected, actual MCP provider conformance and unknown-result handling demonstrated. | M5; W-041, W-045; AC-39, AC-40 | execution | proposed |
+| ADR-09 | Start single organization per deployment with tenant-qualified records; qualify stronger isolation before shared multi-org hosting. | Cross-org access tests and sandbox profile review. | M7; W-053, W-058; AC-05, AC-19, AC-56 | platform/security | proposed |
+| ADR-10 | GitHub and managed Temporal are reference integrations, not domain model dependencies. | Provider interfaces and alternative-deployment documented procedure. | M0 choices: W-001; M5 qualification: W-030, W-045; AC-36, AC-39, AC-40 | platform | proposed |
+| ADR-11 | Node 24 LTS/PostgreSQL 18 reference platform; exact patches/SDKs/images pinned at implementation kickoff. | Committed lockfile and compatibility matrix. | M0; W-002, W-003; AC-260 | backend | proposed |
+| ADR-12 | AI suggestions never finalize trusted gates, broaden permissions or auto-promote global lessons. | Adversarial integrity and authority tests. | M7; W-039, W-058; AC-19, AC-22, AC-47, AC-57 | platform/security | proposed |
+| ADR-13 | Distinct pinned greenfield/existing_feature/bug_fix templates reuse the common stage engine. | Routing, nonwaivable evidence, rework and history-pinning acceptance. | M8; W-068; AC-61–AC-74 | backend | proposed |
+| ADR-14 | Draft application identity precedes Git; authorized bootstrap yields a real base before worktrees. | Draft concurrency, bootstrap unknown-result recovery and new-repository/monorepo qualification. | M4; W-064, W-065; AC-62–AC-65, AC-72, AC-74 | execution | proposed |
+| ADR-15 | Greenfield intent requires adaptive human interview, independent challenge and exact-brief confirmation (human by default; D5 panel when in force) before design/implementation; uncertainty remains explicit. | AC-75–AC-84: coverage, authority, contradictions, revision/resume, non-bypass and focused interaction. | M8; W-071; AC-75–AC-84 | fullstack | proposed |
+| ADR-16 | Complete engineering plans require independent peer sign-off (human by default; D5 panel when in force); one canonical packet supports short, structured and full review views. | AC-85–AC-94: coverage, peer authority, exact-subject rework, visible risks, planned-versus-proven evidence and comprehension. | M8; W-074; AC-85–AC-94 | fullstack | proposed |
+| ADR-17 | Application/change/risk/configuration cohorts earn qualified judgement modes through human policy decisions; human floors remain outside the explicit D5 opt-in; production authority always stays human. | Ledger maturity, sampling, rollback/tightening and non-bypass tests. | M7; W-087; AC-111–AC-114 | backend | proposed |
+| ADR-18 | Factory-owned MCP tools provide feedback, structured proposals and human requests; only trusted quiesced finalisation advances stage state. | Receipt, crash, epoch, credential and private-check conformance. | M3; W-075, W-076; AC-95–AC-101 | execution | proposed |
+| ADR-19 | Explicit PR completion policy controls bounded review/rework; provider state and exact heads determine completion. | All policies, stale approvals, review rounds, human pushes and abandonment. | M3; W-080; AC-104–AC-109 | backend | proposed |
+| ADR-20 | Stage-boundary portable checkpoints are required; mid-stage stop/compaction and native sessions are optional qualified capabilities. | Lost-pod replay, compatible-state checks and handoff-quality evaluation. | M4; W-020, W-023, W-084, W-026; AC-13–AC-16, AC-123–AC-125 | execution | proposed |
+| ADR-21 | Adopt established components for commodity layers when they meet the chapter 22 exit criteria: agent-sandbox execution substrate, in-toto/SLSA attestation, OPA or Cedar policy engine. The existing specification is the fallback. | W-097 reports against every testable chapter 22 exit criterion (AC-153–AC-155), with platform-owner sign-off on version pinning and maturity; decision recorded per candidate before W-013/W-017/W-022 proceed. | M0; W-097; AC-153–AC-155 | platform | proposed |
+| ADR-22 | Registry sources plug in at import time behind RegistrySource with a field-level authority map; factory-specific data stays in Git; tasks read pinned snapshots only. | AC-156, AC-157; no live catalog reads during tasks. | M2; W-098; AC-156, AC-157 | backend | proposed |
+| ADR-23 | Repeatable changes use versioned recipes with typed outcomes, deterministic executors first and campaigns under one approved packet; in human mode auto-merge is an earned merge action after current-head human PR approval, limited to deterministic classes in v1, with degradation to manual merge; D5 separately authorizes qualified AI-reviewed dev merges. Chat intake, multiplayer sessions and external catalog adapters are deferred. | AC-161–AC-167, campaign pilot W-103. | M7; W-101–W-104; AC-161–AC-167 | backend | proposed |
+| ADR-24 | Discovery records a ContextManifest; past incidents are matched by normalized failure signatures as labelled hypotheses; verified fixes keep regression tests; variant analysis and recurrence escalation produce owner-decided proposals, never automatic changes. | AC-173–AC-181, including look-alike anchoring tests. | M4; W-109–W-114; AC-173–AC-181 | execution | proposed |
+| ADR-25 | Data classification/provider eligibility, candidate secret scanning and an organization-wide emergency stop are pilot prerequisites; decision notifications are a required M3 safeguard, not a pilot prerequisite; security work can be embargoed. | AC-182–AC-191; INT-14 closure before non-public content reaches a provider. | M2 pilot safeguards; M3 remaining safeguards; W-115–W-121; AC-182–AC-191 | platform/security | proposed |
+| ADR-26 | Investigations run under an enforced hypothesis ledger with timeboxes, stall detection, fresh-eyes checkpoints and early human escalation. | AC-192–AC-198 including decoy-bug evaluation. | M3; W-122–W-125; AC-192–AC-198 | execution | proposed |
+| ADR-27 | Urgent hotfixes retain one on-call generalist plus every required specialist per INV-21 and distinguish mitigation from verified fixes. W-126 is M7 and depends on W-042/W-052; production mitigation requires the application's qualified release profile. The factory may work on its own repository only outside its trusted components. | AC-199–AC-202, AC-251. | M7; W-126, W-127; AC-199–AC-202, AC-251 | backend | proposed |
+| ADR-28 | Factory tools 1.2.0 versions ledger, live evidence and missing-context contracts; allocation classification and isolated embargo publication remain trusted controller responsibilities. | AC-240–AC-249; retain tools 1.0.0/1.1.0 and qualify INT-08/INT-15/INT-16 before enablement. | M7; W-105, W-115, W-117, W-126, W-136–W-138; AC-240–AC-249 | execution | proposed |
+| ADR-31 | Owned rules and scoped exceptions, deterministic role-content delivery and admitted skills qualify rules-role-content/1.0; factory tools 1.1.0 coexist with the retained 1.0.0 contract. | AC-130–AC-145; exceptions cannot waive invariants or human floors. | M4; W-089–W-091, W-072, W-075, W-076, W-080, W-084–W-086; AC-130–AC-145 | execution | proposed |
+| ADR-32 | Argo CD ApplicationSet PR-generator previews are the reference Kubernetes preview provider; MCP remains an equal alternative behind DeploymentProvider. Existing merge-to-dev Argo and production paths remain unchanged. | Each enabled provider MUST pass the same applicable conformance suite before capabilities are labelled supported; exact head/digests, updates, eligibility, isolation, capacity, uncertain outcomes and full cleanup. Not yet proven on a real cluster. | M5; W-139, W-140, W-045; AC-39–AC-43, AC-262–AC-279 | platform/execution | proposed |
+| ADR-33 | D5 per-application ai_only replaces mandatory human review at every tier with qualified unanimous independent AI panels and all specialists; dev-only automatic merge, human production release and fail-closed human fallback. | Authority, configuration qualification, exclusions, exact subjects, honest provenance, preview/branch enforcement, audit and degradation; effectiveness not yet proven. | M7; W-141, W-142, W-143; AC-280–AC-303 | policy/application owners | proposed |
+| ADR-34 | Design-only delivery is a DeliveryScope value (`design`) for feature, refactor, performance and platform intent, not a ninth work type. Pinned design templates stop after the full intent/plan peer-review gates and deliver the deterministically rendered packet as a design PR or classified report with an honest design_approved outcome; a later build reuses the packet only while basis and approvals are current, otherwise replans affected sections and approvals. | Scope selection, no-implementation graph, gates in every tier, rendering, PR/report delivery, honest outcomes, current/drifted bindings, embargo/classification, budget, storage, versioning and UI. Runtime rendering, Git delivery and currency resolution not yet proven. | M6; W-144; AC-304–AC-318; ai-review design templates M7; W-141; AC-319 | backend/product | proposed |
+
+## Organization-specific integration facts still required
+
+| ID | Needed fact | Owner / due | What can proceed meanwhile | Closing gate (milestone / W-IDs / AC-IDs) |
+| --- | --- | --- | --- | --- |
+| INT-01 | First application/repositories, build/test commands, app owner and supported runtime | Application owner / M0 | Fixture app and generic profiles. | M0; W-001; AC-40, AC-53 |
+| INT-02 | Git provider/installation, branch protection, merge strategy and webhook authentication | Platform owner / M0 | GitProvider fake and local ref reconciliation. | M0 inventory, M3 qualification; W-001, W-030; AC-36, AC-38, AC-40 |
+| INT-03 | Actual MCP server/tool schemas, authentication, operation lookup/dedupe, cleanup and environment isolation | Deployment-tool owner / M0 spike, M5 qualification if MCP selected | Generic contract and fake provider; MCP previews disabled pending its qualification; Argo may qualify independently. | M0 spike, M5 qualification; W-078, W-041; AC-39, AC-40, AC-102 |
+| INT-04 | Temporal hosting, namespace/account, network path, retention and worker versioning support | Platform owner / M0 | Local Temporal and deterministic tests. | M0; W-001; AC-40, AC-53 |
+| INT-05 | Kubernetes version/CNI/storage/sandbox runtime and execution namespaces | Platform owner / M0 | Local cluster and manifests parameterization. | M0 inventory, M2 qualification; W-001, W-017; AC-10, AC-11, AC-40 |
+| INT-06 | OIDC issuer, organization roles, secret manager and workload identity | Security/platform owner / M0 | Test issuer and strict fake identities. | M0 inventory, M1 qualification; W-001, W-008; AC-05, AC-19, AC-40 |
+| INT-07 | Object storage/database provider, encryption, backups and retention obligations | Platform/data owner / M0–M1 | Local compatible stores and reference retention. | M0 inventory, M1 qualification; W-001, W-006, W-007; AC-05, AC-06, AC-40, AC-58 |
+| INT-08 | Claude Agent SDK/model gateway account and routing, permitted role models, SDK isolation controls, account limits and cost sources; gateway enforces runner-issued per-credential model/classification scope, proven by AC-182/AC-247; Codex portability profile in M4 | Engineering owner / M0–M3 | Deterministic harness fake and configurable profiles. | M0 inventory, M3 pilot, M4 portability; W-001, W-077, W-026, W-115; AC-16, AC-53, AC-100, AC-101, AC-125, AC-182, AC-247 |
+| INT-09 | Trace/log/metric backend and service-release mapping | Observability owner / M4 | Fixture telemetry and generic query adapter. | M4; W-038; AC-32 |
+| INT-10 | Production rollout metrics, thresholds, decision roles and recovery plan for first app | Application/release owner / M7 | PR/preview delivery; production disabled. | M7; W-052; AC-44, AC-45, AC-59 |
+| INT-11 | Allowed repository namespaces/visibility, creation grants, initialization template and retained-repository ownership | Platform/application owner / M0 inventory, M4 qualification | Local Git fixtures and draft service; remote bootstrap disabled. | M0 inventory, M4 qualification; W-001, W-064, W-065; AC-40, AC-62–AC-65, AC-72, AC-74 |
+| INT-12 | Existing organizational service catalog, if any, and its trustworthy fields | Platform owner / M0 | Recorded: none today. GitDescriptorSource is the only qualified registry source; any catalog adapter is an adoption decision. | M2; W-098; AC-156, AC-157 |
+| INT-13 | Issue tracker, code host history access and documentation/ADR locations for pilot applications | Application/platform owner / M3 | Fixture tickets and fixture history; documentation adapter optional. | M3; W-110; AC-174 |
+| INT-14 | Model provider contractual terms per provider: data retention, training use, processing region, sub-processors; organization data classification levels | Security/legal owner / M0 | Providers eligible for public content and fixtures only. | M0 terms, M2 enforcement; W-001, W-115; AC-40, AC-53, AC-182, AC-183, AC-247 |
+| INT-15 | Vulnerability scanner/advisory sources and severity targets; choose a GitHub temporary private fork or separate private security repository and qualify complete read-principal checks enforced before and through every push, plus embargo lift/integration | Security owner / M3 | Fixture advisories; embargoed publication blocked until enforcement is qualified. | M3; W-117; AC-185, AC-186, AC-246, AC-248 |
+| INT-16 | Approved CI/error-tracking/tracker/code-history query templates, bounded scopes, principal mapping, classification and redaction for tools 1.2.0 | Application/security owner / M3 | Fixture queries; ungranted sources fail closed. | M3; W-094, W-110; AC-150, AC-174, AC-241 |
+| INT-17 | Recorded: organization uses Argo CD only after merge to dev today; feature PR previews are new. Confirm Argo CD version and ApplicationSet controller access, app repo/chart layout, PR label name, preview domain/DNS/cert issuer, registry immutable-tag support, per-preview data mechanism, reviewer URL auth and application/team concurrency caps; record scoped GitHub/CI credentials, webhook/poll interval and maximum/idle expiry. | Platform/application/security owners / M5 | Generic contracts and fixture tests; Argo previews disabled until qualified; existing dev path untouched. | M5; W-139, W-140, W-045; AC-262–AC-279 |
+| INT-18 | Which applications opt in; for pre_repository decisions the draft application and organization-approved provider/installation/namespace/bootstrap policy plus intended dev branch and scoped identity; at creation, the real bootstrap receipt and exact dev/integration repository/branch and branch-protection allowance for that identity only there; eligible reviewer model families; audit sample rate/deadlines/backlog limits; versioned clean/seeded plan/PR qualification corpus with catch-rate and false-approval thresholds; degradation signals, windows, minimum samples and thresholds. | Policy/application/platform owners / M7 | Generic fixtures and human mode; pre_repository review requires all pre-bootstrap facts and qualification; no AI PR review/merge until concrete repository/protection facts are bound. | M7; W-141, W-142, W-143; AC-280–AC-303 |
+
+The closing cells assign implementation ownership and required evidence; they do not assert that any integration is already qualified.
+
+These are external integration facts, not unspecified core algorithms. The plan deliberately supplies defaults for ordinary implementation choices and makes capability-dependent behavior fail explicitly. It cannot truthfully provide your internal tool schema or production credentials without observing them.
+
+## Principal risks and responses
+
+| Risk | Detection and response |
+| --- | --- |
+| False success from weak oracle | Independent criteria review, expected-test execution checks, negative fixtures and outcome evaluation. |
+| Agent changes the test/verifier boundary | Canonical package outside author authority, separate supervisor, integrity tests and external behavior checks for critical cases. |
+| Vendor lock-in through conversation state | Required portable source/context artifacts and two-harness completion test early. |
+| Duplicate effects after timeout/crash | Durable intent, stable IDs, provider lookup/conditional update and explicit unknown state. |
+| Lost source on pod replacement | Acknowledged durable checkpoints; clean-allocation restore drill. |
+| Runaway retries/spend | Distinct infrastructure/semantic retries, hierarchical reservation, process deadlines and visible metering uncertainty. |
+| Scope creep into unsafe deployment | Explicit delivery scope, exact release subject and capability enforcement. |
+| Stale learned facts | Provenance, applicability, expiry, dispute/supersession and reviewed promotion. |
+| Long-lived workflows block upgrades | Worker build retention, compatibility contracts, replay tests and explicit migration plans. |
+| Beautiful UI hides incomplete system | Milestone demos must produce actual evidence from failure and recovery scenarios. |
+
+## Primary technical references
+
+Sources checked 28 September 2026. The factory defaults, limits, APIs and algorithms are proposed design decisions; vendor pages establish the underlying integration semantics. Recheck exact pinned release compatibility during implementation.
+
+- [Temporal workflow basics](https://docs.temporal.io/develop/typescript/workflows/basics) — deterministic workflow boundary.
+- [Temporal Activities](https://docs.temporal.io/develop/typescript/activities) — external execution and Activity lifecycle.
+- [Temporal message passing](https://docs.temporal.io/develop/typescript/workflows/message-passing) — Signals, Updates and command handlers.
+- [Temporal Continue-As-New](https://docs.temporal.io/develop/typescript/workflows/continue-as-new) — fresh history with explicit state transfer.
+- [Temporal worker versioning](https://docs.temporal.io/worker-versioning) — build/version routing and pinned execution.
+- [Temporal service limits](https://docs.temporal.io/evaluate/cloud/limits) — deployment-specific operational limits.
+- [Codex SDK](https://learn.chatgpt.com/docs/codex-sdk) and [app-server](https://learn.chatgpt.com/docs/app-server) — native programmatic execution/session interfaces.
+- [OpenCode SDK](https://opencode.ai/docs/sdk/) — session/server integration.
+- [Claude Agent SDK sessions](https://code.claude.com/docs/en/agent-sdk/sessions) — session continuation and persistence.
+- [Git worktree](https://git-scm.com/docs/git-worktree) and [Git bundle](https://git-scm.com/docs/git-bundle) — local source isolation and durable object transfer.
+- [Kubernetes Jobs](https://kubernetes.io/docs/concepts/workloads/controllers/job/) — execution/retry semantics.
+- [Kubernetes Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/) — execution hardening controls.
+- [PostgreSQL row security](https://www.postgresql.org/docs/18/ddl-rowsecurity.html) and [SELECT](https://www.postgresql.org/docs/18/sql-select.html) — data isolation and row-lock/queue semantics.
+- [Argo CD PR generator](https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Generators-Pull-Request/), [Application deletion](https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Application-Deletion/) and [namespace management](https://argo-cd.readthedocs.io/en/stable/user-guide/sync-options/#create-namespace) — documentation checked 26 October 2026; installed-version behavior and organization configuration remain INT-17 qualification facts.
+- [MCP tool specification](https://modelcontextprotocol.io/specification/2026-07-28/server/tools) — tool schema discovery and invocation surface.
+- [Node.js releases](https://nodejs.org/en/about/previous-releases) — runtime support status.
+
+- [Reference practice and adoption sources](22-reference-practice-adoption.md): long-running agent harnesses, mechanically enforced architecture, engineer-parity evidence, agent-sandbox, attestation and policy engines.
+
+## Specification validation versus product validation
+
+Local checks on this package verify readable document structure, links, JSON contracts/examples and backlog relationships. They do not demonstrate PostgreSQL migration execution, TypeScript compilation, Kubernetes isolation, actual MCP/Argo compatibility or completed application outcomes. Those are named implementation acceptance obligations. The final build qualification must attach real evidence before labeling the service production-ready.
+
+## Research interpretation for revision 1.4
+
+The review informed design hypotheses, not universal production success rates. Spot-checked primary sources on 1 October 2026:
+
+- [Google program repair](https://arxiv.org/abs/2501.07531): 73% of machine-reported bugs had at least one plausible patch across 20 trajectories; 43% had at least one semantically equivalent patch. This is neither one-shot success nor a forecast for this factory.
+- [Google bug reproduction](https://arxiv.org/abs/2502.01821): one agent produced plausible reproductions for 28% of 80 human-reported bugs. It does not imply the remaining proportion of our tickets is inherently unreproducible.
+- [Spotify feedback loops](https://engineering.atspotify.com/2025/12/feedback-loops-background-coding-agents-part-3): supports compact verification feedback and a scope judge; reports about a quarter of sessions vetoed and acknowledges missing judge evaluations. The cited page does not establish the review's claimed 20–30% to 80% improvement, so that figure is not adopted.
+
+Unverified HumanLayer/METR/ImpossibleBench statistics and hard context/instruction-count thresholds from the original review are not normative claims in this specification. Impossible-task fixtures, architectural feedback and context experiments are explicit engineering requirements/hypotheses to qualify locally. Exact SDK features, sandbox/gateway settings and provider limits remain M0 observations pinned to releases, never assumptions inferred from research summaries.

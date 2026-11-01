@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "2.0",
+  "id": "00000000-0000-4000-8000-000000000216",
+  "scope": {
+    "applicationId": "00000000-0000-4000-8000-000000000010",
+    "workType": "bug",
+    "changeClass": "machine_reported_retry_bug",
+    "assurance": "standard",
+    "pathProfileRef": {
+      "artifactId": "00000000-0000-4000-8000-000000000212",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000000d4",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "behaviorReleaseRef": {
+      "artifactId": "00000000-0000-4000-8000-000000000213",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000000d5",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  },
+  "policyRevision": 1,
+  "gateModes": [
+    {
+      "gateId": "plan_peer_approved",
+      "mode": "human",
+      "sampleBasisPoints": 10000,
+      "humanFloor": true
+    },
+    {
+      "gateId": "oracle_accepted",
+      "mode": "human",
+      "sampleBasisPoints": 10000,
+      "humanFloor": true
+    }
+  ],
+  "direction": "establish",
+  "actorKind": "human",
+  "actorId": "policy-owner:fixture",
+  "authorityRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000217",
+    "sha256": "00000000000000000000000000000000000000000000000000000000000000d9",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "ledgerRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000000218",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000000da",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ],
+  "minimumSampleCount": 30,
+  "observationDays": 90,
+  "degradationRuleRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000219",
+    "sha256": "00000000000000000000000000000000000000000000000000000000000000db",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "reason": "Establish conservative pilot floors; numerical sample targets are illustrative configuration, not sufficient qualification.",
+  "expiresAt": "2027-01-01T00:00:00Z"
+}

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "2.0",
+  "taskId": "00000000-0000-4000-8000-000000000002",
+  "revision": 1,
+  "completionPolicy": {
+    "mode": "pr_created",
+    "maxReviewRounds": 3,
+    "maxWaitSeconds": 604800
+  },
+  "phase": "completed_no_change",
+  "pullRequests": [],
+  "reviewRound": 0,
+  "processedReviewKeys": [],
+  "findingRefs": [],
+  "pendingDecisionIds": [],
+  "deadline": "2026-10-16T12:00:00Z",
+  "recipeOutcomeRef": {
+    "artifactId": "00000000-0000-4000-8000-000000002520",
+    "sha256": "00000000000000000000000000000000000000000000000000000000000009d8",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "gateEvaluationRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000002522",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000009da",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ]
+}

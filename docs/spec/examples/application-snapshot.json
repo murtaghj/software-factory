@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "2.0",
+  "snapshotId": "00000000-0000-4000-8000-000000000042",
+  "targetContext": {
+    "kind": "existing_application",
+    "applicationId": "00000000-0000-4000-8000-000000000010"
+  },
+  "applicationDefinitionRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000000043",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000002b",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ],
+  "applicationDraftRefs": [],
+  "interfaceDefinitionRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000000044",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000002c",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    {
+      "artifactId": "00000000-0000-4000-8000-000000000047",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000002f",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ],
+  "createdAt": "2026-10-09T12:00:00Z"
+}

@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "2.0",
+  "id": "00000000-0000-4000-8000-000000000072",
+  "taskId": "00000000-0000-4000-8000-000000000073",
+  "target": {
+    "kind": "new_application",
+    "applicationId": "00000000-0000-4000-8000-000000000070",
+    "draftRevision": 1,
+    "draftRef": {
+      "artifactId": "00000000-0000-4000-8000-000000000071",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000047",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "repositoryIntent": {
+      "kind": "new_repository",
+      "providerId": "git-reference",
+      "installationRef": "installation:demo",
+      "namespace": "example-org",
+      "name": "returns-service",
+      "visibility": "private",
+      "defaultBranch": "main"
+    }
+  },
+  "architectureRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000074",
+    "sha256": "000000000000000000000000000000000000000000000000000000000000004a",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "applicationSnapshotRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000075",
+    "sha256": "000000000000000000000000000000000000000000000000000000000000004b",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "initializationTemplateRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000076",
+    "sha256": "000000000000000000000000000000000000000000000000000000000000004c",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "setupProfileRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000082",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000052",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "allowedPaths": [
+    "README.md",
+    ".gitignore",
+    "services/returns",
+    "docs",
+    "package.json",
+    "pnpm-lock.yaml",
+    ".github"
+  ],
+  "repositoryOperationId": "00000000-0000-4000-8000-000000000077",
+  "initializationOperationId": "00000000-0000-4000-8000-000000000078"
+}

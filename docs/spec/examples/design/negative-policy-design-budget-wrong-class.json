@@ -1,0 +1,106 @@
+{
+  "kind": "PolicyProfile",
+  "expect": "$.designBudget.budgetClass const",
+  "value": {
+    "schemaVersion": "2.0",
+    "id": "organization-default",
+    "revision": 1,
+    "defaultAssurance": "standard",
+    "fastAllowedApplicationIds": [],
+    "riskTriggers": [
+      "public_api",
+      "authentication_authorization",
+      "payment",
+      "sensitive_data",
+      "persistent_migration",
+      "several_services",
+      "unknown_blast_radius",
+      "critical_application",
+      "privileged_infrastructure",
+      "performance_resource_risk"
+    ],
+    "nonwaivableGates": [
+      "intent_aligned",
+      "architecture_accepted",
+      "plan_accepted",
+      "plan_peer_approved",
+      "release_authorized"
+    ],
+    "nonwaivableInvariants": [
+      "bug_red_lock_green",
+      "exact_input_binding",
+      "independently_collected_evidence",
+      "authorized_delivery"
+    ],
+    "gateModeRules": [
+      {
+        "gateId": "intent_aligned",
+        "mode": "human",
+        "sampleBasisPoints": 10000,
+        "humanFloor": true
+      },
+      {
+        "gateId": "architecture_accepted",
+        "mode": "human",
+        "sampleBasisPoints": 10000,
+        "humanFloor": true
+      },
+      {
+        "gateId": "plan_accepted",
+        "mode": "human",
+        "sampleBasisPoints": 10000,
+        "humanFloor": true
+      },
+      {
+        "gateId": "plan_peer_approved",
+        "mode": "human",
+        "sampleBasisPoints": 10000,
+        "humanFloor": true
+      },
+      {
+        "gateId": "release_authorized",
+        "mode": "human",
+        "sampleBasisPoints": 10000,
+        "humanFloor": true
+      },
+      {
+        "gateId": "oracle_accepted",
+        "mode": "human",
+        "sampleBasisPoints": 10000,
+        "humanFloor": true
+      }
+    ],
+    "stageWallSecondsByTimeoutClass": {
+      "resolve": 600,
+      "execute": 2700,
+      "verify": 1800,
+      "provider": 900,
+      "cleanup": 1200
+    },
+    "maxOpenPRsPerApplication": 5,
+    "maxDiffLinesPerPR": 400,
+    "defaultBudget": {
+      "maxMicroUsd": 25000000,
+      "maxActiveSeconds": 14400,
+      "maxCalendarSeconds": 604800,
+      "maxAuthoringInvocations": 8,
+      "maxSemanticAttemptsPerNode": 3,
+      "maxDesignReturns": 2,
+      "invocationMode": "bounded"
+    },
+    "productionEnabledApplicationIds": [],
+    "decisionTtlSeconds": 259200,
+    "previewTtlSeconds": 86400,
+    "designBudget": {
+      "maxMicroUsd": 10000000,
+      "maxActiveSeconds": 7200,
+      "maxCalendarSeconds": 1209600,
+      "maxAuthoringInvocations": 6,
+      "maxSemanticAttemptsPerNode": 3,
+      "maxDesignReturns": 2,
+      "invocationMode": "bounded",
+      "budgetClass": "task"
+    },
+    "designApprovalTtlSeconds": 7776000
+  }
+}

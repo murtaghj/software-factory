@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "2.0",
+  "taskId": "00000000-0000-4000-8000-000000000002",
+  "packetRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000330",
+    "sha256": "ce6fd1a38c8cf9ef106324d67281caedd70b9aad2a2f08bcc73ec053addc8dd1",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 23885
+  },
+  "assignmentRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000331",
+    "sha256": "447bd49e175283f1f1518218deb13b3ff8c67bd7c11785f01e57a63d24fb99f9",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1510
+  },
+  "policyRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000040",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000028",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  }
+}

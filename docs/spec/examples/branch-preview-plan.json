@@ -1,0 +1,98 @@
+{
+  "schemaVersion": "2.0",
+  "environmentId": "00000000-0000-4000-8000-000000000060",
+  "orgId": "00000000-0000-4000-8000-000000000001",
+  "taskId": "00000000-0000-4000-8000-000000000002",
+  "providerId": "argocd-pr-preview",
+  "profileRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000032",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000020",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "purpose": "preview",
+  "candidateRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000043",
+    "sha256": "000000000000000000000000000000000000000000000000000000000000002b",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "deployables": [
+    {
+      "applicationId": "00000000-0000-4000-8000-000000000010",
+      "repositoryId": "00000000-0000-4000-8000-000000000020",
+      "sourceCommit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "imageDigest": "registry.example/orders@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "templateRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000061",
+        "sha256": "000000000000000000000000000000000000000000000000000000000000003d",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "configurationRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000062",
+        "sha256": "000000000000000000000000000000000000000000000000000000000000003e",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "dependencyIds": [],
+      "secretRefs": [
+        "secret:orders-preview-db"
+      ]
+    }
+  ],
+  "fixtureRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000000063",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000003f",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ],
+  "migrationRecipeRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000000064",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000040",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ],
+  "readinessRecipeRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000000065",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000041",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ],
+  "verificationRecipeRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000000031",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000001f",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ],
+  "networkMode": "restricted-preview",
+  "expiresAt": "2026-10-27T12:00:00Z",
+  "pullRequestRevision": {
+    "repositoryId": "00000000-0000-4000-8000-000000000020",
+    "pullRequestId": "123",
+    "headCommit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "releaseManifestRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000066",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000042",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  }
+}

@@ -1,0 +1,3811 @@
+{
+  "schemaVersion": "1.0",
+  "packages": [
+    {
+      "id": "W-001",
+      "milestone": "M0",
+      "title": "Provider and access inventory",
+      "ownerRole": "platform",
+      "dependsOn": [],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 4
+      },
+      "modules": [
+        "docs/integrations"
+      ],
+      "deliverable": "Close the M0 portions of INT-01 through INT-08 and INT-14 provider terms/classification levels with security/legal sign-off for pilot providers; inventory INT-11 bootstrap access facts; capture actual MCP schemas and sandbox operation examples if selecting that provider",
+      "acceptance": [
+        "AC-40",
+        "AC-53"
+      ]
+    },
+    {
+      "id": "W-002",
+      "milestone": "M0",
+      "title": "Repository and pinned toolchain",
+      "ownerRole": "backend",
+      "dependsOn": [],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 3
+      },
+      "modules": [
+        "workspace",
+        "CI"
+      ],
+      "deliverable": "Create strict TS/pnpm monorepo, package boundaries, lockfile, lint/typecheck and local service scripts",
+      "acceptance": [
+        "AC-260"
+      ]
+    },
+    {
+      "id": "W-003",
+      "milestone": "M0",
+      "title": "Contract baseline and generation",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-002"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/contracts"
+      ],
+      "deliverable": "Validate reference JSON Schema, generate TS/OpenAPI types, add positive/negative fixtures and compatibility checks",
+      "acceptance": [
+        "AC-260",
+        "AC-18"
+      ]
+    },
+    {
+      "id": "W-004",
+      "milestone": "M0",
+      "title": "Representative fixture system",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-002"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "fixtures"
+      ],
+      "deliverable": "Build orders/inventory/web/event fixture with known-good and faulty releases, trace IDs and seeded data",
+      "acceptance": [
+        "AC-20",
+        "AC-25",
+        "AC-32"
+      ]
+    },
+    {
+      "id": "W-005",
+      "milestone": "M0",
+      "title": "Architecture and access review",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-001",
+        "W-003"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 3
+      },
+      "modules": [
+        "docs/adr"
+      ],
+      "deliverable": "Resolve deployment-specific defaults, roles, isolation and nonwaivable gate rules; document explicit unsupported capabilities",
+      "acceptance": [
+        "AC-19",
+        "AC-40",
+        "AC-56"
+      ]
+    },
+    {
+      "id": "W-006",
+      "milestone": "M1",
+      "title": "Database migrations and repositories",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-003"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/database"
+      ],
+      "deliverable": "Implement all core tables, tenant FKs/RLS, indexes, runtime roles and migration-forward tests including denied organization creation and immutable artifact/definition digests",
+      "acceptance": [
+        "AC-05",
+        "AC-58",
+        "AC-203"
+      ]
+    },
+    {
+      "id": "W-007",
+      "milestone": "M1",
+      "title": "Artifact finalization and access",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-003",
+        "W-006"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/artifacts"
+      ],
+      "deliverable": "Implement temporary upload, trusted digest/schema check, immutable registration, scoped access and orphan sweep",
+      "acceptance": [
+        "AC-06",
+        "AC-49"
+      ]
+    },
+    {
+      "id": "W-008",
+      "milestone": "M1",
+      "title": "OIDC and application RBAC",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-005",
+        "W-006"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "apps/api"
+      ],
+      "deliverable": "Bind issuer/subject to scoped roles; enforce artifact/task/provider authorization and audit",
+      "acceptance": [
+        "AC-05",
+        "AC-19",
+        "AC-44"
+      ]
+    },
+    {
+      "id": "W-009",
+      "milestone": "M1",
+      "title": "Task API and idempotency",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-006",
+        "W-008"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "apps/api"
+      ],
+      "deliverable": "Implement creation/list/detail with validated TaskRequest, stable idempotency records and launch outbox",
+      "acceptance": [
+        "AC-01",
+        "AC-02",
+        "AC-03"
+      ]
+    },
+    {
+      "id": "W-010",
+      "milestone": "M1",
+      "title": "Outbox and command dispatcher",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-009"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "apps/dispatcher"
+      ],
+      "deliverable": "Implement leased dispatch, retry classification, stable Workflow IDs and uncertain-response reconciliation",
+      "acceptance": [
+        "AC-03",
+        "AC-07",
+        "AC-08"
+      ]
+    },
+    {
+      "id": "W-011",
+      "milestone": "M1",
+      "title": "Temporal task skeleton",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-003",
+        "W-010"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "apps/worker"
+      ],
+      "deliverable": "Implement task states, handlers, projection sequencing and fake stage execution with deterministic replay",
+      "acceptance": [
+        "AC-04",
+        "AC-07",
+        "AC-09"
+      ]
+    },
+    {
+      "id": "W-012",
+      "milestone": "M1",
+      "title": "Artifact bindings and gate engine",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-007",
+        "W-011"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/domain"
+      ],
+      "deliverable": "Implement complete input binding hashes, gate evaluation and dependency invalidation across plan versions",
+      "acceptance": [
+        "AC-24",
+        "AC-33",
+        "AC-44"
+      ]
+    },
+    {
+      "id": "W-013",
+      "milestone": "M1",
+      "title": "Policy and hierarchical budgets",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-012",
+        "W-097"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/policy"
+      ],
+      "deliverable": "Implement five independent task axes, risk rules, reservations, ceilings and explicit incomplete outcomes",
+      "acceptance": [
+        "AC-33",
+        "AC-34"
+      ]
+    },
+    {
+      "id": "W-014",
+      "milestone": "M1",
+      "title": "Events and initial task dashboard",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-009",
+        "W-011"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "apps/dashboard"
+      ],
+      "deliverable": "Implement ordered resumable SSE, task/stage/gate views and honest projection staleness",
+      "acceptance": [
+        "AC-04",
+        "AC-52"
+      ]
+    },
+    {
+      "id": "W-015",
+      "milestone": "M1",
+      "title": "Command and decision workflow",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-011",
+        "W-012",
+        "W-008"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "apps/api",
+        "apps/worker"
+      ],
+      "deliverable": "Implement pause/resume/cancel/amend/budget and bound decision requests with dedupe and expiry",
+      "acceptance": [
+        "AC-07",
+        "AC-08",
+        "AC-44"
+      ]
+    },
+    {
+      "id": "W-016",
+      "milestone": "M1",
+      "title": "Fake complete vertical slice",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-012",
+        "W-013",
+        "W-014",
+        "W-015"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 3
+      },
+      "modules": [
+        "tests/system"
+      ],
+      "deliverable": "Demonstrate task intake through fake execution, independent result, report delivery and outcome manifest",
+      "acceptance": [
+        "AC-54"
+      ]
+    },
+    {
+      "id": "W-017",
+      "milestone": "M2",
+      "title": "Kubernetes controller and Job protocol",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-005",
+        "W-006",
+        "W-011",
+        "W-077",
+        "W-097"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "apps/runner",
+        "deploy/helm"
+      ],
+      "deliverable": "Implement desired/observed reconciliation, deterministic Job naming, pod-specific permits and versioned allocations",
+      "acceptance": [
+        "AC-10",
+        "AC-11"
+      ]
+    },
+    {
+      "id": "W-018",
+      "milestone": "M2",
+      "title": "Workspace manager and Git materialization",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-006",
+        "W-007"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "packages/workspace"
+      ],
+      "deliverable": "Implement private clones/worktrees, approved paths, setup profile, branch identity and independent evaluation source",
+      "acceptance": [
+        "AC-12",
+        "AC-22",
+        "AC-38"
+      ]
+    },
+    {
+      "id": "W-019",
+      "milestone": "M2",
+      "title": "Lease fencing and process supervision",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-017",
+        "W-018"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "apps/supervisor"
+      ],
+      "deliverable": "Implement epochs, heartbeat, stale-writer rejection, process tree cancellation and isolated replacement rules",
+      "acceptance": [
+        "AC-10",
+        "AC-12",
+        "AC-15"
+      ]
+    },
+    {
+      "id": "W-020",
+      "milestone": "M2",
+      "title": "Durable checkpoints and restore",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-007",
+        "W-018",
+        "W-019"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "packages/workspace"
+      ],
+      "deliverable": "Implement committed and dirty-state manifests, bundle transfer, finalization and clean-allocation restore",
+      "acceptance": [
+        "AC-13",
+        "AC-14",
+        "AC-16"
+      ]
+    },
+    {
+      "id": "W-021",
+      "milestone": "M2",
+      "title": "Capability proxy and execution profiles",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-008",
+        "W-019"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "apps/runner",
+        "deploy/helm"
+      ],
+      "deliverable": "Implement scoped tool grants, per-role identities, egress controls and denied-operation audit",
+      "acceptance": [
+        "AC-19",
+        "AC-56"
+      ]
+    },
+    {
+      "id": "W-022",
+      "milestone": "M2",
+      "title": "Canonical verifier supervisor",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-012",
+        "W-018",
+        "W-021",
+        "W-097"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "apps/verifier"
+      ],
+      "deliverable": "Implement exact source/package execution, external result collection, counts/integrity checks and trusted finalization",
+      "acceptance": [
+        "AC-21",
+        "AC-22",
+        "AC-23",
+        "AC-24"
+      ]
+    },
+    {
+      "id": "W-023",
+      "milestone": "M2",
+      "title": "Runner Activity attachment and cancellation",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-019",
+        "W-020",
+        "W-011"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "apps/worker"
+      ],
+      "deliverable": "Implement startOrAttach/await heartbeat/cancel and typed infrastructure versus semantic outcomes",
+      "acceptance": [
+        "AC-10",
+        "AC-14",
+        "AC-15"
+      ]
+    },
+    {
+      "id": "W-024",
+      "milestone": "M2",
+      "title": "Workspace/resource sweeper",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-019",
+        "W-020"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 4
+      },
+      "modules": [
+        "apps/runner"
+      ],
+      "deliverable": "Implement UID-scoped cleanup, retention, orphan reconciliation and visible failed cleanup obligations",
+      "acceptance": [
+        "AC-43"
+      ]
+    },
+    {
+      "id": "W-025",
+      "milestone": "M2",
+      "title": "Context builder and role prompts",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-007",
+        "W-012",
+        "W-021"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/context"
+      ],
+      "deliverable": "Implement token allocation, fact selection, role context manifests, prompt packages and fresh/resume policy",
+      "acceptance": [
+        "AC-18",
+        "AC-57"
+      ]
+    },
+    {
+      "id": "W-026",
+      "milestone": "M4",
+      "title": "Codex portability adapter",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-023",
+        "W-025",
+        "W-033",
+        "W-075"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/harness/codex"
+      ],
+      "deliverable": "Implement pinned SDK/app-server mapping and prove fresh portable continuation from Claude with shared tool/lifecycle conformance",
+      "acceptance": [
+        "AC-16",
+        "AC-18",
+        "AC-53"
+      ]
+    },
+    {
+      "id": "W-027",
+      "milestone": "M3",
+      "title": "Existing-project feature template",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-022",
+        "W-035",
+        "W-013",
+        "W-063",
+        "W-072",
+        "W-076",
+        "W-082",
+        "W-083"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/domain",
+        "apps/worker"
+      ],
+      "deliverable": "Implement criteria/design/acceptance/execute/review path and exact candidate return routing",
+      "acceptance": [
+        "AC-25",
+        "AC-24",
+        "AC-67"
+      ]
+    },
+    {
+      "id": "W-028",
+      "milestone": "M3",
+      "title": "Bug regression workflow",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-022",
+        "W-035",
+        "W-063",
+        "W-072",
+        "W-076",
+        "W-082",
+        "W-083"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "packages/verification"
+      ],
+      "deliverable": "Implement diagnosis/test review/baseline red/package lock/candidate green with tamper-resistant canonical source",
+      "acceptance": [
+        "AC-20",
+        "AC-21",
+        "AC-22",
+        "AC-68"
+      ]
+    },
+    {
+      "id": "W-029",
+      "milestone": "M3",
+      "title": "Investigation template and report",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-025",
+        "W-035",
+        "W-013",
+        "W-072",
+        "W-076"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 4
+      },
+      "modules": [
+        "packages/domain"
+      ],
+      "deliverable": "Implement bounded hypotheses/experiments/report/review with no forced code or deployment",
+      "acceptance": [
+        "AC-31"
+      ]
+    },
+    {
+      "id": "W-030",
+      "milestone": "M3",
+      "title": "GitHub PR publishing adapter",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-018",
+        "W-008",
+        "W-012"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "packages/git"
+      ],
+      "deliverable": "Implement expected-head task refs, stable PR identity, webhook inbox and uncertain-create reconciliation",
+      "acceptance": [
+        "AC-36",
+        "AC-38"
+      ]
+    },
+    {
+      "id": "W-031",
+      "milestone": "M3",
+      "title": "Review findings and adjudication",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-027",
+        "W-028",
+        "W-029"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/verification"
+      ],
+      "deliverable": "Implement fresh reviewer schema, severity/routing, rebuttal limits and residual-risk decisions",
+      "acceptance": [
+        "AC-35",
+        "AC-57"
+      ]
+    },
+    {
+      "id": "W-032",
+      "milestone": "M3",
+      "title": "Review and evidence UI",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-014",
+        "W-015",
+        "W-031"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "apps/dashboard"
+      ],
+      "deliverable": "Implement bound decisions, baseline/candidate evidence, stale-gate labels and safe artifact access",
+      "acceptance": [
+        "AC-44",
+        "AC-49",
+        "AC-54"
+      ]
+    },
+    {
+      "id": "W-033",
+      "milestone": "M3",
+      "title": "First real pilot qualification",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-027",
+        "W-028",
+        "W-029",
+        "W-030",
+        "W-032",
+        "W-073",
+        "W-079",
+        "W-080",
+        "W-081",
+        "W-084",
+        "W-085",
+        "W-086",
+        "W-088",
+        "W-093",
+        "W-094",
+        "W-096",
+        "W-107",
+        "W-122",
+        "W-132",
+        "W-134",
+        "W-109",
+        "W-110",
+        "W-111",
+        "W-112"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "tests/system"
+      ],
+      "deliverable": "Qualify full feature machine-reported bug and investigation graphs with Claude human plan/oracle review independent checks PR follow-through and recovery; no greenfield/unreproduced claims; require closed INT-14 eligibility for the pilot application classification",
+      "acceptance": [
+        "AC-20",
+        "AC-25",
+        "AC-31",
+        "AC-54",
+        "AC-67",
+        "AC-68"
+      ]
+    },
+    {
+      "id": "W-034",
+      "milestone": "M4",
+      "title": "OpenCode adapter and portable handoff",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-020",
+        "W-025",
+        "W-033",
+        "W-026"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "packages/harness/opencode"
+      ],
+      "deliverable": "Implement isolated server/session mapping and cross-vendor clean-pod continuation",
+      "acceptance": [
+        "AC-17",
+        "AC-53"
+      ]
+    },
+    {
+      "id": "W-035",
+      "milestone": "M3",
+      "title": "Claude Agent SDK pilot adapter",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-023",
+        "W-025",
+        "W-077"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/harness/claude"
+      ],
+      "deliverable": "Implement qualified Claude runtime gateway usage cancellation isolated settings and optional native persistence without vendor state in gates",
+      "acceptance": [
+        "AC-16",
+        "AC-18",
+        "AC-53"
+      ]
+    },
+    {
+      "id": "W-036",
+      "milestone": "M4",
+      "title": "Git integration and merge queue",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-030",
+        "W-012"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "packages/git"
+      ],
+      "deliverable": "Implement target-head binding, integration candidates, conflict routing and merged-source provenance",
+      "acceptance": [
+        "AC-37",
+        "AC-38",
+        "AC-46"
+      ]
+    },
+    {
+      "id": "W-037",
+      "milestone": "M4",
+      "title": "Registry imports and profile snapshots",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-006",
+        "W-007",
+        "W-005",
+        "W-098"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "packages/registry"
+      ],
+      "deliverable": "Implement schema-validated Git import, stable entities, declared graph and immutable resolved profiles",
+      "acceptance": [
+        "AC-48"
+      ]
+    },
+    {
+      "id": "W-038",
+      "milestone": "M4",
+      "title": "Telemetry adapter and causal diagnosis",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-037",
+        "W-028",
+        "W-004",
+        "W-135"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "packages/telemetry"
+      ],
+      "deliverable": "Implement bounded traces/logs/release inventory and evidence-based multi-service hypothesis evaluation; close INT-09 telemetry and release-mapping facts",
+      "acceptance": [
+        "AC-32"
+      ]
+    },
+    {
+      "id": "W-039",
+      "milestone": "M4",
+      "title": "Knowledge and runbook update workflow",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-037",
+        "W-031",
+        "W-030"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/registry",
+        "apps/worker"
+      ],
+      "deliverable": "Implement scoped proposals, disputes/supersession, reviewed Git runbook changes and reindex",
+      "acceptance": [
+        "AC-47",
+        "AC-48"
+      ]
+    },
+    {
+      "id": "W-040",
+      "milestone": "M4",
+      "title": "Application graph and knowledge UI",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-037",
+        "W-039",
+        "W-014"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "apps/dashboard"
+      ],
+      "deliverable": "Show source/observed distinctions, import health, profiles, owners and fact provenance",
+      "acceptance": [
+        "AC-47",
+        "AC-48"
+      ]
+    },
+    {
+      "id": "W-041",
+      "milestone": "M5",
+      "title": "Actual MCP deployment mapping",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-001",
+        "W-005",
+        "W-007",
+        "W-037",
+        "W-078"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 7
+      },
+      "modules": [
+        "packages/deployment"
+      ],
+      "deliverable": "Map observed tool schemas/auth/results as the MCP alternative; pass the common real-provider conformance suite for uncertain outcomes exact inventory readiness isolation and cleanup before declaring capabilities supported; fake tests alone do not qualify",
+      "acceptance": [
+        "AC-39",
+        "AC-40",
+        "AC-41",
+        "AC-42",
+        "AC-43",
+        "AC-45",
+        "AC-56"
+      ],
+      "launchScope": "optional"
+    },
+    {
+      "id": "W-042",
+      "milestone": "M5",
+      "title": "Environment workflow and operation ledger",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-011",
+        "W-013"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "apps/worker",
+        "packages/deployment"
+      ],
+      "deliverable": "Implement desired-state provisioning/reconcile/expiry with stable operation identity and unknown outcomes; require at least one qualified real provider from the alternative dependency group and bind its qualification evidence",
+      "acceptance": [
+        "AC-39",
+        "AC-40",
+        "AC-43"
+      ],
+      "dependsOnAny": [
+        [
+          "W-041",
+          "W-139"
+        ]
+      ]
+    },
+    {
+      "id": "W-043",
+      "milestone": "M5",
+      "title": "Fixtures, readiness and environment verification",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-042",
+        "W-022"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "packages/deployment",
+        "packages/verification"
+      ],
+      "deliverable": "Implement isolated data/migrations, dependency readiness and exact composition behavior checks",
+      "acceptance": [
+        "AC-41",
+        "AC-42"
+      ]
+    },
+    {
+      "id": "W-044",
+      "milestone": "M5",
+      "title": "Preview cleanup and environment UI",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-042",
+        "W-024",
+        "W-014"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "apps/dashboard",
+        "apps/runner"
+      ],
+      "deliverable": "Implement lease extension, endpoint access, ownership/expiry and failed-cleanup visibility",
+      "acceptance": [
+        "AC-43"
+      ]
+    },
+    {
+      "id": "W-045",
+      "milestone": "M5",
+      "title": "Preview qualification and environment-only bug",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-043",
+        "W-044",
+        "W-028"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "tests/system"
+      ],
+      "deliverable": "Require at least one qualified real provider from the alternative dependency group; prove timeout-after-create recovery exact inventory red/green comparable environments and no leaked resources; each enabled provider must pass and unsupported comparison profiles remain disabled",
+      "acceptance": [
+        "AC-39",
+        "AC-41",
+        "AC-42",
+        "AC-43",
+        "AC-279"
+      ],
+      "dependsOnAny": [
+        [
+          "W-041",
+          "W-139"
+        ]
+      ]
+    },
+    {
+      "id": "W-046",
+      "milestone": "M6",
+      "title": "Refactor and maintenance templates",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-027",
+        "W-031",
+        "W-037"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "packages/domain"
+      ],
+      "deliverable": "Implement preserved invariants/structural review and dependency compatibility matrices",
+      "acceptance": [
+        "AC-26",
+        "AC-27"
+      ]
+    },
+    {
+      "id": "W-047",
+      "milestone": "M6",
+      "title": "Performance protocol and evaluator",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-022",
+        "W-037",
+        "W-043"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "packages/verification"
+      ],
+      "deliverable": "Implement frozen benchmark plans, repetition/variability reporting and correctness/resource guardrails; require controlled pinned/dedicated placement",
+      "acceptance": [
+        "AC-28",
+        "AC-127"
+      ]
+    },
+    {
+      "id": "W-048",
+      "milestone": "M6",
+      "title": "Platform and migration template",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-043",
+        "W-031"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "packages/domain"
+      ],
+      "deliverable": "Implement desired-state plan, recovery requirements, mixed-version rehearsal and execution scope",
+      "acceptance": [
+        "AC-29"
+      ]
+    },
+    {
+      "id": "W-049",
+      "milestone": "M6",
+      "title": "Documentation validation template",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-029",
+        "W-031",
+        "W-039"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/domain"
+      ],
+      "deliverable": "Implement source-bound claims, links/rendering/examples and subject-review delivery",
+      "acceptance": [
+        "AC-30"
+      ]
+    },
+    {
+      "id": "W-050",
+      "milestone": "M6",
+      "title": "Mixed tasks and multi-repository composition",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-036",
+        "W-046",
+        "W-048",
+        "W-049"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "apps/worker",
+        "packages/domain"
+      ],
+      "deliverable": "Implement child DAG validation, shared budget, release manifest and integrated parent completion",
+      "acceptance": [
+        "AC-34",
+        "AC-46"
+      ]
+    },
+    {
+      "id": "W-051",
+      "milestone": "M6",
+      "title": "Adversarial testing and flake handling",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-031",
+        "W-022",
+        "W-043"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "packages/verification"
+      ],
+      "deliverable": "Implement risk-selected failure cases, oracle review and retained diagnostic repetition",
+      "acceptance": [
+        "AC-35",
+        "AC-55"
+      ]
+    },
+    {
+      "id": "W-052",
+      "milestone": "M7",
+      "title": "Qualified production delivery",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-036",
+        "W-045",
+        "W-048",
+        "W-015"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 7
+      },
+      "modules": [
+        "packages/deployment",
+        "apps/worker"
+      ],
+      "deliverable": "Implement application release profile, exact approval, rollout inventory, observation and mitigation; close INT-10 rollout metrics thresholds decision roles and recovery facts",
+      "acceptance": [
+        "AC-44",
+        "AC-45",
+        "AC-59"
+      ]
+    },
+    {
+      "id": "W-053",
+      "milestone": "M7",
+      "title": "HA charts and execution hardening",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-021",
+        "W-042"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "deploy/helm"
+      ],
+      "deliverable": "Implement multi-replica control services, RBAC/network/storage profiles, probes/quotas and isolated pools",
+      "acceptance": [
+        "AC-05",
+        "AC-56"
+      ]
+    },
+    {
+      "id": "W-054",
+      "milestone": "M7",
+      "title": "Capacity fairness and metering",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-013",
+        "W-023",
+        "W-042",
+        "W-088",
+        "W-085"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "apps/runner",
+        "packages/domain"
+      ],
+      "deliverable": "Implement organization/provider admission, child reservations, actual/estimated usage and reconciliation",
+      "acceptance": [
+        "AC-34",
+        "AC-51"
+      ]
+    },
+    {
+      "id": "W-055",
+      "milestone": "M7",
+      "title": "Observability and operator runbooks",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-023",
+        "W-042",
+        "W-054"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/telemetry",
+        "docs/runbooks"
+      ],
+      "deliverable": "Add traces/metrics/alerts for queues, leases, unknown operations, cleanup, integrity and budget",
+      "acceptance": [
+        "AC-43",
+        "AC-54"
+      ]
+    },
+    {
+      "id": "W-056",
+      "milestone": "M7",
+      "title": "Backup, retention and disaster restore",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-007",
+        "W-053"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "deploy",
+        "docs/runbooks"
+      ],
+      "deliverable": "Implement PITR/object retention, reachability GC and restore reconciliation with side effects disabled",
+      "acceptance": [
+        "AC-06",
+        "AC-50"
+      ]
+    },
+    {
+      "id": "W-057",
+      "milestone": "M7",
+      "title": "Factory upgrade and replay pipeline",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-011",
+        "W-053"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "CI",
+        "apps/worker"
+      ],
+      "deliverable": "Implement worker build routing/drain, expanded schema compatibility and representative history replay",
+      "acceptance": [
+        "AC-09",
+        "AC-58"
+      ]
+    },
+    {
+      "id": "W-058",
+      "milestone": "M7",
+      "title": "Security and authority qualification",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-032",
+        "W-053",
+        "W-083",
+        "W-086"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "tests/isolation"
+      ],
+      "deliverable": "Exercise cross-task access, prompt/tool escalation, artifact script isolation and verifier authority limits",
+      "acceptance": [
+        "AC-05",
+        "AC-19",
+        "AC-22",
+        "AC-49",
+        "AC-56",
+        "AC-57"
+      ]
+    },
+    {
+      "id": "W-059",
+      "milestone": "M8",
+      "title": "All-type evaluation corpus",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-034",
+        "W-035",
+        "W-046",
+        "W-047",
+        "W-048",
+        "W-049",
+        "W-050",
+        "W-051",
+        "W-068",
+        "W-074",
+        "W-026",
+        "W-087",
+        "W-111",
+        "W-114",
+        "W-124",
+        "W-125",
+        "W-038",
+        "W-040",
+        "W-103",
+        "W-104",
+        "W-113",
+        "W-118",
+        "W-120",
+        "W-127",
+        "W-136",
+        "W-144"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "tests/evals"
+      ],
+      "deliverable": "Run all positive/negative fixtures with measured quality, review usefulness, cost and portability; include chapter 24 recurrence and look-alike cases and chapter 26 decoy stall and escalation cases",
+      "acceptance": [
+        "AC-60"
+      ]
+    },
+    {
+      "id": "W-060",
+      "milestone": "M8",
+      "title": "Recovery and concurrency qualification",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-052",
+        "W-056",
+        "W-057",
+        "W-058",
+        "W-065",
+        "W-079",
+        "W-016",
+        "W-129",
+        "W-131",
+        "W-138"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "tests/recovery"
+      ],
+      "deliverable": "Inject crashes/races at operation boundaries and execute real restore/rollback drills",
+      "acceptance": [
+        "AC-07",
+        "AC-08",
+        "AC-12",
+        "AC-39",
+        "AC-50",
+        "AC-59"
+      ]
+    },
+    {
+      "id": "W-061",
+      "milestone": "M8",
+      "title": "Load and SLO qualification",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-054",
+        "W-055"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "tests/load"
+      ],
+      "deliverable": "Measure declared API/queue/cancel/cleanup objectives under documented workload and provider limits",
+      "acceptance": [
+        "AC-51",
+        "AC-52"
+      ]
+    },
+    {
+      "id": "W-062",
+      "milestone": "M8",
+      "title": "Operator onboarding and controlled launch",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-059",
+        "W-060",
+        "W-061"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "docs/release",
+        "apps/dashboard"
+      ],
+      "deliverable": "Assemble release evidence, train owners/operators, extend onboarding beyond pilot applications and enable qualified scopes including production progressively",
+      "acceptance": [
+        "AC-54",
+        "AC-60"
+      ]
+    },
+    {
+      "id": "W-063",
+      "milestone": "M1",
+      "title": "Target context and pinned journey contracts",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-003",
+        "W-009",
+        "W-012"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/contracts",
+        "packages/domain",
+        "apps/worker"
+      ],
+      "deliverable": "Implement v2 target union, route matrix, immutable template definitions/bindings, reclassification invalidation and explicit legacy migration",
+      "acceptance": [
+        "AC-61",
+        "AC-69",
+        "AC-70"
+      ]
+    },
+    {
+      "id": "W-064",
+      "milestone": "M4",
+      "title": "Draft application registration",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-006",
+        "W-008",
+        "W-037",
+        "W-063"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/registry",
+        "apps/api",
+        "packages/database"
+      ],
+      "deliverable": "Implement draft identities/revisions, organization grants, active bootstrap claims and atomic experimental registration with real definitions",
+      "acceptance": [
+        "AC-62",
+        "AC-74"
+      ]
+    },
+    {
+      "id": "W-065",
+      "milestone": "M4",
+      "title": "Repository bootstrap and reconciliation",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-018",
+        "W-030",
+        "W-036",
+        "W-064"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 7
+      },
+      "modules": [
+        "packages/git",
+        "packages/workspace",
+        "apps/worker"
+      ],
+      "deliverable": "Qualify repository creation/conditional initialization and receipt before worktrees; enforce monorepo paths, scoped setup, cancellation retention and unknown effects",
+      "acceptance": [
+        "AC-63",
+        "AC-64",
+        "AC-65",
+        "AC-72"
+      ]
+    },
+    {
+      "id": "W-066",
+      "milestone": "M6",
+      "title": "Greenfield foundation and product workflow",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-065",
+        "W-027",
+        "W-028",
+        "W-043",
+        "W-050",
+        "W-069"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 5,
+        "high": 8
+      },
+      "modules": [
+        "packages/domain",
+        "packages/verification",
+        "apps/worker"
+      ],
+      "deliverable": "Compose reviewed design, independent foundation/slice checks, registration and bounded children; enforce integrated parent criteria with explicit rework",
+      "acceptance": [
+        "AC-66",
+        "AC-71",
+        "AC-228"
+      ]
+    },
+    {
+      "id": "W-067",
+      "milestone": "M6",
+      "title": "Distinct intake and glanceable journey UI",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-014",
+        "W-032",
+        "W-063",
+        "W-064",
+        "W-066"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "apps/dashboard"
+      ],
+      "deliverable": "Implement new-app draft intake and existing feature/bug choices, journey-specific milestones, compact blockers/actions and expandable evidence",
+      "acceptance": [
+        "AC-61",
+        "AC-73",
+        "AC-74"
+      ]
+    },
+    {
+      "id": "W-068",
+      "milestone": "M8",
+      "title": "Three-journey qualification fixtures",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-066",
+        "W-067",
+        "W-045",
+        "W-051",
+        "W-071",
+        "W-133"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "fixtures",
+        "tests/system",
+        "tests/recovery"
+      ],
+      "deliverable": "Run new-repository and monorepo greenfield positive/negative fixtures plus feature/bug route, rework, replay, bootstrap recovery and UI qualification",
+      "acceptance": [
+        "AC-61",
+        "AC-62",
+        "AC-63",
+        "AC-64",
+        "AC-65",
+        "AC-66",
+        "AC-67",
+        "AC-68",
+        "AC-69",
+        "AC-70",
+        "AC-71",
+        "AC-72",
+        "AC-73",
+        "AC-74",
+        "AC-220"
+      ]
+    },
+    {
+      "id": "W-069",
+      "milestone": "M6",
+      "title": "Adaptive intent interview and human gate",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-015",
+        "W-025",
+        "W-031",
+        "W-063",
+        "W-064"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 5,
+        "high": 8
+      },
+      "modules": [
+        "packages/domain",
+        "packages/contracts",
+        "apps/api",
+        "apps/worker"
+      ],
+      "deliverable": "Implement immutable brief/question/answer state, coverage and contradiction handling, exact-human confirmation, normalized spec application and durable waiting/reopen behavior",
+      "acceptance": [
+        "AC-75",
+        "AC-76",
+        "AC-77",
+        "AC-78",
+        "AC-79",
+        "AC-80",
+        "AC-81",
+        "AC-82",
+        "AC-84"
+      ]
+    },
+    {
+      "id": "W-070",
+      "milestone": "M6",
+      "title": "Focused interview and intent confirmation UI",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-069",
+        "W-067"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "apps/dashboard"
+      ],
+      "deliverable": "Implement small adaptive question batches, unknown/correction paths, save/resume, visible blockers and concise exact-version read-back with explicit human confirmation",
+      "acceptance": [
+        "AC-76",
+        "AC-77",
+        "AC-79",
+        "AC-83"
+      ]
+    },
+    {
+      "id": "W-071",
+      "milestone": "M8",
+      "title": "Human alignment qualification",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-069",
+        "W-070",
+        "W-057"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "tests/system",
+        "tests/recovery",
+        "fixtures"
+      ],
+      "deliverable": "Qualify contradiction/unknown/assumption cases, forged/stale approval, changed intent, answer races, portable resumption and mode/deadline non-bypass with UI evidence",
+      "acceptance": [
+        "AC-75",
+        "AC-76",
+        "AC-77",
+        "AC-78",
+        "AC-79",
+        "AC-80",
+        "AC-81",
+        "AC-82",
+        "AC-83",
+        "AC-84"
+      ]
+    },
+    {
+      "id": "W-072",
+      "milestone": "M3",
+      "title": "Complete plan packets and independent peer gate",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-015",
+        "W-025",
+        "W-063",
+        "W-089"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 5,
+        "high": 8
+      },
+      "modules": [
+        "packages/contracts",
+        "packages/domain",
+        "apps/api",
+        "apps/worker"
+      ],
+      "deliverable": "Implement complete engineering packets, criteria/scenario/DoD validation, independent required peer assignments, exact-subject decisions, durable comments and execution binding and signed component/interface/data/slice structure outline; include ordered task checks and component/dependency reuse rationale",
+      "acceptance": [
+        "AC-85",
+        "AC-86",
+        "AC-87",
+        "AC-88",
+        "AC-90",
+        "AC-91",
+        "AC-92",
+        "AC-93",
+        "AC-110",
+        "AC-138"
+      ]
+    },
+    {
+      "id": "W-073",
+      "milestone": "M3",
+      "title": "Layered engineering review experience",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-072",
+        "W-014"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "apps/dashboard"
+      ],
+      "deliverable": "Implement decision summary, structured review, full anchored detail, visible risks, criteria/test/DoD matrix, peer scope, durable notes and semantic revision diff with resume",
+      "acceptance": [
+        "AC-86",
+        "AC-89",
+        "AC-91",
+        "AC-94"
+      ]
+    },
+    {
+      "id": "W-074",
+      "milestone": "M8",
+      "title": "Peer authority and review comprehension qualification",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-073",
+        "W-068",
+        "W-058"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "tests/system",
+        "tests/isolation",
+        "fixtures"
+      ],
+      "deliverable": "Qualify complete coverage, self/missing-peer rejection, blocker/approval races, mode and DoD rules, revision rework and engineer comprehension of seeded omissions",
+      "acceptance": [
+        "AC-85",
+        "AC-86",
+        "AC-87",
+        "AC-88",
+        "AC-89",
+        "AC-90",
+        "AC-91",
+        "AC-92",
+        "AC-93",
+        "AC-94"
+      ]
+    },
+    {
+      "id": "W-075",
+      "milestone": "M2",
+      "title": "Factory tool server and durable proposals",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-019",
+        "W-020",
+        "W-021",
+        "W-022",
+        "W-025",
+        "W-090"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 5,
+        "high": 8
+      },
+      "modules": [
+        "apps/supervisor",
+        "packages/contracts"
+      ],
+      "deliverable": "Implement versioned factory tools with server-derived authority caps receipts and quiesced durable finalisation; retain 1.0 and add negotiated 1.1 source-bound feedback claims and required disclosure",
+      "acceptance": [
+        "AC-95",
+        "AC-96",
+        "AC-97",
+        "AC-98",
+        "AC-99",
+        "AC-100",
+        "AC-136",
+        "AC-137",
+        "AC-142"
+      ]
+    },
+    {
+      "id": "W-076",
+      "milestone": "M3",
+      "title": "Claude factory-tool conformance",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-075",
+        "W-035",
+        "W-090"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/harness/claude",
+        "tests/provider"
+      ],
+      "deliverable": "Register tools and hooks; prove role correction human requests feedback isolation and no interactive waits; qualify factory-owned settings required request content and both negotiated tool profiles",
+      "acceptance": [
+        "AC-95",
+        "AC-96",
+        "AC-98",
+        "AC-99",
+        "AC-101",
+        "AC-129",
+        "AC-133",
+        "AC-135",
+        "AC-142"
+      ]
+    },
+    {
+      "id": "W-077",
+      "milestone": "M0",
+      "title": "Claude restricted-pod feasibility spike",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-001",
+        "W-002"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 4
+      },
+      "modules": [
+        "spikes/claude",
+        "docs/integrations"
+      ],
+      "deliverable": "Pin Agent SDK and prove isolation gateway token placement process-tree stop usage settings session paths and tool transport",
+      "acceptance": [
+        "AC-100",
+        "AC-101",
+        "AC-125"
+      ]
+    },
+    {
+      "id": "W-078",
+      "milestone": "M0",
+      "title": "Deployment effect-identity spike",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-001"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 4
+      },
+      "modules": [
+        "spikes/deployment",
+        "docs/integrations"
+      ],
+      "deliverable": "Exercise actual MCP timeout-after-create lookup cleanup conditional identity and wrapper guarantees or keep that MCP provider disabled; Argo qualification is independent",
+      "acceptance": [
+        "AC-102"
+      ],
+      "launchScope": "optional"
+    },
+    {
+      "id": "W-079",
+      "milestone": "M1",
+      "title": "Crash-injection framework",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-007",
+        "W-010",
+        "W-011"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "tests/recovery",
+        "packages/test-support"
+      ],
+      "deliverable": "Build deterministic fault/concurrency hooks and extend each milestone; retain full M8 recovery drills",
+      "acceptance": [
+        "AC-103"
+      ]
+    },
+    {
+      "id": "W-080",
+      "milestone": "M3",
+      "title": "PR completion and human review rework",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-030",
+        "W-031",
+        "W-015",
+        "W-076"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 5,
+        "high": 8
+      },
+      "modules": [
+        "packages/git",
+        "apps/worker",
+        "apps/api"
+      ],
+      "deliverable": "Implement completion policies reconciled Signals typed rework rounds human-head adoption handover abandonment and durable waits; preserve human adjudication for disputed review comments",
+      "acceptance": [
+        "AC-104",
+        "AC-105",
+        "AC-106",
+        "AC-107",
+        "AC-108",
+        "AC-109",
+        "AC-140"
+      ]
+    },
+    {
+      "id": "W-081",
+      "milestone": "M3",
+      "title": "Application health evidence collection",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-008",
+        "W-013",
+        "W-030"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/telemetry",
+        "packages/database",
+        "apps/api"
+      ],
+      "deliverable": "Collect cohort measurements with mature windows attribution denominators review outcomes and architecture findings; no automatic relaxation",
+      "acceptance": [
+        "AC-112"
+      ]
+    },
+    {
+      "id": "W-082",
+      "milestone": "M3",
+      "title": "Oracle signatures shims and strength",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-022",
+        "W-072"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 7
+      },
+      "modules": [
+        "packages/verification",
+        "packages/contracts"
+      ],
+      "deliverable": "Implement failure signatures human oracle binding reviewed shims mutation/family reporting and trivial-change rules; keep proposal path disabled in pilot; define the proposal graph/template and compiler rules as a postpilot deliverable and require separate conformance before enabling",
+      "acceptance": [
+        "AC-115",
+        "AC-116",
+        "AC-117",
+        "AC-118",
+        "AC-120",
+        "AC-229"
+      ]
+    },
+    {
+      "id": "W-083",
+      "milestone": "M3",
+      "title": "Evidence classes tamper and scope",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-022",
+        "W-072"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 7
+      },
+      "modules": [
+        "packages/verification",
+        "tests/isolation"
+      ],
+      "deliverable": "Separate feedback and evidence classes; isolate private checks; enforce protected paths and qualified semantic scope",
+      "acceptance": [
+        "AC-119",
+        "AC-120",
+        "AC-121"
+      ]
+    },
+    {
+      "id": "W-084",
+      "milestone": "M3",
+      "title": "Portable handoff and context qualification",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-020",
+        "W-025",
+        "W-076",
+        "W-092"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/context",
+        "packages/harness",
+        "tests/evals"
+      ],
+      "deliverable": "Qualify fresh restore native compatibility context experiments compaction neutral discovery and aggregate subagent budgets; bind fresh/resume to compiled role rules and skill admission",
+      "acceptance": [
+        "AC-123",
+        "AC-124",
+        "AC-125",
+        "AC-134"
+      ]
+    },
+    {
+      "id": "W-085",
+      "milestone": "M3",
+      "title": "Reviewer admission and operational UI",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-088",
+        "W-030",
+        "W-073",
+        "W-080",
+        "W-081"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "apps/dashboard",
+        "packages/policy"
+      ],
+      "deliverable": "Show structure-first plans tiers PR targets rounds current-head approval evidence classes and health; reserve review capacity and bound slices; reveal rule blockers exception scope and disclosure counts with details on demand",
+      "acceptance": [
+        "AC-110",
+        "AC-112",
+        "AC-126",
+        "AC-144"
+      ]
+    },
+    {
+      "id": "W-086",
+      "milestone": "M3",
+      "title": "Behavior release and canary evaluations",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-004",
+        "W-076",
+        "W-082",
+        "W-083",
+        "W-090"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "tests/evals",
+        "packages/policy",
+        "CI"
+      ],
+      "deliverable": "Version behavior configuration; compare held-out outcomes hacking false refusals review quality and cost before rollout; evaluate role delivery skill admission activation contamination and uncertainty",
+      "acceptance": [
+        "AC-114",
+        "AC-122",
+        "AC-129",
+        "AC-145"
+      ]
+    },
+    {
+      "id": "W-087",
+      "milestone": "M7",
+      "title": "Evidence-backed gate mode policy",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-081",
+        "W-086",
+        "W-054"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "packages/policy",
+        "apps/dashboard"
+      ],
+      "deliverable": "Implement scoped human policy decisions samples degradation tightening and nonwaivable floors; no automatic relaxation",
+      "acceptance": [
+        "AC-111",
+        "AC-112",
+        "AC-113",
+        "AC-114"
+      ]
+    },
+    {
+      "id": "W-088",
+      "milestone": "M2",
+      "title": "Minimum execution admission",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-013",
+        "W-019"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/domain",
+        "apps/runner"
+      ],
+      "deliverable": "Reserve org provider task/child capacity transactionally with visible waits and explicit per-root/per-parent limits",
+      "acceptance": [
+        "AC-128"
+      ]
+    },
+    {
+      "id": "W-089",
+      "milestone": "M2",
+      "title": "Standards resolution and scoped exceptions",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-007",
+        "W-012",
+        "W-021"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "packages/policy",
+        "packages/registry",
+        "packages/contracts"
+      ],
+      "deliverable": "Implement owned versioned rules deterministic resolution exact-scope human exceptions revocation and trusted check provenance using existing artifact and decision stores",
+      "acceptance": [
+        "AC-130",
+        "AC-131",
+        "AC-132",
+        "AC-141"
+      ]
+    },
+    {
+      "id": "W-090",
+      "milestone": "M2",
+      "title": "Role compiler and third-party admission",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-025",
+        "W-021",
+        "W-089"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "packages/context",
+        "packages/harness",
+        "packages/policy"
+      ],
+      "deliverable": "Implement canonical role artifacts compiler profiles pinned content inventory admission revocation and synthetic delivery fixtures without candidate setting inheritance",
+      "acceptance": [
+        "AC-133",
+        "AC-134",
+        "AC-135",
+        "AC-139"
+      ]
+    },
+    {
+      "id": "W-091",
+      "milestone": "M4",
+      "title": "Optional run forensics proposals",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-039",
+        "W-086"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 4
+      },
+      "modules": [
+        "packages/knowledge",
+        "apps/worker"
+      ],
+      "deliverable": "Implement bounded retention-aware analysis of observable failed reworked and canary runs producing reviewed proposals only",
+      "acceptance": [
+        "AC-143"
+      ],
+      "launchScope": "optional"
+    },
+    {
+      "id": "W-092",
+      "milestone": "M3",
+      "title": "Structured portable handoff",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-020",
+        "W-075"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/context",
+        "packages/contracts",
+        "packages/harness"
+      ],
+      "deliverable": "Add the versioned PortableHandoff schema to the contract generator; derive task status from tool receipts; append-only progress log; per-task local commits; fresh-session restore from the handoff alone; cover human_review/controller_evidence receipt-derived done_with_evidence and writer-nonblocking awaiting_evidence restore",
+      "acceptance": [
+        "AC-146",
+        "AC-147",
+        "AC-245"
+      ]
+    },
+    {
+      "id": "W-093",
+      "milestone": "M3",
+      "title": "Pilot executable architecture rules",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-089",
+        "W-004"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/policy",
+        "fixtures",
+        "CI"
+      ],
+      "deliverable": "Require owner-declared layering dependency and boundary checks before pilot enablement; reject candidate amendments to applicable rules; report violations to application health",
+      "acceptance": [
+        "AC-148",
+        "AC-149"
+      ]
+    },
+    {
+      "id": "W-094",
+      "milestone": "M3",
+      "title": "Pilot engineer-parity evidence",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-075",
+        "W-021",
+        "W-008",
+        "W-115"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 4
+      },
+      "modules": [
+        "packages/telemetry",
+        "packages/harness",
+        "packages/contracts"
+      ],
+      "deliverable": "Read-only scoped CI and error-tracking evidence adapters for get_evidence with redaction provenance and access records; deny mutations; implement GetEvidenceToolInputV12 bounded template queries in factory tools 1.2.0 with INT-16 grants",
+      "acceptance": [
+        "AC-150",
+        "AC-241"
+      ]
+    },
+    {
+      "id": "W-095",
+      "milestone": "M3",
+      "title": "Cohort stop-the-line",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-088",
+        "W-086",
+        "W-083"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 4
+      },
+      "modules": [
+        "packages/policy",
+        "apps/runner",
+        "apps/dashboard",
+        "packages/contracts",
+        "apps/api"
+      ],
+      "deliverable": "Suspend cohort admission and hold in-flight publication on integrity signals under the pre-authorized degradation policy; human clearing; operations view through reviewed policy/configuration releases with bound policy-owner authority",
+      "acceptance": [
+        "AC-151"
+      ]
+    },
+    {
+      "id": "W-096",
+      "milestone": "M1",
+      "title": "Pre-pilot baseline measurement",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-001"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 3
+      },
+      "modules": [
+        "docs/measurement",
+        "tests/evals"
+      ],
+      "deliverable": "Record per-application pre-factory delivery baselines with definitions windows denominators and gaps; block pilot enablement without one",
+      "acceptance": [
+        "AC-152"
+      ]
+    },
+    {
+      "id": "W-097",
+      "milestone": "M0",
+      "title": "Commodity adoption spikes",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-001",
+        "W-005"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "docs/adr",
+        "deploy"
+      ],
+      "deliverable": "Evaluate agent-sandbox, in-toto/SLSA attestation and OPA or Cedar against chapter 22 exit criteria; record ADR-21 outcomes with fallbacks and platform-owner sign-off on version pinning and maturity",
+      "acceptance": [
+        "AC-153",
+        "AC-154",
+        "AC-155"
+      ]
+    },
+    {
+      "id": "W-098",
+      "milestone": "M2",
+      "title": "Registry sources and Git descriptors",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-006",
+        "W-007",
+        "W-089"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/registry",
+        "packages/contracts"
+      ],
+      "deliverable": "Implement import-time RegistrySource snapshots with per-field provenance, a field-level authority map with conflict findings and the Backstage-compatible GitDescriptorSource with factory extension section",
+      "acceptance": [
+        "AC-156",
+        "AC-157"
+      ]
+    },
+    {
+      "id": "W-099",
+      "milestone": "M3",
+      "title": "Agent-assisted onboarding and ownership gate",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-098",
+        "W-018",
+        "W-075",
+        "W-115",
+        "W-116",
+        "W-119"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "packages/registry",
+        "apps/worker",
+        "apps/dashboard"
+      ],
+      "deliverable": "Draft definitions with execution-verified build and test commands, manifest dependencies and owner hints; owner confirmation before commit and import; confirmed ownership as eligibility gate; require a human-supplied provisional nomination classification before allocation and eligible providers under closed INT-14",
+      "acceptance": [
+        "AC-158",
+        "AC-159",
+        "AC-261"
+      ]
+    },
+    {
+      "id": "W-100",
+      "milestone": "M3",
+      "title": "Change-class readiness assessment",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-099",
+        "W-089"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/registry",
+        "packages/policy"
+      ],
+      "deliverable": "Assess readiness per application and change class with source commit expiry and evidence; enforce eligibility at admission; request preparation work as maintenance tasks",
+      "acceptance": [
+        "AC-160"
+      ]
+    },
+    {
+      "id": "W-101",
+      "milestone": "M4",
+      "title": "Change recipes and deterministic executor",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-075",
+        "W-022",
+        "W-086",
+        "W-100",
+        "W-080",
+        "W-033"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "packages/recipes",
+        "packages/harness",
+        "packages/contracts"
+      ],
+      "deliverable": "Versioned recipe contract with preconditions mappings examples scope verification and typed outcomes; deterministic_transform stage kind with evidence parity; evidence-bound no-change delivery_complete and terminal succeeded without publication; recipe behavior-release evaluation",
+      "acceptance": [
+        "AC-161",
+        "AC-162",
+        "AC-250"
+      ]
+    },
+    {
+      "id": "W-102",
+      "milestone": "M4",
+      "title": "Campaign initiatives",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-101",
+        "W-088",
+        "W-095",
+        "W-080",
+        "W-085"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 5,
+        "high": 8
+      },
+      "modules": [
+        "apps/worker",
+        "packages/domain",
+        "apps/dashboard",
+        "packages/contracts",
+        "apps/api"
+      ],
+      "deliverable": "Pinned target sets, campaign-level peer sign-off, canary and bounded waves, per-owner-group review budgets and deferral, pause thresholds, targeted re-runs, PR refresh and campaign view; CampaignManifest reviewBudgetsByOwner and TaskView campaign state use parent-task controls and decisions; require primary peer plus every target owner/specialist and reconfirm all peers on retargeting",
+      "acceptance": [
+        "AC-163",
+        "AC-164",
+        "AC-165",
+        "AC-244"
+      ]
+    },
+    {
+      "id": "W-103",
+      "milestone": "M4",
+      "title": "Campaign pilot",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-102",
+        "W-096"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 4
+      },
+      "modules": [
+        "tests/system"
+      ],
+      "deliverable": "Run one recipe across a handful of similar repositories and report accepted outcomes review time rework and cost against the baseline",
+      "acceptance": [
+        "AC-166"
+      ]
+    },
+    {
+      "id": "W-104",
+      "milestone": "M7",
+      "title": "Earned automatic merge action",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-087",
+        "W-102"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 4
+      },
+      "modules": [
+        "packages/policy"
+      ],
+      "deliverable": "In human mode automate the merge action only after current-head human PR approval and all gates for mature deterministic change classes; degradation reverts to manual merge",
+      "acceptance": [
+        "AC-167"
+      ]
+    },
+    {
+      "id": "W-105",
+      "milestone": "M3",
+      "title": "Role-scoped tool profiles and missing-context",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-075",
+        "W-090"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 4
+      },
+      "modules": [
+        "packages/harness",
+        "packages/contracts"
+      ],
+      "deliverable": "Compile profiles keyed on role stageKind and workType/recipe; implement SubmitResultToolInputV12 with untrusted missingContext in factory tools 1.2.0; retain 1.1.0/1.0.0 manifests and negotiate explicitly at admission",
+      "acceptance": [
+        "AC-168",
+        "AC-169",
+        "AC-240"
+      ]
+    },
+    {
+      "id": "W-106",
+      "milestone": "M4",
+      "title": "Interactive takeover journey",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-019",
+        "W-020",
+        "W-014"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 4
+      },
+      "modules": [
+        "apps/dashboard",
+        "apps/runner",
+        "packages/contracts",
+        "apps/api"
+      ],
+      "deliverable": "Explicit take-over and hand-back actions with checkpoint, epoch transfer and re-evaluation of returned source through required EpochTransfer command payloads",
+      "acceptance": [
+        "AC-170"
+      ]
+    },
+    {
+      "id": "W-107",
+      "milestone": "M3",
+      "title": "First real task: reproducible bug",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-028",
+        "W-030",
+        "W-099",
+        "W-093",
+        "W-094",
+        "W-096",
+        "W-115",
+        "W-116",
+        "W-119",
+        "W-080",
+        "W-100",
+        "W-109",
+        "W-111",
+        "W-112"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 4
+      },
+      "modules": [
+        "tests/system"
+      ],
+      "deliverable": "Run one reproducible machine-reported bug in one onboarded application end to end with human plan and oracle review, red lock green, independent verification and a reviewed PR; require current bug_fix readiness and provider eligibility under closed INT-14; derive DiagnosisManifest from the chapter 08 hypothesis table until W-033 adds the ledger",
+      "acceptance": [
+        "AC-172"
+      ]
+    },
+    {
+      "id": "W-108",
+      "milestone": "M1",
+      "title": "Executed contract checks in CI",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-003",
+        "W-006"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 1,
+        "high": 2
+      },
+      "modules": [
+        "CI",
+        "packages/database",
+        "packages/contracts"
+      ],
+      "deliverable": "Apply the reference DDL to PostgreSQL 18 with tenant-isolation and column-grant smoke tests under factory_runtime including the complete tool receipt lifecycle and rejected identity/acceptance mutations; compile TypeScript contracts in strict mode on every revision",
+      "acceptance": [
+        "AC-171"
+      ]
+    },
+    {
+      "id": "W-109",
+      "milestone": "M3",
+      "title": "Discovery context manifest",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-025",
+        "W-072"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 4
+      },
+      "modules": [
+        "packages/context",
+        "apps/worker"
+      ],
+      "deliverable": "Record sources consulted, prior matches, blocking and nonblocking gaps and assumptions in discovery output; show it in the plan packet current_state; keep scope_accepted unmet on blocking gaps",
+      "acceptance": [
+        "AC-173",
+        "AC-227"
+      ]
+    },
+    {
+      "id": "W-110",
+      "milestone": "M3",
+      "title": "Tracker and code-history evidence",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-094",
+        "W-030"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 4
+      },
+      "modules": [
+        "packages/telemetry",
+        "packages/harness",
+        "packages/contracts"
+      ],
+      "deliverable": "Read-only scoped issue-tracker and code-host history adapters for get_evidence with redaction provenance and access records; optional documentation adapter; no tracker writes through evidence tools; implement GetEvidenceToolInputV12 bounded template queries in factory tools 1.2.0 with INT-16 grants; close INT-13 pilot tracker and code-history access facts",
+      "acceptance": [
+        "AC-174",
+        "AC-241"
+      ]
+    },
+    {
+      "id": "W-111",
+      "milestone": "M3",
+      "title": "Failure signatures and prior-incident matching",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-028",
+        "W-094"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 6
+      },
+      "modules": [
+        "packages/registry",
+        "packages/context",
+        "packages/contracts"
+      ],
+      "deliverable": "Versioned signature normalizer from reproduction, error-tracking and CI evidence; structured-key then text matching with authorization; labelled hypotheses in discovery; regression-of-prior-fix classification",
+      "acceptance": [
+        "AC-175",
+        "AC-176"
+      ]
+    },
+    {
+      "id": "W-112",
+      "milestone": "M3",
+      "title": "Regression memory and root-cause categories",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-028",
+        "W-083"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 4
+      },
+      "modules": [
+        "packages/verification",
+        "packages/policy"
+      ],
+      "deliverable": "Require permanent regression tests for verified fixes with owner exceptions; protect incident-linked tests; versioned category taxonomy with reviewer confirmation",
+      "acceptance": [
+        "AC-177",
+        "AC-178",
+        "AC-227"
+      ]
+    },
+    {
+      "id": "W-113",
+      "milestone": "M4",
+      "title": "Variant analysis",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-111",
+        "W-101"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/verification",
+        "apps/worker"
+      ],
+      "deliverable": "Budget-capped read-only pattern search across authorized scopes with classified evidence; route confirmed variants to linked tasks or recipe proposals",
+      "acceptance": [
+        "AC-179"
+      ]
+    },
+    {
+      "id": "W-114",
+      "milestone": "M4",
+      "title": "Recurrence escalation and match usefulness",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-111",
+        "W-112",
+        "W-081",
+        "W-089"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 4
+      },
+      "modules": [
+        "packages/policy",
+        "apps/dashboard"
+      ],
+      "deliverable": "Count confirmed categories per scope and window; raise owner-decided systemic proposals; measure prior-match accuracy and expire misleading lessons",
+      "acceptance": [
+        "AC-180",
+        "AC-181"
+      ]
+    },
+    {
+      "id": "W-115",
+      "milestone": "M2",
+      "title": "Data classification and provider eligibility",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-098",
+        "W-021"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/policy",
+        "packages/registry",
+        "deploy",
+        "packages/contracts",
+        "apps/runner"
+      ],
+      "deliverable": "Classification fields on descriptors ApplicationDefinition/ApplicationRepository and StageInput in domain 2.0; effective classification and eligibility decision pinned in InputBinding/allocation; runner mints scoped credentials from that decision for the external INT-08 gateway; enforce at admission and every request; populate provider eligibility entries from closed INT-14",
+      "acceptance": [
+        "AC-182",
+        "AC-183",
+        "AC-247"
+      ]
+    },
+    {
+      "id": "W-116",
+      "milestone": "M2",
+      "title": "Candidate secret scanning",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-020",
+        "W-022"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 3
+      },
+      "modules": [
+        "packages/verification",
+        "packages/workspace"
+      ],
+      "deliverable": "Deterministic secret scan of candidate diffs before checkpoint publication push and delivery; redacted protected findings; owner exceptions only",
+      "acceptance": [
+        "AC-184"
+      ]
+    },
+    {
+      "id": "W-117",
+      "milestone": "M3",
+      "title": "Security work intake and embargo",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-008",
+        "W-028",
+        "W-111"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "apps/api",
+        "packages/policy",
+        "apps/dashboard",
+        "packages/contracts",
+        "packages/database",
+        "packages/git"
+      ],
+      "deliverable": "Security task severity source deadlines priority and incident fields; group membership and restrictive task/derived-record embargo visibility; policy-assigned isolated confidential publication target with provider-enforced reader subset checked before every push; exact-subject human embargo lift and no ordinary-repository fallback (INT-15); close INT-15 source severity and confidential-target enforcement facts before enablement",
+      "acceptance": [
+        "AC-185",
+        "AC-186",
+        "AC-242",
+        "AC-246",
+        "AC-248"
+      ]
+    },
+    {
+      "id": "W-118",
+      "milestone": "M3",
+      "title": "Licence policy checks",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-089",
+        "W-083"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 3
+      },
+      "modules": [
+        "packages/verification",
+        "packages/policy"
+      ],
+      "deliverable": "Versioned licence policy for new dependencies at plan approval and verification; optional reproduction scanning for generated code",
+      "acceptance": [
+        "AC-187"
+      ]
+    },
+    {
+      "id": "W-119",
+      "milestone": "M2",
+      "title": "Organization-wide emergency stop",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-088",
+        "W-021",
+        "W-023"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 3
+      },
+      "modules": [
+        "apps/runner",
+        "packages/policy",
+        "apps/dashboard",
+        "packages/contracts",
+        "apps/api"
+      ],
+      "deliverable": "Audited operator control halting admission publication and delivery with cancellation and reconciliation; human clearing; drill through the internal OperatorControlPlane with durable revision-bound EmergencyStopDecision artifacts",
+      "acceptance": [
+        "AC-188",
+        "AC-217"
+      ]
+    },
+    {
+      "id": "W-120",
+      "milestone": "M3",
+      "title": "Authorship trailers",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-030",
+        "W-081"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 1,
+        "high": 2
+      },
+      "modules": [
+        "apps/runner",
+        "packages/workspace",
+        "packages/git"
+      ],
+      "deliverable": "Trusted runner/checkpoint authorship trailers from server records before commit IDs freeze; Git adapter validates without rewriting; squash-safe attribution used by application health",
+      "acceptance": [
+        "AC-189"
+      ]
+    },
+    {
+      "id": "W-121",
+      "milestone": "M3",
+      "title": "Decision notifications and response targets",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-015",
+        "W-014"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 4
+      },
+      "modules": [
+        "apps/api",
+        "apps/dashboard",
+        "packages/policy"
+      ],
+      "deliverable": "Channel routing reminders response targets escalation to backup deciders and waiting-on-humans measures without auto-approval",
+      "acceptance": [
+        "AC-190",
+        "AC-191"
+      ]
+    },
+    {
+      "id": "W-122",
+      "milestone": "M3",
+      "title": "Hypothesis ledger and timeboxes",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-075",
+        "W-105"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/harness",
+        "packages/contracts",
+        "apps/runner"
+      ],
+      "deliverable": "Implement factory tools 1.2.0 ledger open record close extend and reopen schemas; retain factory-tools.v1.1.schema.json and v1.0; StageInput/RolePackage negotiate explicitly and investigation-discipline/1.0 requires 1.2.0; derive SQL tool_name CHECK from manifest; ledger state is ordered receipts/artifacts with server-owned counters and capped extensions",
+      "acceptance": [
+        "AC-192",
+        "AC-193",
+        "AC-243"
+      ]
+    },
+    {
+      "id": "W-123",
+      "milestone": "M3",
+      "title": "Stall detection and fresh-eyes checkpoints",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-122",
+        "W-086"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 4
+      },
+      "modules": [
+        "apps/runner",
+        "packages/context"
+      ],
+      "deliverable": "Deterministic stall signals with reflection then handoff; transcript-free fresh reviewer at extension stall and pre-submission points",
+      "acceptance": [
+        "AC-194",
+        "AC-195"
+      ]
+    },
+    {
+      "id": "W-124",
+      "milestone": "M3",
+      "title": "Breadth-first probes escalation and dead ends",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-122",
+        "W-111"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 4
+      },
+      "modules": [
+        "packages/harness",
+        "packages/registry"
+      ],
+      "deliverable": "Bounded parallel probes for top hypotheses, early request_decision escalation, failed-hypothesis records linked to signatures with evidence-gated reopening; implement ReopenHypothesisToolInput with non-empty evidence new to the prior ruling and append-only history",
+      "acceptance": [
+        "AC-196",
+        "AC-197",
+        "AC-243"
+      ]
+    },
+    {
+      "id": "W-125",
+      "milestone": "M3",
+      "title": "Rabbit-hole evaluation",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-123",
+        "W-086",
+        "W-004",
+        "W-111"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 4
+      },
+      "modules": [
+        "tests/evals"
+      ],
+      "deliverable": "Decoy and look-alike bug corpus with first-hypothesis accuracy wasted budget and stall extension and escalation metrics per behavior release",
+      "acceptance": [
+        "AC-198"
+      ]
+    },
+    {
+      "id": "W-126",
+      "milestone": "M7",
+      "title": "Urgent hotfix path",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-107",
+        "W-121",
+        "W-117",
+        "W-042",
+        "W-052",
+        "W-054"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 4
+      },
+      "modules": [
+        "packages/policy",
+        "apps/worker",
+        "apps/dashboard",
+        "packages/contracts"
+      ],
+      "deliverable": "Incident tasks with on-call routing, concise complete plan and one on-call generalist plus every required specialist peer sign-off with urgent response targets, recorded mitigations through authorized environment operations, automatic follow-up tasks and incident learning; qualify urgent-mitigation/1.0 outside bug_fix 3.0.0 with reconciled operation recovery evidence and incomplete mitigated outcome linked to the required follow-up",
+      "acceptance": [
+        "AC-199",
+        "AC-200",
+        "AC-201",
+        "AC-249",
+        "AC-251"
+      ]
+    },
+    {
+      "id": "W-127",
+      "milestone": "M4",
+      "title": "Factory self-work onboarding",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-033",
+        "W-099",
+        "W-083"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 3
+      },
+      "modules": [
+        "packages/policy",
+        "deploy"
+      ],
+      "deliverable": "Onboard the factory repository with allowed change classes and protected trusted components; keep deployment in the factory release pipeline",
+      "acceptance": [
+        "AC-202"
+      ]
+    },
+    {
+      "id": "W-128",
+      "milestone": "M1",
+      "title": "Storage constraints and runtime grant qualification",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-006",
+        "W-007",
+        "W-108"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 3
+      },
+      "modules": [
+        "packages/database",
+        "packages/artifacts",
+        "tests/system"
+      ],
+      "deliverable": "Implement and execute column-limited grants immutable tool-call guards commit-ID constraints upload bindings projection hashes and decision provenance with forward-migration coverage",
+      "acceptance": [
+        "AC-203",
+        "AC-204",
+        "AC-205",
+        "AC-207"
+      ]
+    },
+    {
+      "id": "W-129",
+      "milestone": "M4",
+      "title": "Operational storage and ownership projections",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-017",
+        "W-106",
+        "W-111",
+        "W-128"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 4
+      },
+      "modules": [
+        "packages/database",
+        "apps/api",
+        "apps/runner",
+        "packages/registry"
+      ],
+      "deliverable": "Persist fenced checkpoint child Jobs audited task owner/holder commands structured failure signatures atomic PR review projections stack predecessors and complete operational fields",
+      "acceptance": [
+        "AC-175",
+        "AC-206",
+        "AC-208",
+        "AC-209"
+      ]
+    },
+    {
+      "id": "W-130",
+      "milestone": "M1",
+      "title": "API state and metadata contract consistency",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-005",
+        "W-007",
+        "W-015",
+        "W-108"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 4
+      },
+      "modules": [
+        "packages/contracts",
+        "packages/database",
+        "apps/api",
+        "tests/system"
+      ],
+      "deliverable": "Implement typed receipts artifact links registration metadata stage supersession command-state guards decision actions SSE recovery and readiness status codes; retain historical readers and qualify API description 2.4.0",
+      "acceptance": [
+        "AC-210",
+        "AC-211",
+        "AC-212",
+        "AC-213",
+        "AC-214",
+        "AC-215",
+        "AC-216"
+      ]
+    },
+    {
+      "id": "W-131",
+      "milestone": "M4",
+      "title": "Human controls and owner-group budgets",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-130",
+        "W-102",
+        "W-106",
+        "W-117",
+        "W-119"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 4
+      },
+      "modules": [
+        "packages/contracts",
+        "packages/policy",
+        "apps/api",
+        "apps/dashboard",
+        "tests/system"
+      ],
+      "deliverable": "Qualify task-bound campaign owner-confirmation and embargo decisions epoch-transfer payloads policy-owner authority and multi-owner review budget accounting with application-only limit reductions",
+      "acceptance": [
+        "AC-218",
+        "AC-219"
+      ]
+    },
+    {
+      "id": "W-132",
+      "milestone": "M3",
+      "title": "Workflow dependency and review conformance",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-022",
+        "W-063",
+        "W-076",
+        "W-079",
+        "W-013"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 4
+      },
+      "modules": [
+        "packages/domain",
+        "packages/policy",
+        "apps/worker",
+        "tests/system"
+      ],
+      "deliverable": "Enforce current passed dependency runs oracle-before-implementation author return paths default human floors (D5 extension in W-141) complete risk triggers and resolved stage caps with negative fixtures",
+      "acceptance": [
+        "AC-221",
+        "AC-222",
+        "AC-223",
+        "AC-224",
+        "AC-225",
+        "AC-226"
+      ]
+    },
+    {
+      "id": "W-133",
+      "milestone": "M4",
+      "title": "Retained bootstrap root adoption",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-065",
+        "W-132"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 1,
+        "high": 2
+      },
+      "modules": [
+        "packages/git",
+        "packages/workspace",
+        "packages/contracts",
+        "tests/recovery"
+      ],
+      "deliverable": "Support canonical empty-root adoption only with verified retained bootstrap provenance owner approval and scoped plan while preserving path and no-overwrite checks",
+      "acceptance": [
+        "AC-220"
+      ]
+    },
+    {
+      "id": "W-134",
+      "milestone": "M2",
+      "title": "Runner trust-boundary conformance",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-020",
+        "W-021",
+        "W-024",
+        "W-075"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 4
+      },
+      "modules": [
+        "apps/runner",
+        "packages/workspace",
+        "packages/harness",
+        "packages/contracts",
+        "tests/isolation"
+      ],
+      "deliverable": "Qualify config-inert trusted snapshots diagnostic adapter results checkpoint-only finalization input/spec binding quarantine outcomes Job ownership and 15-second termination plus additional admission and scoped runner-API authorization",
+      "acceptance": [
+        "AC-230",
+        "AC-231",
+        "AC-232",
+        "AC-233",
+        "AC-236"
+      ]
+    },
+    {
+      "id": "W-135",
+      "milestone": "M4",
+      "title": "Interface snapshots and evidence metadata",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-037",
+        "W-039",
+        "W-031",
+        "W-134"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 3
+      },
+      "modules": [
+        "packages/registry",
+        "packages/contracts",
+        "packages/database",
+        "packages/context"
+      ],
+      "deliverable": "Import InterfaceDefinition documents and pin every provided/consumed contract; preserve finding consequence/confidence knowledge disputes usage provenance allocation leases and the documented locations of context checkpoint and operation metadata",
+      "acceptance": [
+        "AC-234",
+        "AC-235"
+      ]
+    },
+    {
+      "id": "W-136",
+      "milestone": "M3",
+      "title": "Factory tools 1.2 and handoff conformance",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-092",
+        "W-105",
+        "W-110",
+        "W-122",
+        "W-124"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/contracts",
+        "packages/harness",
+        "packages/context",
+        "apps/runner",
+        "tests/evals"
+      ],
+      "deliverable": "Qualify version negotiation with frozen 1.0/1.1 manifests bounded live queries supervisor-bound profiles missingContext ledger extension/reopen and receipt-derived non-executable handoffs",
+      "acceptance": [
+        "AC-240",
+        "AC-241",
+        "AC-243",
+        "AC-245"
+      ]
+    },
+    {
+      "id": "W-137",
+      "milestone": "M3",
+      "title": "Classified admission and embargo storage",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-006",
+        "W-115",
+        "W-117"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/contracts",
+        "packages/database",
+        "packages/policy",
+        "apps/api",
+        "apps/runner",
+        "tests/isolation"
+      ],
+      "deliverable": "Qualify incident/security admission metadata derived changeClass classification bindings gateway credentials and restrictive embargo visibility including derived artifacts logs knowledge and auxiliary envelopes; prove forward migrations and membership authority",
+      "acceptance": [
+        "AC-242",
+        "AC-246",
+        "AC-247"
+      ]
+    },
+    {
+      "id": "W-138",
+      "milestone": "M7",
+      "title": "Confidential delivery and campaign approval conformance",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-102",
+        "W-126",
+        "W-137",
+        "W-052"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 2,
+        "high": 4
+      },
+      "modules": [
+        "packages/git",
+        "packages/policy",
+        "apps/worker",
+        "tests/system"
+      ],
+      "deliverable": "Qualify target-owner coverage and retargeting plus isolated confidential publication with every-push reader enforcement and the versioned incomplete mitigation closure path; preserve human floors for excluded paths and human-mode campaigns",
+      "acceptance": [
+        "AC-244",
+        "AC-248",
+        "AC-249"
+      ]
+    },
+    {
+      "id": "W-139",
+      "milestone": "M5",
+      "title": "Argo CD branch-preview adapter and conformance",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-005",
+        "W-007",
+        "W-030",
+        "W-037",
+        "W-088",
+        "W-115",
+        "W-117",
+        "W-140"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 5,
+        "high": 8
+      },
+      "modules": [
+        "packages/deployment",
+        "packages/git",
+        "deploy/helm",
+        "tests/system"
+      ],
+      "deliverable": "Implement chapter 10 ApplicationSet PR previews: exact head/digests; scoped Git label/draft and repository identity admission; durable current-plan generations and public queued status; draft-first verification/rework; webhook/polling lookup supersession authenticated routing caps and full cleanup; close ADR-32 and INT-17 platform repo label DNS cert registry auth capacity and credential facts; qualify common real-provider conformance and Argo-specific scenarios before support; preserve merge-to-dev and production paths",
+      "acceptance": [
+        "AC-39",
+        "AC-40",
+        "AC-41",
+        "AC-42",
+        "AC-43",
+        "AC-45",
+        "AC-56",
+        "AC-262",
+        "AC-263",
+        "AC-264",
+        "AC-265",
+        "AC-266",
+        "AC-267",
+        "AC-268",
+        "AC-270",
+        "AC-271",
+        "AC-272",
+        "AC-273",
+        "AC-274",
+        "AC-275",
+        "AC-276",
+        "AC-277",
+        "AC-278"
+      ],
+      "launchScope": "optional"
+    },
+    {
+      "id": "W-140",
+      "milestone": "M5",
+      "title": "Preview namespace and data provisioning",
+      "ownerRole": "platform",
+      "dependsOn": [
+        "W-005",
+        "W-007",
+        "W-017",
+        "W-037",
+        "W-115",
+        "W-117"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "packages/deployment",
+        "deploy/helm",
+        "tests/isolation"
+      ],
+      "deliverable": "Provide owned namespaces NetworkPolicy quotas LimitRange Pod Security external secrets and isolated per-preview database/credentials; order idempotent migration and seed sync-hook Jobs; qualify classification confidentiality and complete resource data volume cleanup including CreateNamespace-only namespaces; close INT-17 data mechanism and isolation facts",
+      "acceptance": [
+        "AC-264",
+        "AC-265",
+        "AC-269",
+        "AC-270"
+      ],
+      "launchScope": "optional"
+    },
+    {
+      "id": "W-141",
+      "milestone": "M7",
+      "title": "Application AI review authority and panels",
+      "ownerRole": "backend",
+      "dependsOn": [
+        "W-087",
+        "W-080",
+        "W-072",
+        "W-069",
+        "W-142",
+        "W-137",
+        "W-144"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 5,
+        "high": 8
+      },
+      "modules": [
+        "packages/policy",
+        "packages/contracts",
+        "packages/database",
+        "apps/worker"
+      ],
+      "deliverable": "Implement D5 joint application decisions scoped live resolver immutable AI decisions independent diverse unanimous panels specialist and adversarial content exact bindings human fallback and versioned ai-review/1.0 templates including the 2.0.0 design templates; close ADR-33/INT-18 authority and model facts without efficacy claims; The runtime implementation MUST pass an adversarial negative corpus covering provenance laundering; scope and embargo/hotfix/production; identity and fork; chronology; nested outputs; empty refs; stale qualification; exported views overriding the trusted task snapshot; nested bundles reviving revoked or stopped authority; provider review observations presented as human approval; production mitigation without human release; release decisions without an identified decider, with every expected-reject case rejected and every expected-accept control passing. Static reference predicates do not prove runtime enforcement.",
+      "acceptance": [
+        "AC-224",
+        "AC-280",
+        "AC-282",
+        "AC-283",
+        "AC-284",
+        "AC-285",
+        "AC-286",
+        "AC-287",
+        "AC-288",
+        "AC-289",
+        "AC-290",
+        "AC-291",
+        "AC-292",
+        "AC-300",
+        "AC-301",
+        "AC-319"
+      ],
+      "launchScope": "optional"
+    },
+    {
+      "id": "W-142",
+      "milestone": "M7",
+      "title": "Reviewer-quality corpus qualification",
+      "ownerRole": "execution",
+      "dependsOn": [
+        "W-087",
+        "W-086",
+        "W-090"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 3,
+        "high": 5
+      },
+      "modules": [
+        "tests/evals",
+        "packages/policy"
+      ],
+      "deliverable": "Define versioned clean and seeded-defect plans/PRs plus applicable intent oracle and specialist cases; qualify each reviewer and independent adjudicator configuration against predeclared catch and false-approval thresholds with denominators; close INT-18 corpus/family facts and require human establishment after changes",
+      "acceptance": [
+        "AC-281",
+        "AC-282",
+        "AC-284",
+        "AC-286",
+        "AC-287",
+        "AC-289",
+        "AC-302"
+      ],
+      "launchScope": "optional"
+    },
+    {
+      "id": "W-143",
+      "milestone": "M7",
+      "title": "AI-reviewed dev merge audit and visibility",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-141",
+        "W-087",
+        "W-080",
+        "W-030",
+        "W-042",
+        "W-045",
+        "W-085",
+        "W-119"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 4,
+        "high": 7
+      },
+      "modules": [
+        "packages/git",
+        "packages/policy",
+        "packages/database",
+        "apps/api",
+        "apps/dashboard",
+        "tests/system"
+      ],
+      "deliverable": "Qualify factory-identity dev-only merge after exact-head checks and previews; preserve human production authority; implement hidden pre-execution sample later human audits ledger thresholds automatic human/manual fallback and honest mode provenance UI/API/export; close ADR-33/INT-18 branch audit and degradation facts; The runtime implementation MUST pass an adversarial negative corpus covering provenance laundering; scope and embargo/hotfix/production; identity and fork; chronology; nested outputs; empty refs; stale qualification; exported views overriding the trusted task snapshot; nested bundles reviving revoked or stopped authority; provider review observations presented as human approval; production mitigation without human release; release decisions without an identified decider, with every expected-reject case rejected and every expected-accept control passing. Static reference predicates do not prove runtime enforcement.",
+      "acceptance": [
+        "AC-54",
+        "AC-293",
+        "AC-294",
+        "AC-295",
+        "AC-296",
+        "AC-297",
+        "AC-298",
+        "AC-299",
+        "AC-302",
+        "AC-303"
+      ],
+      "launchScope": "optional"
+    },
+    {
+      "id": "W-144",
+      "milestone": "M6",
+      "title": "Design-only delivery and build-from-design binding",
+      "ownerRole": "fullstack",
+      "dependsOn": [
+        "W-013",
+        "W-030",
+        "W-063",
+        "W-069",
+        "W-072",
+        "W-073",
+        "W-080",
+        "W-089",
+        "W-117",
+        "W-137"
+      ],
+      "estimatedEngineeringDays": {
+        "low": 6,
+        "high": 9
+      },
+      "modules": [
+        "packages/contracts",
+        "packages/domain",
+        "packages/database",
+        "packages/git",
+        "apps/api",
+        "apps/worker",
+        "apps/dashboard",
+        "tests/system"
+      ],
+      "deliverable": "Implement the design delivery scope and design-delivery/1.0 templates with complete peer-reviewed packets deterministic Markdown rendering design PR or report delivery honest design_approved outcomes design budget class confidential/classified targets and current-design build bindings that reuse exact approvals or replan affected sections in human mode; ai-review design templates are enabled only through W-141; close ADR-34 without claiming runtime qualification",
+      "acceptance": [
+        "AC-304",
+        "AC-305",
+        "AC-306",
+        "AC-307",
+        "AC-308",
+        "AC-309",
+        "AC-310",
+        "AC-311",
+        "AC-312",
+        "AC-313",
+        "AC-314",
+        "AC-315",
+        "AC-316",
+        "AC-317",
+        "AC-318"
+      ]
+    }
+  ]
+}

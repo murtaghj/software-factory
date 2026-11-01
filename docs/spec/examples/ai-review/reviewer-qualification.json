@@ -1,0 +1,72 @@
+{
+  "schemaVersion": "2.0",
+  "configurationRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001680",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000690",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "corpusRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001700",
+    "sha256": "00000000000000000000000000000000000000000000000000000000000006a4",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "thresholdsRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001701",
+    "sha256": "00000000000000000000000000000000000000000000000000000000000006a5",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "minimumCatchBasisPoints": 9000,
+  "maximumFalseApprovalBasisPoints": 1000,
+  "results": [
+    {
+      "kind": "plan",
+      "cleanCount": 10,
+      "seededDefectCount": 10,
+      "caughtDefects": 10,
+      "falseApprovals": 0,
+      "breakdownRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001702",
+        "sha256": "00000000000000000000000000000000000000000000000000000000000006a6",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      }
+    },
+    {
+      "kind": "pr",
+      "cleanCount": 10,
+      "seededDefectCount": 10,
+      "caughtDefects": 10,
+      "falseApprovals": 0,
+      "breakdownRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001702",
+        "sha256": "00000000000000000000000000000000000000000000000000000000000006a6",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      }
+    }
+  ],
+  "result": "passed",
+  "evaluatedAt": "2026-10-28T12:00:00Z",
+  "qualificationCohortRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001605",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000645",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "roleCoverageRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001703",
+    "sha256": "00000000000000000000000000000000000000000000000000000000000006a7",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  }
+}

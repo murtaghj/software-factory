@@ -1,0 +1,13 @@
+{
+  "gateId": "plan_peer_approved",
+  "mode": "ai_panel",
+  "humanFloor": false,
+  "sampleBasisPoints": 0,
+  "reviewModeDecisionRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001615",
+    "sha256": "000000000000000000000000000000000000000000000000000000000000064f",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "2.0",
+  "id": "fixture-assertion-v1",
+  "framework": "fixture-test-runner",
+  "frameworkVersion": "1.0.0",
+  "parserRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000207",
+    "sha256": "00000000000000000000000000000000000000000000000000000000000000cf",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "scenarioIds": [
+    "duplicate-reservation"
+  ],
+  "intendedAssertionMatchers": [
+    "expected reservation count 1; observed 2"
+  ],
+  "minimumExecutedTests": 1,
+  "rejectedClasses": [
+    "compile",
+    "setup",
+    "discovery",
+    "network",
+    "timeout"
+  ],
+  "oracleReviewRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000208",
+    "sha256": "00000000000000000000000000000000000000000000000000000000000000d0",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  }
+}

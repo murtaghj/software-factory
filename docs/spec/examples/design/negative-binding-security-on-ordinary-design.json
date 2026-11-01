@@ -1,0 +1,339 @@
+{
+  "kind": "binding",
+  "expect": "build security metadata may only inherit an embargoed design",
+  "value": {
+    "delivery": {
+      "schemaVersion": "2.0",
+      "taskId": "00000000-0000-4000-8000-000000003030",
+      "applicationId": "00000000-0000-4000-8000-000000000010",
+      "workType": "feature",
+      "targetKind": "existing_application",
+      "workflowTemplate": {
+        "id": "feature_design",
+        "version": "1.0.0",
+        "definitionRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003005",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000bbd",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      },
+      "designProfile": "design-delivery/1.0",
+      "packetRef": {
+        "artifactId": "00000000-0000-4000-8000-000000003006",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000bbe",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "planReviewSubjectRef": {
+        "artifactId": "00000000-0000-4000-8000-000000003007",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000bbf",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "subjectHash": "0000000000000000000000000000000000000000000000000000000000000bbf",
+      "basis": {
+        "applicationSnapshotRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003001",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000bb9",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "sourcePins": [
+          {
+            "repositoryId": "00000000-0000-4000-8000-000000000020",
+            "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "subpath": "services/orders"
+          }
+        ],
+        "resolvedRulesRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003002",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000bba",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "policyRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003003",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000bbb",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "taskSpecVersion": 1,
+        "intentRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003004",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000bbc",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "acceptedIntentDigest": "74d554f766e0479c70f651ffe5cbca658d7e9246ef2cb9705f9ccace8149a133",
+        "assurance": "enhanced",
+        "plannedBuildDeliveryScope": "pr"
+      },
+      "approvals": [
+        {
+          "gateId": "architecture_accepted",
+          "gateEvaluationRef": {
+            "artifactId": "00000000-0000-4000-8000-000000003012",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000bc4",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "authority": "human",
+          "approvalSetRef": {
+            "artifactId": "00000000-0000-4000-8000-000000003020",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000bcc",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "approvedAt": "2026-10-29T10:00:00Z"
+        },
+        {
+          "gateId": "plan_peer_approved",
+          "gateEvaluationRef": {
+            "artifactId": "00000000-0000-4000-8000-000000003013",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000bc5",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "authority": "human",
+          "approvalSetRef": {
+            "artifactId": "00000000-0000-4000-8000-000000003020",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000bcc",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "approvedAt": "2026-10-29T10:00:00Z"
+        },
+        {
+          "gateId": "plan_accepted",
+          "gateEvaluationRef": {
+            "artifactId": "00000000-0000-4000-8000-000000003014",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000bc6",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "authority": "human",
+          "approvalSetRef": {
+            "artifactId": "00000000-0000-4000-8000-000000003020",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000bcc",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          },
+          "approvedAt": "2026-10-29T10:00:00Z"
+        }
+      ],
+      "rendering": {
+        "mediaType": "text/markdown",
+        "renderedRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003008",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000bc0",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "rendererVersion": "design-render/1.0.0",
+        "sourcePacketRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003006",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000bbe",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "anchorIds": [
+          "intent_scope",
+          "current_state",
+          "design",
+          "interfaces_data",
+          "implementation",
+          "acceptance_tests",
+          "quality_security",
+          "delivery_recovery",
+          "operations",
+          "risks_decisions",
+          "definition_of_done",
+          "review_ownership",
+          "C1",
+          "C2",
+          "C3",
+          "C4",
+          "S1",
+          "S2",
+          "S3",
+          "S4",
+          "S5"
+        ]
+      },
+      "target": {
+        "kind": "design_pr",
+        "repositoryId": "00000000-0000-4000-8000-000000000020",
+        "subpath": "docs/design",
+        "baseBranch": "main",
+        "publicationTargetRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003009",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000bc1",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "gitChangeId": "00000000-0000-4000-8000-000000003031",
+        "providerHandle": "github:example/orders#241",
+        "headCommit": "cccccccccccccccccccccccccccccccccccccccc",
+        "draft": false,
+        "confidential": false,
+        "publicationMode": "ordinary"
+      },
+      "dataClassification": "internal",
+      "securityFlagged": false,
+      "embargoed": false,
+      "reviewMode": "human",
+      "approvedAt": "2026-10-29T10:00:00Z",
+      "approvalsExpireAt": "2027-01-27T10:00:00Z",
+      "deliveredAt": "2026-10-29T10:05:00Z"
+    },
+    "deliveryRef": {
+      "artifactId": "00000000-0000-4000-8000-000000003040",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000be0",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "buildTask": {
+      "schemaVersion": "2.0",
+      "title": "Build approved order cancellation design",
+      "intent": "Allow an authorized customer to cancel an unfulfilled order while preserving audit history.",
+      "applicationIds": [
+        "00000000-0000-4000-8000-000000000010"
+      ],
+      "targetContext": {
+        "kind": "existing_application",
+        "applicationId": "00000000-0000-4000-8000-000000000010"
+      },
+      "workType": "feature",
+      "acceptanceCriteria": [
+        "Authorized customer can cancel an unfulfilled order.",
+        "Repeated cancellation is idempotent.",
+        "Another customer cannot cancel the order.",
+        "Audit history remains queryable."
+      ],
+      "assurance": "enhanced",
+      "deliveryScope": "pr",
+      "prCompletion": {
+        "mode": "pr_created",
+        "maxReviewRounds": 3,
+        "maxWaitSeconds": 604800
+      },
+      "budget": {
+        "maxMicroUsd": 25000000,
+        "maxActiveSeconds": 14400,
+        "maxCalendarSeconds": 604800,
+        "maxAuthoringInvocations": 8,
+        "maxSemanticAttemptsPerNode": 3,
+        "maxDesignReturns": 2,
+        "invocationMode": "bounded"
+      },
+      "designSource": {
+        "designTaskId": "00000000-0000-4000-8000-000000003030",
+        "designDeliveryRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003040",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000be0",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      },
+      "security": {
+        "severity": "high",
+        "sourceRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003067",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000bfb",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "embargoed": true,
+        "securityGroupId": "00000000-0000-4000-8000-000000003044"
+      }
+    },
+    "binding": {
+      "schemaVersion": "2.0",
+      "taskId": "00000000-0000-4000-8000-000000003050",
+      "designTaskId": "00000000-0000-4000-8000-000000003030",
+      "designDeliveryRef": {
+        "artifactId": "00000000-0000-4000-8000-000000003040",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000be0",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "packetRef": {
+        "artifactId": "00000000-0000-4000-8000-000000003006",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000bbe",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "subjectHash": "0000000000000000000000000000000000000000000000000000000000000bbf",
+      "currentBasis": {
+        "applicationSnapshotRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003001",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000bb9",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "sourcePins": [
+          {
+            "repositoryId": "00000000-0000-4000-8000-000000000020",
+            "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "subpath": "services/orders"
+          }
+        ],
+        "resolvedRulesRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003002",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000bba",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "policyRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003003",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000bbb",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "taskSpecVersion": 1,
+        "intentRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003004",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000bbc",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "acceptedIntentDigest": "74d554f766e0479c70f651ffe5cbca658d7e9246ef2cb9705f9ccace8149a133",
+        "assurance": "enhanced",
+        "plannedBuildDeliveryScope": "pr"
+      },
+      "result": "reuse",
+      "drift": [],
+      "reopenedSectionIds": [],
+      "rerequestedGateIds": [],
+      "evaluatedAt": "2026-11-05T09:00:00Z"
+    },
+    "buildChangeClass": "fixture",
+    "reviewEvidenceFile": "review-evidence.json"
+  }
+}

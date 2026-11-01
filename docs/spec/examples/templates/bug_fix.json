@@ -1,0 +1,253 @@
+{
+  "schemaVersion": "2.0",
+  "id": "bug_fix",
+  "version": "3.0.0",
+  "workType": "bug",
+  "targetKind": "existing_application",
+  "nodes": [
+    {
+      "id": "diagnose",
+      "stageKind": "diagnose",
+      "role": "discovery",
+      "dependsOn": [],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "scope_accepted"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "execute",
+      "sessionPolicy": "fresh",
+      "returnTargets": [],
+      "mandatory": true
+    },
+    {
+      "id": "plan",
+      "stageKind": "plan",
+      "role": "planner",
+      "dependsOn": [
+        "diagnose"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [],
+      "requiredCapabilities": [],
+      "timeoutClass": "execute",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "diagnose"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "plan_review",
+      "stageKind": "plan_peer_review",
+      "role": "reviewer",
+      "dependsOn": [
+        "plan"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "plan_accepted",
+        "plan_peer_approved"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "human_wait",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "plan",
+        "diagnose"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "oracle",
+      "stageKind": "author_regression",
+      "role": "criteria_author",
+      "dependsOn": [
+        "plan_review"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "oracle_accepted"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "execute",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "diagnose"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "red",
+      "stageKind": "baseline_red",
+      "role": "verifier",
+      "dependsOn": [
+        "oracle"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "baseline_valid"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "verify",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "oracle",
+        "diagnose"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "lock",
+      "stageKind": "lock_regression",
+      "role": "verifier",
+      "dependsOn": [
+        "red"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "canonical_package_locked"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "verify",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "oracle"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "repair",
+      "stageKind": "execute",
+      "role": "implementer",
+      "dependsOn": [
+        "lock"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [],
+      "requiredCapabilities": [],
+      "timeoutClass": "execute",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "diagnose"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "green",
+      "stageKind": "candidate_green",
+      "role": "verifier",
+      "dependsOn": [
+        "repair"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "outcome_verified"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "verify",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "repair",
+        "oracle"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "regression",
+      "stageKind": "compatibility_verify",
+      "role": "verifier",
+      "dependsOn": [
+        "green"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "integration_passed"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "verify",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "repair",
+        "diagnose"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "review",
+      "stageKind": "review",
+      "role": "reviewer",
+      "dependsOn": [
+        "regression"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "review_passed"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "execute",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "repair",
+        "diagnose"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "deliver",
+      "stageKind": "deliver",
+      "role": "publisher",
+      "dependsOn": [
+        "review"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [],
+      "requiredCapabilities": [],
+      "timeoutClass": "provider",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "regression"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "pr_review",
+      "stageKind": "pr_review",
+      "role": "publisher",
+      "dependsOn": [
+        "deliver"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "delivery_complete"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "human_wait",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "diagnose",
+        "plan",
+        "oracle",
+        "repair"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "close",
+      "stageKind": "learn_close",
+      "role": "knowledge_curator",
+      "dependsOn": [
+        "pr_review"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "outcome_recorded"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "execute",
+      "sessionPolicy": "fresh",
+      "returnTargets": [],
+      "mandatory": true
+    }
+  ]
+}

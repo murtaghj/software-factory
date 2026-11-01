@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "2.0",
+  "scope": {
+    "taskId": "00000000-0000-4000-8000-000000000002",
+    "applicationIds": [
+      "00000000-0000-4000-8000-000000000010"
+    ],
+    "resourceIds": [
+      "repo-20/src/**"
+    ],
+    "workType": "feature",
+    "environment": "preview"
+  },
+  "resolverVersion": "1.0.0",
+  "bundleRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000001310",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000051e",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ],
+  "ruleRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000001305",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000519",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ],
+  "exceptionRefs": []
+}

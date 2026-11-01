@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "2.0",
+  "id": "00000000-0000-4000-8000-000000000214",
+  "scope": {
+    "applicationId": "00000000-0000-4000-8000-000000000010",
+    "workType": "bug",
+    "changeClass": "machine_reported_retry_bug",
+    "assurance": "standard",
+    "pathProfileRef": {
+      "artifactId": "00000000-0000-4000-8000-000000000212",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000000d4",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "behaviorReleaseRef": {
+      "artifactId": "00000000-0000-4000-8000-000000000213",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000000d5",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  },
+  "metricVersion": "1.0.0",
+  "windowStart": "2026-09-01T00:00:00Z",
+  "windowEnd": "2026-10-01T00:00:00Z",
+  "observedAt": "2026-10-01T12:00:00Z",
+  "sampleCount": 4,
+  "metrics": [
+    {
+      "name": "rewrite_90d",
+      "numerator": 0,
+      "denominator": 0,
+      "unit": "lines",
+      "maturity": "immature",
+      "attribution": "unknown",
+      "notes": "Observation window has not matured; no autonomy relaxation permitted."
+    }
+  ],
+  "sourceRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000000215",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000000d7",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ]
+}

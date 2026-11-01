@@ -1,0 +1,25 @@
+{
+  "kind": "audit",
+  "value": {
+    "schemaVersion": "2.0",
+    "taskId": "00000000-0000-4000-8000-000000000002",
+    "applicationId": "00000000-0000-4000-8000-000000000010",
+    "reviewModeDecisionRef": {
+      "artifactId": "00000000-0000-4000-8000-000000001615",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000064f",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "sampleBasisPoints": 0,
+    "selected": true,
+    "selectedAt": "2026-10-29T00:30:00Z",
+    "selectionEvidenceRef": {
+      "artifactId": "00000000-0000-4000-8000-000000001741",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000006cd",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  }
+}

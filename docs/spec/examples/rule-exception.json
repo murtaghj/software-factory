@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "2.0",
+  "id": "00000000-0000-4000-8000-000000001307",
+  "ruleId": "architecture.layer-direction",
+  "ruleRevision": 1,
+  "ruleRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001305",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000519",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "scope": {
+    "taskId": "00000000-0000-4000-8000-000000000002",
+    "applicationIds": [
+      "00000000-0000-4000-8000-000000000010"
+    ],
+    "resourceIds": [
+      "repo-20/src/**"
+    ],
+    "workType": "feature",
+    "environment": "preview"
+  },
+  "requestedRelaxation": "Permit the named legacy adapter for this preview task only.",
+  "reason": "Fixture demonstrating scoped approval; not blanket production permission.",
+  "compensatingControlsRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001308",
+    "sha256": "000000000000000000000000000000000000000000000000000000000000051c",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "validFrom": "2026-10-02T00:00:00Z",
+  "expiresAt": "2026-10-03T00:00:00Z"
+}

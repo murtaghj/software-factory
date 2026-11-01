@@ -1,0 +1,750 @@
+{
+  "schemaVersion": "2.0",
+  "taskId": "00000000-0000-4000-8000-000000000002",
+  "revision": 5,
+  "taskSpecVersion": 1,
+  "workType": "feature",
+  "targetContext": {
+    "kind": "existing_application",
+    "applicationId": "00000000-0000-4000-8000-000000000010"
+  },
+  "authorPrincipalIds": [
+    "00000000-0000-4000-8000-000000000200"
+  ],
+  "summary": {
+    "outcome": "Customers can cancel their own unfulfilled orders without duplicate effects.",
+    "approach": "Commit cancellation, audit and an outbox event atomically; release inventory asynchronously.",
+    "impact": "Orders API + inventory-event worker \u00b7 one repository \u00b7 additive schema.",
+    "verification": "Enhanced assurance: new API, authorization and persistent-migration triggers require independent oracle review and fresh adversarial testing, alongside seven planned scenarios and consumer regressions.",
+    "delivery": "Reviewed PR only. No merge or deployment authorization.",
+    "decisionRequested": "Approve the design, implementation/test plan and definition of done for revision 5."
+  },
+  "sections": [
+    {
+      "id": "intent_scope",
+      "title": "Intent and scope",
+      "summary": "Customers cancel their own unfulfilled orders; refunds are excluded.",
+      "status": "complete",
+      "contentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000300",
+        "sha256": "16cb2c7dadd64da27f36c486ccc76b5f40944267d782b62397f0a317a228c18e",
+        "mediaType": "text/markdown",
+        "schemaVersion": "2.0",
+        "sizeBytes": 455
+      }
+    },
+    {
+      "id": "current_state",
+      "title": "Current state",
+      "summary": "Reuse the existing order, identity and inventory-event contracts.",
+      "status": "complete",
+      "contentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000301",
+        "sha256": "6b9e792acdfe9670feba60edb0194c473e62146b9bf99d1d1b6885f3651f0474",
+        "mediaType": "text/markdown",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1811
+      }
+    },
+    {
+      "id": "design",
+      "title": "Design and alternatives",
+      "summary": "Commit cancellation, audit and outbox intent atomically.",
+      "status": "complete",
+      "contentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000302",
+        "sha256": "98245ce13977a3c03eb3545c8903fc55812623738a35ee4fa340f57bed855153",
+        "mediaType": "text/markdown",
+        "schemaVersion": "2.0",
+        "sizeBytes": 587
+      }
+    },
+    {
+      "id": "interfaces_data",
+      "title": "Interfaces and data",
+      "summary": "One endpoint and additive records; preserve existing consumers.",
+      "status": "complete",
+      "contentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000303",
+        "sha256": "20b2fb478925e89f6e7ca22700b47670c9ac8c792c36ab6ce9f6da1fdd218ffa",
+        "mediaType": "text/markdown",
+        "schemaVersion": "2.0",
+        "sizeBytes": 617
+      }
+    },
+    {
+      "id": "implementation",
+      "title": "Implementation and worktrees",
+      "summary": "One repo, two components, a bounded integration sequence.",
+      "status": "complete",
+      "contentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000304",
+        "sha256": "c35c4c5148d4dcf62095fd83ab6522d6acd28bfe0ca9578ef67a242a78d3fd93",
+        "mediaType": "text/markdown",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1748
+      }
+    },
+    {
+      "id": "acceptance_tests",
+      "title": "Acceptance and test strategy",
+      "summary": "Four criteria, seven concrete scenarios; all are still planned.",
+      "status": "complete",
+      "contentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000305",
+        "sha256": "d8b4c98bca3d91c229d5bb620a7780eee3f4d7ace220084d9292002e22ed781d",
+        "mediaType": "text/markdown",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1244
+      }
+    },
+    {
+      "id": "quality_security",
+      "title": "Quality and security",
+      "summary": "Prove ownership checks and at-most-once effects under retries.",
+      "status": "complete",
+      "contentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000306",
+        "sha256": "a567ddbe295a5aa09c33f2dab978fd4302df2f41e98ffe80ddd337e1b09b379b",
+        "mediaType": "text/markdown",
+        "schemaVersion": "2.0",
+        "sizeBytes": 579
+      }
+    },
+    {
+      "id": "delivery_recovery",
+      "title": "Delivery and recovery",
+      "summary": "PR only; include a future rollout and recovery note.",
+      "status": "complete",
+      "contentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000307",
+        "sha256": "304bab283e96e8521884cf7447e4971f23c5ba8fcca08ef9326ff883a2f5213f",
+        "mediaType": "text/markdown",
+        "schemaVersion": "2.0",
+        "sizeBytes": 802
+      }
+    },
+    {
+      "id": "operations",
+      "title": "Operations and ownership",
+      "summary": "Watch outbox age, failed retries and duplicate effects.",
+      "status": "complete",
+      "contentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000308",
+        "sha256": "2bf91269a9a7830a77caadcd2aa5927b04a89a52d44f93c57f4997cb9e15772a",
+        "mediaType": "text/markdown",
+        "schemaVersion": "2.0",
+        "sizeBytes": 519
+      }
+    },
+    {
+      "id": "risks_decisions",
+      "title": "Risks and decisions",
+      "summary": "Concurrent requests and uncertain inventory delivery need explicit checks.",
+      "status": "complete",
+      "contentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000309",
+        "sha256": "1d259c9388fc834a7bb36c8a802cae628b0ec4349f79c0cf6c540a500789bd94",
+        "mediaType": "text/markdown",
+        "schemaVersion": "2.0",
+        "sizeBytes": 555
+      }
+    },
+    {
+      "id": "definition_of_done",
+      "title": "Definition of done",
+      "summary": "Outcome, evidence, review and scoped delivery all have predicates.",
+      "status": "complete",
+      "contentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000310",
+        "sha256": "db5069ba1221e79552cfcf9a46c3109ed5ec09929392a896569b1623fa2c7390",
+        "mediaType": "text/markdown",
+        "schemaVersion": "2.0",
+        "sizeBytes": 748
+      }
+    },
+    {
+      "id": "review_ownership",
+      "title": "Review and ownership",
+      "summary": "Independent primary peer plus the inventory contract owner.",
+      "status": "complete",
+      "contentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000311",
+        "sha256": "7f674805616251dc64b6ce88e70d0336a6532ff56bf1f42290f61a84af4cf764",
+        "mediaType": "text/markdown",
+        "schemaVersion": "2.0",
+        "sizeBytes": 633
+      }
+    }
+  ],
+  "criteria": [
+    {
+      "id": "C1",
+      "statement": "An owner can cancel an unfulfilled order; fulfilled orders are rejected.",
+      "sourceRefs": [
+        {
+          "artifactId": "00000000-0000-4000-8000-000000000321",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000141",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      ]
+    },
+    {
+      "id": "C2",
+      "statement": "Repeated and concurrent requests produce one logical cancellation and stock release.",
+      "sourceRefs": [
+        {
+          "artifactId": "00000000-0000-4000-8000-000000000321",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000141",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      ]
+    },
+    {
+      "id": "C3",
+      "statement": "A customer cannot cancel another customer\u2019s order.",
+      "sourceRefs": [
+        {
+          "artifactId": "00000000-0000-4000-8000-000000000321",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000141",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      ]
+    },
+    {
+      "id": "C4",
+      "statement": "The original history and exactly one cancellation audit event remain queryable.",
+      "sourceRefs": [
+        {
+          "artifactId": "00000000-0000-4000-8000-000000000321",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000141",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        }
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "S1",
+      "criterionIds": [
+        "C1"
+      ],
+      "category": "happy_path",
+      "given": "A customer owns an unfulfilled order",
+      "when": "They submit cancellation",
+      "then": "One cancellation result is returned and its durable outbox intent exists.",
+      "testLevel": "integration",
+      "environmentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000320",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000140",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "baselineExpectation": "not_applicable",
+      "status": "planned"
+    },
+    {
+      "id": "S2",
+      "criterionIds": [
+        "C2"
+      ],
+      "category": "recovery",
+      "given": "The first cancellation response is lost",
+      "when": "The customer retries the same request",
+      "then": "The original result is returned; no second audit or release event appears.",
+      "testLevel": "integration",
+      "environmentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000320",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000140",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "baselineExpectation": "not_applicable",
+      "status": "planned"
+    },
+    {
+      "id": "S3",
+      "criterionIds": [
+        "C3"
+      ],
+      "category": "security",
+      "given": "An order belongs to another customer",
+      "when": "The caller submits cancellation",
+      "then": "Access is denied without data leakage or any state change.",
+      "testLevel": "integration",
+      "environmentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000320",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000140",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "baselineExpectation": "not_applicable",
+      "status": "planned"
+    },
+    {
+      "id": "S4",
+      "criterionIds": [
+        "C1"
+      ],
+      "category": "boundary",
+      "given": "An order has been fulfilled",
+      "when": "Its owner submits cancellation",
+      "then": "A conflict is returned and fulfillment remains unchanged.",
+      "testLevel": "integration",
+      "environmentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000320",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000140",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "baselineExpectation": "not_applicable",
+      "status": "planned"
+    },
+    {
+      "id": "S5",
+      "criterionIds": [
+        "C4"
+      ],
+      "category": "regression",
+      "given": "An order already has audit history",
+      "when": "A valid cancellation completes",
+      "then": "All previous events remain and exactly one cancellation event is added.",
+      "testLevel": "integration",
+      "environmentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000320",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000140",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "baselineExpectation": "not_applicable",
+      "status": "planned"
+    },
+    {
+      "id": "S6",
+      "criterionIds": [
+        "C2"
+      ],
+      "category": "boundary",
+      "given": "Two requests target the same order with distinct keys",
+      "when": "They arrive concurrently",
+      "then": "Exactly one cancellation and one logical inventory release occur.",
+      "testLevel": "integration",
+      "environmentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000320",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000140",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "baselineExpectation": "not_applicable",
+      "status": "planned"
+    },
+    {
+      "id": "S7",
+      "criterionIds": [
+        "C1",
+        "C2"
+      ],
+      "category": "recovery",
+      "given": "Inventory is temporarily unavailable",
+      "when": "Cancellation commits and the worker retries after recovery",
+      "then": "The cancellation stays durable and stock is eventually released once.",
+      "testLevel": "integration",
+      "environmentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000000320",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000140",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "baselineExpectation": "not_applicable",
+      "status": "planned"
+    }
+  ],
+  "definitionOfDone": [
+    {
+      "id": "D1",
+      "condition": "C1\u2013C4 and S1\u2013S7 pass in independent verification.",
+      "criterionIds": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "evidenceKinds": [
+        "verification"
+      ],
+      "requiredGateIds": [
+        "outcome_verified"
+      ]
+    },
+    {
+      "id": "D2",
+      "condition": "The exact integrated candidate preserves existing contracts/regressions.",
+      "criterionIds": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "evidenceKinds": [
+        "verification"
+      ],
+      "requiredGateIds": [
+        "integration_passed"
+      ]
+    },
+    {
+      "id": "D3",
+      "condition": "Independent peer plan sign-off and code review are current; blocking findings are resolved.",
+      "criterionIds": [],
+      "evidenceKinds": [
+        "review"
+      ],
+      "requiredGateIds": [
+        "plan_peer_approved",
+        "review_passed"
+      ]
+    },
+    {
+      "id": "D4",
+      "condition": "API/runbook notes accompany the verified PR; required human PR approvals match its current head.",
+      "criterionIds": [],
+      "evidenceKinds": [
+        "artifact",
+        "delivery",
+        "review"
+      ],
+      "requiredGateIds": [
+        "delivery_complete"
+      ]
+    },
+    {
+      "id": "D5",
+      "condition": "Outcome provenance and fixture resource cleanup/ownership are recorded.",
+      "criterionIds": [],
+      "evidenceKinds": [
+        "artifact",
+        "cleanup"
+      ],
+      "requiredGateIds": [
+        "outcome_recorded"
+      ]
+    },
+    {
+      "id": "D6",
+      "condition": "Independent oracle review accepts the canonical package before implementation.",
+      "criterionIds": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "evidenceKinds": [
+        "review"
+      ],
+      "requiredGateIds": [
+        "oracle_accepted"
+      ]
+    },
+    {
+      "id": "D7",
+      "condition": "Fresh adversarial testing of authorization, migration and retry boundaries passes on the exact candidate.",
+      "criterionIds": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "evidenceKinds": [
+        "verification"
+      ],
+      "requiredGateIds": [
+        "adversarial_passed"
+      ]
+    }
+  ],
+  "risks": [
+    {
+      "id": "R1",
+      "statement": "Concurrent requests could cancel or release stock twice.",
+      "severity": "high",
+      "mitigation": "Unique identity, transaction locking and consumer dedupe; verify S2/S6.",
+      "ownerId": "00000000-0000-4000-8000-000000000201",
+      "state": "mitigation_planned",
+      "blocking": false,
+      "scenarioIds": [
+        "S2",
+        "S6"
+      ],
+      "evidenceRefs": []
+    },
+    {
+      "id": "R2",
+      "statement": "Inventory can be unavailable after cancellation commits.",
+      "severity": "medium",
+      "mitigation": "Durable outbox retries, age/retry monitoring and recovery scenario S7.",
+      "ownerId": "00000000-0000-4000-8000-000000000202",
+      "state": "mitigation_planned",
+      "blocking": false,
+      "scenarioIds": [
+        "S7"
+      ],
+      "evidenceRefs": []
+    }
+  ],
+  "structureOutline": {
+    "components": [
+      {
+        "id": "orders",
+        "repositoryId": "00000000-0000-4000-8000-000000000020",
+        "paths": [
+          "services/orders",
+          "db/migrations"
+        ],
+        "change": "Add authenticated cancellation in one transaction.",
+        "signatures": [
+          "cancelOrder(customerId, orderId, idempotencyKey): CancellationResult"
+        ],
+        "interfaceChanges": [
+          "POST /orders/{id}/cancel",
+          "CancellationResult: cancellationId, orderId, status"
+        ],
+        "dataChanges": [
+          "Unique order-cancellation identity",
+          "Atomic audit + outbox records"
+        ]
+      },
+      {
+        "id": "inventory",
+        "repositoryId": "00000000-0000-4000-8000-000000000020",
+        "paths": [
+          "workers/inventory-events"
+        ],
+        "change": "Consume cancellation events with stable deduplication.",
+        "signatures": [
+          "handleCancellation(event: OrderCancelled): void"
+        ],
+        "interfaceChanges": [
+          "OrderCancelled: eventId, orderId, cancellationId"
+        ],
+        "dataChanges": [
+          "Reuse durable consumer dedupe identity"
+        ]
+      }
+    ],
+    "slices": [
+      {
+        "id": "cancel-and-release",
+        "outcome": "Customer cancellation with one eventual stock release and preserved audit.",
+        "componentIds": [
+          "orders",
+          "inventory"
+        ],
+        "criterionIds": [
+          "C1",
+          "C2",
+          "C3",
+          "C4"
+        ]
+      }
+    ],
+    "exclusions": [
+      "Refunds",
+      "UI redesign",
+      "Merge or production deployment"
+    ],
+    "contractRefs": [
+      {
+        "artifactId": "00000000-0000-4000-8000-000000000322",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000142",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      }
+    ]
+  },
+  "previousPacketRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000329",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000149",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "resolvedRulesRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001400",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000578",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "implementationTasks": [
+    {
+      "id": "T1",
+      "outcome": "Add atomic cancellation, ownership and audit behavior.",
+      "dependsOn": [],
+      "pathsOrResources": [
+        "services/orders",
+        "db/migrations"
+      ],
+      "criterionIds": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "checkStrategy": {
+        "kind": "recipe",
+        "recipeRefs": [
+          {
+            "artifactId": "00000000-0000-4000-8000-000000001401",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000579",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          }
+        ],
+        "evidenceRequirementRefs": [],
+        "rationale": "Visible transaction, ownership and audit checks."
+      }
+    },
+    {
+      "id": "T2",
+      "outcome": "Bind idempotent inventory release and recovery.",
+      "dependsOn": [
+        "T1"
+      ],
+      "pathsOrResources": [
+        "workers/inventory-events"
+      ],
+      "criterionIds": [
+        "C1",
+        "C2"
+      ],
+      "checkStrategy": {
+        "kind": "recipe",
+        "recipeRefs": [
+          {
+            "artifactId": "00000000-0000-4000-8000-000000001402",
+            "sha256": "000000000000000000000000000000000000000000000000000000000000057a",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          }
+        ],
+        "evidenceRequirementRefs": [],
+        "rationale": "Replay and dependency recovery checks."
+      }
+    },
+    {
+      "id": "T3",
+      "outcome": "Independently verify the complete integrated candidate.",
+      "dependsOn": [
+        "T2"
+      ],
+      "pathsOrResources": [
+        "tests/orders",
+        "tests/inventory",
+        "integration fixture"
+      ],
+      "criterionIds": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "checkStrategy": {
+        "kind": "recipe",
+        "recipeRefs": [
+          {
+            "artifactId": "00000000-0000-4000-8000-000000001403",
+            "sha256": "000000000000000000000000000000000000000000000000000000000000057b",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          }
+        ],
+        "evidenceRequirementRefs": [
+          {
+            "artifactId": "00000000-0000-4000-8000-000000001404",
+            "sha256": "000000000000000000000000000000000000000000000000000000000000057c",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          }
+        ],
+        "rationale": "Trusted verifier owns canonical acceptance; author feedback is not a gate."
+      }
+    },
+    {
+      "id": "T4",
+      "outcome": "Review and publish the exact verified candidate.",
+      "dependsOn": [
+        "T3"
+      ],
+      "pathsOrResources": [
+        "task PR",
+        "API/runbook notes"
+      ],
+      "criterionIds": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "checkStrategy": {
+        "kind": "human_review",
+        "recipeRefs": [],
+        "evidenceRequirementRefs": [
+          {
+            "artifactId": "00000000-0000-4000-8000-000000001405",
+            "sha256": "000000000000000000000000000000000000000000000000000000000000057d",
+            "mediaType": "application/json",
+            "schemaVersion": "2.0",
+            "sizeBytes": 1024
+          }
+        ],
+        "rationale": "Required human approvals and provider reconciliation must match the head."
+      }
+    }
+  ],
+  "reuseJustifications": [
+    {
+      "id": "R1",
+      "kind": "component",
+      "name": "Orders cancellation transaction",
+      "neededBecause": "The new customer action needs atomic state, audit and outbox writes.",
+      "existingCode": "Extend the existing Orders handler and transaction boundary.",
+      "standardLibrary": "Cannot supply durable database transactions.",
+      "platform": "Reuse existing database uniqueness and outbox.",
+      "existingDependencies": "Existing database client suffices.",
+      "choice": "Minimal transaction/schema addition; no new dependency.",
+      "tradeoffs": "Outbox operations and retry monitoring are required."
+    },
+    {
+      "id": "R2",
+      "kind": "component",
+      "name": "Inventory cancellation binding",
+      "neededBecause": "Cancellation must cause one eventual stock release.",
+      "existingCode": "Extend the existing inventory-event consumer.",
+      "standardLibrary": "Cannot supply durable consumer deduplication.",
+      "platform": "Reuse current event delivery and dedupe store.",
+      "existingDependencies": "Existing event and database clients suffice.",
+      "choice": "Add a handler binding to the existing worker.",
+      "tradeoffs": "Asynchronous release requires recovery evidence."
+    }
+  ]
+}

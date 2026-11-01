@@ -1,0 +1,164 @@
+{
+  "schemaVersion": "2.0",
+  "id": "00000000-0000-4000-8000-000000001602",
+  "reviewMode": "ai_only",
+  "scope": {
+    "applicationId": "00000000-0000-4000-8000-000000000010",
+    "workTypes": [
+      "feature",
+      "bug",
+      "maintenance"
+    ],
+    "changeClasses": [
+      "fixture"
+    ],
+    "pathProfileRef": {
+      "artifactId": "00000000-0000-4000-8000-000000001601",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000641",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "assuranceTiers": [
+      "fast",
+      "standard",
+      "enhanced"
+    ]
+  },
+  "revision": 1,
+  "subjectRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001603",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000643",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "subjectHash": "0000000000000000000000000000000000000000000000000000000000000643",
+  "ownerApprovals": [
+    {
+      "actorKind": "human",
+      "role": "policy_owner",
+      "principalId": "00000000-0000-4000-8000-000000001610",
+      "subjectRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001603",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000643",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "subjectHash": "0000000000000000000000000000000000000000000000000000000000000643",
+      "approvedAt": "2026-10-29T00:00:00Z",
+      "authenticationRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001612",
+        "sha256": "000000000000000000000000000000000000000000000000000000000000064c",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      }
+    },
+    {
+      "actorKind": "human",
+      "role": "application_owner",
+      "principalId": "00000000-0000-4000-8000-000000001611",
+      "subjectRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001603",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000643",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "subjectHash": "0000000000000000000000000000000000000000000000000000000000000643",
+      "approvedAt": "2026-10-29T00:00:00Z",
+      "authenticationRef": {
+        "artifactId": "00000000-0000-4000-8000-000000001613",
+        "sha256": "000000000000000000000000000000000000000000000000000000000000064d",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      }
+    }
+  ],
+  "policyRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001604",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000644",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "validFrom": "2026-10-29T00:00:00Z",
+  "expiresAt": "2026-11-29T00:00:00Z",
+  "qualificationCohortRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001605",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000645",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "reviewerQualificationRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000001690",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000069a",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    {
+      "artifactId": "00000000-0000-4000-8000-000000001691",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000069b",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    {
+      "artifactId": "00000000-0000-4000-8000-000000001692",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000069c",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    {
+      "artifactId": "00000000-0000-4000-8000-000000001693",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000069d",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ],
+  "degradationPolicyRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001606",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000646",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "repositoryBindingState": "bound",
+  "devRepositoryId": "00000000-0000-4000-8000-000000000020",
+  "devRepositoryIdentity": {
+    "providerId": "github-reference",
+    "installationRef": "installation:demo",
+    "externalId": "repo20"
+  },
+  "devBranch": "dev",
+  "factoryGitIdentityRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001607",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000647",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "branchProtectionEvidenceRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001608",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000648",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "auditSampleBasisPoints": 2000,
+  "auditPolicyRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001609",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000649",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  }
+}

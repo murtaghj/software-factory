@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "2.0",
+  "taskId": "00000000-0000-4000-8000-000000000002",
+  "gateId": "plan_peer_approved",
+  "providerId": "github-reference",
+  "headRepository": {
+    "providerId": "github-reference",
+    "installationRef": "installation:demo",
+    "externalId": "repo20"
+  },
+  "baseRepository": {
+    "providerId": "github-reference",
+    "installationRef": "installation:demo",
+    "externalId": "repo20"
+  },
+  "contentRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001621",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000655",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "assignmentRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001710",
+    "sha256": "00000000000000000000000000000000000000000000000000000000000006ae",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "policyRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001604",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000644",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "inputBindingRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001622",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000656",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  }
+}

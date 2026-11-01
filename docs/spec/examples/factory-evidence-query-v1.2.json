@@ -1,0 +1,15 @@
+{
+  "callId": "00000000-0000-4000-8000-000000001341",
+  "sourceKind": "ci",
+  "sourceId": "fixture-ci",
+  "queryTemplateId": "test-failures-v1",
+  "parameters": {
+    "runId": "fixture-17"
+  },
+  "timeRange": {
+    "start": "2026-10-09T10:00:00Z",
+    "end": "2026-10-09T11:00:00Z"
+  },
+  "maxResults": 10,
+  "maxBytes": 8192
+}

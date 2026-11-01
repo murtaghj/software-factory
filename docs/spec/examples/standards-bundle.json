@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "2.0",
+  "id": "engineering-fixture",
+  "revision": 1,
+  "sourceRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001302",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000516",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "ruleRefs": [
+    {
+      "artifactId": "00000000-0000-4000-8000-000000001305",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000519",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    }
+  ],
+  "reviewRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001306",
+    "sha256": "000000000000000000000000000000000000000000000000000000000000051a",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  }
+}

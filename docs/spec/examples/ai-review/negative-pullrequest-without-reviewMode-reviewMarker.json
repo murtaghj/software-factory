@@ -1,0 +1,45 @@
+{
+  "kind": "PullRequest",
+  "value": {
+    "providerId": "github-reference",
+    "repositoryId": "00000000-0000-4000-8000-000000000020",
+    "externalId": "123",
+    "url": "https://github.example/example/orders/pull/123",
+    "baseBranch": "dev",
+    "baseCommit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "headCommit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "baseRepository": {
+      "providerId": "github-reference",
+      "installationRef": "installation:demo",
+      "externalId": "repo20"
+    },
+    "headRepository": {
+      "providerId": "github-reference",
+      "installationRef": "installation:demo",
+      "externalId": "repo20"
+    },
+    "state": "open",
+    "draft": true,
+    "labels": [
+      "factory-preview",
+      "team:orders"
+    ],
+    "reviewModeDecisionRef": {
+      "artifactId": "00000000-0000-4000-8000-000000001615",
+      "sha256": "000000000000000000000000000000000000000000000000000000000000064f",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "reviewSubjectRef": {
+      "artifactId": "00000000-0000-4000-8000-000000001620",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000654",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "aiReviewApprovalSetRefs": [],
+    "voluntaryHumanReviewRefs": [],
+    "taskId": "00000000-0000-4000-8000-000000000002"
+  }
+}

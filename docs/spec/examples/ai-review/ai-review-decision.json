@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "2.0",
+  "decisionKind": "ai_review",
+  "taskId": "00000000-0000-4000-8000-000000000002",
+  "gateId": "plan_peer_approved",
+  "subjectRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001620",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000654",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "subjectHash": "0000000000000000000000000000000000000000000000000000000000000654",
+  "assignmentRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001710",
+    "sha256": "00000000000000000000000000000000000000000000000000000000000006ae",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "reviewerSlotId": "slot-0",
+  "reviewerConfigurationRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001680",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000690",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "modelFamily": "fixture-family-a",
+  "round": 1,
+  "verdict": "approve",
+  "findingRefs": [],
+  "reviewedSectionIds": [
+    "intent_scope",
+    "current_state",
+    "design",
+    "interfaces_data",
+    "implementation",
+    "acceptance_tests",
+    "quality_security",
+    "delivery_recovery",
+    "operations",
+    "risks_decisions",
+    "definition_of_done",
+    "review_ownership"
+  ],
+  "reviewEvidenceRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001720",
+    "sha256": "00000000000000000000000000000000000000000000000000000000000006b8",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "submittedAt": "2026-10-29T12:00:00Z"
+}

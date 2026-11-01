@@ -1,0 +1,15 @@
+{
+  "callId": "00000000-0000-4000-8000-000000000201",
+  "output": {
+    "role": "implementer",
+    "changeSummaryRef": {
+      "artifactId": "00000000-0000-4000-8000-000000000202",
+      "sha256": "00000000000000000000000000000000000000000000000000000000000000ca",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "workspaceSourceDigest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "limitations": []
+  }
+}

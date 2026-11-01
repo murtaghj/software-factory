@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "2.0",
+  "taskId": "00000000-0000-4000-8000-000000000073",
+  "applicationId": "00000000-0000-4000-8000-000000000070",
+  "planRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000079",
+    "sha256": "000000000000000000000000000000000000000000000000000000000000004f",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "repositoryId": "00000000-0000-4000-8000-000000000080",
+  "baseCommit": "cccccccccccccccccccccccccccccccccccccccc",
+  "sourceRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000081",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000051",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "createdRepository": true,
+  "operationIds": [
+    "00000000-0000-4000-8000-000000000077",
+    "00000000-0000-4000-8000-000000000078"
+  ],
+  "completedAt": "2026-09-30T12:00:00Z"
+}

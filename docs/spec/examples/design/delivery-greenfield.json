@@ -1,0 +1,391 @@
+{
+  "deliveryRef": {
+    "artifactId": "00000000-0000-4000-8000-000000003040",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000be0",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "record": {
+    "schemaVersion": "2.0",
+    "taskId": "00000000-0000-4000-8000-000000003030",
+    "applicationId": "00000000-0000-4000-8000-000000000070",
+    "workType": "feature",
+    "targetKind": "new_application",
+    "workflowTemplate": {
+      "id": "greenfield_design",
+      "version": "1.0.0",
+      "definitionRef": {
+        "artifactId": "00000000-0000-4000-8000-000000003005",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000bbd",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      }
+    },
+    "designProfile": "design-delivery/1.0",
+    "packetRef": {
+      "artifactId": "00000000-0000-4000-8000-000000003006",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000bbe",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "planReviewSubjectRef": {
+      "artifactId": "00000000-0000-4000-8000-000000003007",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000bbf",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "subjectHash": "0000000000000000000000000000000000000000000000000000000000000bbf",
+    "basis": {
+      "applicationSnapshotRef": {
+        "artifactId": "00000000-0000-4000-8000-000000003001",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000bb9",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "sourcePins": [],
+      "resolvedRulesRef": {
+        "artifactId": "00000000-0000-4000-8000-000000003002",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000bba",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "policyRef": {
+        "artifactId": "00000000-0000-4000-8000-000000003003",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000bbb",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "taskSpecVersion": 1,
+      "intentRef": {
+        "artifactId": "00000000-0000-4000-8000-000000003004",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000bbc",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "acceptedIntentDigest": "5cf1cde11897254426ca7079720314107c28127e09854ca8fd58a119ba1948a5",
+      "assurance": "enhanced",
+      "plannedBuildDeliveryScope": "pr"
+    },
+    "approvals": [
+      {
+        "gateId": "intent_aligned",
+        "gateEvaluationRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003011",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000bc3",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "authority": "human",
+        "approvalSetRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003046",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000be6",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "approvedAt": "2026-10-29T10:00:00Z"
+      },
+      {
+        "gateId": "architecture_accepted",
+        "gateEvaluationRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003012",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000bc4",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "authority": "human",
+        "approvalSetRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003020",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000bcc",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "approvedAt": "2026-10-29T10:00:00Z"
+      },
+      {
+        "gateId": "plan_peer_approved",
+        "gateEvaluationRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003013",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000bc5",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "authority": "human",
+        "approvalSetRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003020",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000bcc",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "approvedAt": "2026-10-29T10:00:00Z"
+      },
+      {
+        "gateId": "plan_accepted",
+        "gateEvaluationRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003014",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000bc6",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "authority": "human",
+        "approvalSetRef": {
+          "artifactId": "00000000-0000-4000-8000-000000003020",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000bcc",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "approvedAt": "2026-10-29T10:00:00Z"
+      }
+    ],
+    "rendering": {
+      "mediaType": "text/markdown",
+      "renderedRef": {
+        "artifactId": "00000000-0000-4000-8000-000000003008",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000bc0",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "rendererVersion": "design-render/1.0.0",
+      "sourcePacketRef": {
+        "artifactId": "00000000-0000-4000-8000-000000003006",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000bbe",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "anchorIds": [
+        "intent_scope",
+        "current_state",
+        "design",
+        "interfaces_data",
+        "implementation",
+        "acceptance_tests",
+        "quality_security",
+        "delivery_recovery",
+        "operations",
+        "risks_decisions",
+        "definition_of_done",
+        "review_ownership",
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "S1",
+        "S2",
+        "S3",
+        "S4",
+        "S5"
+      ]
+    },
+    "target": {
+      "kind": "report",
+      "artifactRef": {
+        "artifactId": "00000000-0000-4000-8000-000000003069",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000bfd",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "reason": "no_design_docs_location"
+    },
+    "dataClassification": "internal",
+    "securityFlagged": false,
+    "embargoed": false,
+    "reviewMode": "human",
+    "approvedAt": "2026-10-29T10:00:00Z",
+    "approvalsExpireAt": "2027-01-27T10:00:00Z",
+    "deliveredAt": "2026-10-29T10:05:00Z"
+  },
+  "packet": {
+    "sectionIds": [
+      "intent_scope",
+      "current_state",
+      "design",
+      "interfaces_data",
+      "implementation",
+      "acceptance_tests",
+      "quality_security",
+      "delivery_recovery",
+      "operations",
+      "risks_decisions",
+      "definition_of_done",
+      "review_ownership"
+    ],
+    "criterionIds": [
+      "C1",
+      "C2",
+      "C3",
+      "C4"
+    ],
+    "scenarioIds": [
+      "S1",
+      "S2",
+      "S3",
+      "S4",
+      "S5"
+    ],
+    "plannedBuildDeliveryScope": "pr"
+  },
+  "application": null,
+  "targetDataClassification": "internal",
+  "classificationOrder": [
+    "public",
+    "internal",
+    "restricted",
+    "regulated"
+  ],
+  "gateEvaluations": [
+    {
+      "ref": {
+        "artifactId": "00000000-0000-4000-8000-000000003010",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000bc2",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "gateId": "scope_accepted"
+    },
+    {
+      "ref": {
+        "artifactId": "00000000-0000-4000-8000-000000003011",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000bc3",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "gateId": "intent_aligned"
+    },
+    {
+      "ref": {
+        "artifactId": "00000000-0000-4000-8000-000000003012",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000bc4",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "gateId": "architecture_accepted"
+    },
+    {
+      "ref": {
+        "artifactId": "00000000-0000-4000-8000-000000003013",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000bc5",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "gateId": "plan_peer_approved"
+    },
+    {
+      "ref": {
+        "artifactId": "00000000-0000-4000-8000-000000003014",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000bc6",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "gateId": "plan_accepted"
+    },
+    {
+      "ref": {
+        "artifactId": "00000000-0000-4000-8000-000000003015",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000bc7",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "gateId": "delivery_complete"
+    },
+    {
+      "ref": {
+        "artifactId": "00000000-0000-4000-8000-000000003016",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000bc8",
+        "mediaType": "application/json",
+        "schemaVersion": "2.0",
+        "sizeBytes": 1024
+      },
+      "gateId": "outcome_recorded"
+    }
+  ],
+  "taskView": {
+    "id": "00000000-0000-4000-8000-000000003030",
+    "orgId": "00000000-0000-4000-8000-000000000001",
+    "creatorId": "00000000-0000-4000-8000-000000000001",
+    "ownerPrincipalId": "00000000-0000-4000-8000-000000000001",
+    "spec": {
+      "schemaVersion": "2.0",
+      "title": "Build a returns service",
+      "intent": "Let customers request and track a return.",
+      "applicationIds": [
+        "00000000-0000-4000-8000-000000000070",
+        "00000000-0000-4000-8000-000000000011"
+      ],
+      "targetContext": {
+        "kind": "new_application",
+        "applicationId": "00000000-0000-4000-8000-000000000070",
+        "draftRevision": 1,
+        "draftRef": {
+          "artifactId": "00000000-0000-4000-8000-000000000071",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000047",
+          "mediaType": "application/json",
+          "schemaVersion": "2.0",
+          "sizeBytes": 1024
+        },
+        "repositoryIntent": {
+          "kind": "new_repository",
+          "providerId": "git-reference",
+          "installationRef": "installation:demo",
+          "namespace": "example-org",
+          "name": "returns-service",
+          "visibility": "private",
+          "defaultBranch": "main"
+        }
+      },
+      "workType": "feature",
+      "acceptanceCriteria": [
+        "An authorized customer can request a return.",
+        "The customer can read the return status.",
+        "An unauthorized customer cannot access another return."
+      ],
+      "assurance": "enhanced",
+      "deliveryScope": "design",
+      "budget": {
+        "maxMicroUsd": 10000000,
+        "maxActiveSeconds": 7200,
+        "maxCalendarSeconds": 1209600,
+        "maxAuthoringInvocations": 6,
+        "maxSemanticAttemptsPerNode": 3,
+        "maxDesignReturns": 2,
+        "invocationMode": "bounded",
+        "budgetClass": "design"
+      }
+    },
+    "status": "running",
+    "revision": 1,
+    "planVersion": 1,
+    "projectionSequence": 1,
+    "projectedAt": "2026-10-29T12:01:00Z",
+    "createdAt": "2026-10-29T00:00:00Z",
+    "updatedAt": "2026-10-29T12:01:00Z",
+    "cleanupState": "pending",
+    "lastEventSequence": 1,
+    "priorityClass": "normal",
+    "changeClass": "fixture"
+  },
+  "reviewEvidenceFile": "review-evidence.json"
+}

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "2.0",
+  "title": "Design order module boundary refactor",
+  "intent": "Allow an authorized customer to cancel an unfulfilled order while preserving audit history.",
+  "applicationIds": [
+    "00000000-0000-4000-8000-000000000010"
+  ],
+  "targetContext": {
+    "kind": "existing_application",
+    "applicationId": "00000000-0000-4000-8000-000000000010"
+  },
+  "workType": "refactor",
+  "acceptanceCriteria": [
+    "Order persistence is isolated behind one repository interface.",
+    "Public API behavior is preserved."
+  ],
+  "assurance": "fast",
+  "deliveryScope": "design",
+  "budget": {
+    "maxMicroUsd": 10000000,
+    "maxActiveSeconds": 7200,
+    "maxCalendarSeconds": 1209600,
+    "maxAuthoringInvocations": 6,
+    "maxSemanticAttemptsPerNode": 3,
+    "maxDesignReturns": 2,
+    "invocationMode": "bounded",
+    "budgetClass": "design"
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "2.0",
+  "taskId": "00000000-0000-4000-8000-000000000002",
+  "packetRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000330",
+    "sha256": "ce6fd1a38c8cf9ef106324d67281caedd70b9aad2a2f08bcc73ec053addc8dd1",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 23885
+  },
+  "policyRef": {
+    "artifactId": "00000000-0000-4000-8000-000000000040",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000028",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "requiredPeers": [
+    {
+      "id": "primary",
+      "principalId": "00000000-0000-4000-8000-000000000201",
+      "kind": "primary",
+      "sectionIds": [
+        "intent_scope",
+        "current_state",
+        "design",
+        "interfaces_data",
+        "implementation",
+        "acceptance_tests",
+        "quality_security",
+        "delivery_recovery",
+        "operations",
+        "risks_decisions",
+        "definition_of_done",
+        "review_ownership"
+      ],
+      "reason": "Independent engineering peer covering the complete plan."
+    },
+    {
+      "id": "inventory",
+      "principalId": "00000000-0000-4000-8000-000000000202",
+      "kind": "specialist",
+      "sectionIds": [
+        "design",
+        "interfaces_data",
+        "acceptance_tests",
+        "delivery_recovery",
+        "risks_decisions"
+      ],
+      "reason": "Owns the inventory release contract and recovery obligations."
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "scope": {
+    "applicationId": "00000000-0000-4000-8000-000000000010",
+    "workTypes": [
+      "feature",
+      "bug",
+      "maintenance"
+    ],
+    "changeClasses": [
+      "fixture"
+    ],
+    "pathProfileRef": {
+      "artifactId": "00000000-0000-4000-8000-000000001601",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000641",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "assuranceTiers": [
+      "fast",
+      "standard",
+      "enhanced"
+    ]
+  },
+  "reviewMode": "ai_only",
+  "decisionRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001615",
+    "sha256": "000000000000000000000000000000000000000000000000000000000000064f",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  }
+}

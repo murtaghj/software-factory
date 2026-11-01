@@ -1,0 +1,17 @@
+{
+  "staticChecksPassed": true,
+  "productValidationExecuted": false,
+  "checks": 11016,
+  "schemaDefinitions": 312,
+  "apiOperations": 49,
+  "workPackages": 144,
+  "acceptanceScenarios": 308,
+  "referenceTables": 59,
+  "scope": "Static specification/package checks and example validation using the keyword subset present in this package.",
+  "notExecuted": [
+    "PostgreSQL migrations/privilege tests",
+    "TypeScript compiler",
+    "Browser rendering",
+    "Temporal/Kubernetes/provider integration tests"
+  ]
+}

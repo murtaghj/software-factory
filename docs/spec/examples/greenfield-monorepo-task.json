@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "2.0",
+  "title": "Build a returns service",
+  "intent": "Let customers request and track a return.",
+  "applicationIds": [
+    "00000000-0000-4000-8000-000000000070",
+    "00000000-0000-4000-8000-000000000011"
+  ],
+  "targetContext": {
+    "kind": "new_application",
+    "applicationId": "00000000-0000-4000-8000-000000000070",
+    "draftRevision": 1,
+    "draftRef": {
+      "artifactId": "00000000-0000-4000-8000-000000000071",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000047",
+      "mediaType": "application/json",
+      "schemaVersion": "2.0",
+      "sizeBytes": 1024
+    },
+    "repositoryIntent": {
+      "kind": "existing_repository",
+      "repositoryId": "00000000-0000-4000-8000-000000000020",
+      "baseCommit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "subpath": "services/returns"
+    }
+  },
+  "workType": "feature",
+  "acceptanceCriteria": [
+    "An authorized customer can request a return.",
+    "The customer can read the return status.",
+    "An unauthorized customer cannot access another return."
+  ],
+  "assurance": "enhanced",
+  "deliveryScope": "pr",
+  "prCompletion": {
+    "mode": "pr_created",
+    "maxReviewRounds": 3,
+    "maxWaitSeconds": 604800
+  },
+  "budget": {
+    "maxMicroUsd": 25000000,
+    "maxActiveSeconds": 14400,
+    "maxCalendarSeconds": 604800,
+    "maxAuthoringInvocations": 8,
+    "maxSemanticAttemptsPerNode": 3,
+    "maxDesignReturns": 2,
+    "invocationMode": "bounded"
+  }
+}

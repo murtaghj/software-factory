@@ -1,0 +1,12 @@
+{
+  "id": "R1",
+  "kind": "component",
+  "name": "Reservation deduplication helper",
+  "neededBecause": "Two handlers share the accepted idempotence contract.",
+  "existingCode": "Use the existing reservation store.",
+  "standardLibrary": "No storage transaction boundary supplied.",
+  "platform": "Existing database uniqueness is retained.",
+  "existingDependencies": "Existing database client suffices.",
+  "choice": "Extract a small internal helper; add no dependency.",
+  "tradeoffs": "One shared module with explicit transaction ownership."
+}

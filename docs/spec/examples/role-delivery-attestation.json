@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "2.0",
+  "compiledRoleRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001318",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000526",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "adapterProfileRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001315",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000523",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "modelProfileRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001319",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000527",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "fixtureRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001320",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000528",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "observedContentDigest": "0000000000000000000000000000000000000000000000000000000000000525",
+  "requestCaptureRef": {
+    "artifactId": "00000000-0000-4000-8000-000000001321",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000529",
+    "mediaType": "application/json",
+    "schemaVersion": "2.0",
+    "sizeBytes": 1024
+  },
+  "observedAt": "2026-10-02T12:00:00Z",
+  "producerId": "synthetic-qualification-fixture"
+}
