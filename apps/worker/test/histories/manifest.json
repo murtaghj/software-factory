@@ -28,5 +28,35 @@
     "workflowId": "factory/3dc429fb-e4e6-4433-838d-ca399bdc385c/bc7e73d6-3fa4-4640-905a-e49c131513fe",
     "capturedWithWorkflowCodeDigest": "23af133171d83db9deee439864b836381f5fc405b6cbef8a76723f9ef4739fcf",
     "events": 89
+  },
+  "completed-gate-engine-v1": {
+    "description": "Investigation plan run to success through fake stages",
+    "workflowId": "factory/cd008dd0-10ac-479f-9763-7a5cb7e5b0a1/b733a014-9e1f-45e5-8944-fa4a3d6edfef",
+    "capturedWithWorkflowCodeDigest": "b1977ca3d30479d50d04f6748f17183374f02ed0cd74337e2ffc948ba1e7d322",
+    "events": 223
+  },
+  "failed-gate-engine-v1": {
+    "description": "Mandatory evidence_review stage reports a product failure",
+    "workflowId": "factory/cd008dd0-10ac-479f-9763-7a5cb7e5b0a1/ab44f547-5f07-41b7-80ce-08f695fe4185",
+    "capturedWithWorkflowCodeDigest": "b1977ca3d30479d50d04f6748f17183374f02ed0cd74337e2ffc948ba1e7d322",
+    "events": 139
+  },
+  "active-mid-stage-gate-engine-v1": {
+    "description": "Open history: the investigate stage is still executing",
+    "workflowId": "factory/cd008dd0-10ac-479f-9763-7a5cb7e5b0a1/84d7b877-f041-41fe-b000-82be291b5281",
+    "capturedWithWorkflowCodeDigest": "b1977ca3d30479d50d04f6748f17183374f02ed0cd74337e2ffc948ba1e7d322",
+    "events": 82
+  },
+  "amended-gate-engine-v1": {
+    "description": "amend_spec races an in-flight stage; plan 2 supersedes plan 1",
+    "workflowId": "factory/cd008dd0-10ac-479f-9763-7a5cb7e5b0a1/b0ca3f4d-9c27-4d98-a2b1-c7c86a9047f8",
+    "capturedWithWorkflowCodeDigest": "b1977ca3d30479d50d04f6748f17183374f02ed0cd74337e2ffc948ba1e7d322",
+    "events": 315
+  },
+  "continued-as-new-gate-engine-v1": {
+    "description": "First run of a task that rolls over after two stages",
+    "workflowId": "factory/cd008dd0-10ac-479f-9763-7a5cb7e5b0a1/a12b91fc-72f5-4957-ae03-de7fec9e91fc",
+    "capturedWithWorkflowCodeDigest": "b1977ca3d30479d50d04f6748f17183374f02ed0cd74337e2ffc948ba1e7d322",
+    "events": 103
   }
 }

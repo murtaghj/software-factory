@@ -1,7 +1,7 @@
 // Captures representative TaskWorkflow histories as replay fixtures (AC-09). Run deliberately when
 // a new workflow build is accepted; never overwrite an existing fixture — fixtures from older
 // builds must keep replaying against every later build.
-// Usage: node apps/worker/scripts/capture-histories.ts
+// Usage: node apps/worker/scripts/capture-histories.ts [--suffix <build-label>]
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -24,7 +24,11 @@ const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath
 const build = workflowCodeDigest();
 const until = async (fn: () => Promise<boolean>): Promise<void> => { for (let i = 0; i < 300; i += 1) { if (await fn()) return; await new Promise((r) => setTimeout(r, 50)); } throw new Error('timeout'); };
 
-async function capture(name: string, description: string, run: (tq: string) => Promise<string>, behavior?: Parameters<typeof h.withWorker>[0]): Promise<void> {
+const suffixAt = process.argv.indexOf('--suffix');
+const suffix = suffixAt >= 0 ? `-${process.argv[suffixAt + 1] ?? ''}` : '';
+
+async function capture(baseName: string, description: string, run: (tq: string) => Promise<string>, behavior?: Parameters<typeof h.withWorker>[0]): Promise<void> {
+  const name = `${baseName}${suffix}`;
   const file = join(outDir, `${name}.json`);
   if (existsSync(file)) { console.log(`keep existing ${name}`); return; }
   const runId = await h.withWorker(behavior, run);

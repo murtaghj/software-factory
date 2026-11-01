@@ -18,7 +18,11 @@ export type PlanSnapshot = {
   policyRef: ArtifactRefLike;
   templateRef: { id: string; version: string; definitionRef: ArtifactRefLike };
   nodes: PlanNodeSnapshot[];
+  // Added with gate-engine-v1. Absent in plans resolved by earlier builds.
+  criteriaRef?: ArtifactRefLike;
 };
+
+export type GateResult = { gateId: string; verdict: 'passed' | 'failed' | 'inconclusive'; evaluationId: string; reasonCodes: string[] };
 
 export type NodeState = { status: 'pending' | 'running' | 'passed' | 'failed'; attempt: number; stageRunId?: string; inputHash?: string; resultRef?: ArtifactRefLike; outputRefs?: ArtifactRefLike[] };
 
@@ -56,5 +60,7 @@ export interface TaskActivities {
   executeFakeStage(i: { orgId: string; taskId: string; logicalId: string; nodeId: string; stageKind: string; attempt: number; inputHash: string; specVersion: number; planVersion: number }): Promise<FakeStageResult>;
   finishStage(i: { orgId: string; logicalId: string; status: 'passed' | 'failed' | 'inconclusive'; resultRef?: ArtifactRefLike; errorClass?: string }): Promise<void>;
   supersedeStages(i: { orgId: string; taskId: string; oldPlanVersion: number; newPlanVersion: number }): Promise<number>;
+  evaluateGates(i: { orgId: string; taskId: string; nodeId: string; logicalId: string; stageKind: string; requiredGateIds: string[]; binding: Record<string, unknown>; outputRefs: ArtifactRefLike[]; dependencyRefs: ArtifactRefLike[] }): Promise<{ allPassed: boolean; results: GateResult[] }>;
+  supersedeGates(i: { orgId: string; taskId: string; oldPlanVersion: number; newPlanVersion: number }): Promise<number>;
   project(i: { orgId: string; taskId: string; sequence: number; state: { status: TaskStatus; currentNodeId?: string | null; waitingReason?: string | null; specVersion: number; planVersion: number; controlRevision: number }; refs: Record<string, unknown>; eventType: string; correlationId: string }): Promise<{ outcome: 'applied' | 'duplicate' | 'stale' }>;
 }

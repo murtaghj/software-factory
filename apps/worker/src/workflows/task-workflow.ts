@@ -8,7 +8,7 @@
 //   expectedRevision is not the current control revision is rejected with a reason (AC-07).
 // - amend_spec supersedes the current plan. A stage result that arrives for the old binding is kept
 //   as history only and cannot advance the new plan (AC-07, INV-04).
-import { allHandlersFinished, condition, continueAsNew, defineQuery, defineUpdate, proxyActivities, setHandler, workflowInfo } from '@temporalio/workflow';
+import { allHandlersFinished, condition, continueAsNew, defineQuery, defineUpdate, patched, proxyActivities, setHandler, workflowInfo } from '@temporalio/workflow';
 import { canonicalHash } from '@factory/domain';
 import { TERMINAL, type Checkpoint, type CommandPayload, type LaunchPayload, type NodeState, type PlanSnapshot, type Receipt, type TaskActivities, type WorkflowView } from './types.ts';
 
@@ -20,6 +20,7 @@ const resolve = proxyActivities<TaskActivities>({ startToCloseTimeout: '120 seco
 const execute = proxyActivities<TaskActivities>({ startToCloseTimeout: '50 minutes', retry: { initialInterval: '1 second', backoffCoefficient: 2, maximumInterval: '30 seconds', maximumAttempts: 5 } });
 
 const HISTORY_SOFT_LIMIT = 5000;
+export const GATE_ENGINE_V1 = 'gate-engine-v1';
 
 export const logicalStageId = (taskId: string, planVersion: number, nodeId: string, attempt: number): string => `task-${taskId}/plan-${String(planVersion)}/${nodeId}/attempt-${String(attempt)}`;
 
@@ -87,6 +88,7 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
     const oldPlan = state.plan.version;
     const plan = await resolve.resolvePlan({ orgId: launch.orgId, taskId: launch.taskId, specVersion: next, planVersion: oldPlan + 1 });
     await persist.supersedeStages({ orgId: launch.orgId, taskId: launch.taskId, oldPlanVersion: oldPlan, newPlanVersion: plan.version });
+    if (patched(GATE_ENGINE_V1)) await persist.supersedeGates({ orgId: launch.orgId, taskId: launch.taskId, oldPlanVersion: oldPlan, newPlanVersion: plan.version });
     state.specVersion = next;
     state.plan = plan;
     state.nodes = freshNodes(plan); // dependent evidence of the old plan is invalidated (INV-04)
@@ -129,6 +131,18 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
       state.supersededResults += 1;
       if (current) state.nodes[node.id] = { status: 'pending', attempt: ns.attempt + 1 };
       continue;
+    }
+    // gate-engine-v1: a completed node passes only when every required gate has a current passing
+    // evaluation for this exact binding. Histories from earlier builds keep their original path.
+    if (result.status === 'completed' && node.requiredGateIds.length > 0 && patched(GATE_ENGINE_V1)) {
+      const gates = await persist.evaluateGates({ orgId: launch.orgId, taskId: launch.taskId, nodeId: node.id, logicalId, stageKind: node.stageKind, requiredGateIds: node.requiredGateIds, binding: { ...binding, ...(state.plan.criteriaRef ? { criteriaRef: state.plan.criteriaRef } : {}) }, outputRefs: result.outputRefs, dependencyRefs: dependencies.flatMap((d) => (d.resultRef ? [d.resultRef] : [])) });
+      if (!gates.allPassed) {
+        await persist.finishStage({ orgId: launch.orgId, logicalId, status: 'failed', errorClass: 'gate_failed' });
+        state.nodes[node.id] = { ...ns, status: 'failed', stageRunId, inputHash };
+        await project('running', 'gate.evaluated', { currentNodeId: node.id, refs: { stageRunId: logicalId, gates: gates.results.map((g) => ({ gateId: g.gateId, verdict: g.verdict, evaluationId: g.evaluationId })) } });
+        continue;
+      }
+      await project('running', 'gate.evaluated', { currentNodeId: node.id, refs: { stageRunId: logicalId, gates: gates.results.map((g) => ({ gateId: g.gateId, verdict: g.verdict, evaluationId: g.evaluationId })) } });
     }
     if (result.status === 'completed') {
       const resultRef = result.outputRefs[0];

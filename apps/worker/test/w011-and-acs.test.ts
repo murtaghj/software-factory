@@ -25,10 +25,10 @@ describe('W-011 Temporal task skeleton', () => {
     const view = await h.withWorker<WorkflowView>(undefined, async (tq) => (await start(tq, launch, launch.workflowId)).result() as Promise<WorkflowView>);
     expect(view.status).toBe('succeeded');
     const task = await tx(async (t) => (await t.query<{ status: string; projection_sequence: string; last_event_sequence: string; plan_version: number }>('SELECT status, projection_sequence, last_event_sequence, plan_version FROM factory.task WHERE id = $1', [taskId])).rows[0]);
-    // queued, running, 5 x (stage.started, stage.completed), task.completed
-    expect(task).toEqual({ status: 'succeeded', projection_sequence: '13', last_event_sequence: '13', plan_version: 1 });
+    // queued, running, 5 x (stage.started, stage.completed), 3 x gate.evaluated, task.completed
+    expect(task).toEqual({ status: 'succeeded', projection_sequence: '16', last_event_sequence: '16', plan_version: 1 });
     const events = await tx(async (t) => (await t.query<{ sequence: string; event_type: string }>('SELECT sequence, event_type FROM factory.task_event WHERE task_id = $1 ORDER BY sequence', [taskId])).rows);
-    expect(events.map((e) => Number(e.sequence))).toEqual(Array.from({ length: 13 }, (_, i) => i + 1));
+    expect(events.map((e) => Number(e.sequence))).toEqual(Array.from({ length: 16 }, (_, i) => i + 1));
     expect(events[0]?.event_type).toBe('plan.resolved');
     expect(events.at(-1)?.event_type).toBe('task.completed');
     const stages = await tx(async (t) => (await t.query<{ logical_id: string; status: string; input_ref: unknown; result_ref: unknown }>('SELECT logical_id, status, input_ref, result_ref FROM factory.stage_run WHERE task_id = $1 ORDER BY created_at', [taskId])).rows);
