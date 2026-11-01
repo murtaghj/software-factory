@@ -3,3 +3,8 @@ packages:
   - "apps/*"
   - "tests/*"
   - "fixtures"
+# Build scripts are denied by default (pnpm 12). protobufjs's postinstall only prints a version
+# notice; @swc/core and Temporal's native bridge use prebuilt platform packages.
+allowBuilds:
+  protobufjs: false
+  "@swc/core": false
