@@ -279,6 +279,45 @@ export class ArtifactService {
     });
   }
 
+  // Trusted control-plane output (task event payloads, plans, outcome manifests). It is produced by
+  // the control plane itself, never by a stage workload. Write the content-addressed object first,
+  // outside any transaction, then register it with registerControllerArtifact inside the transaction
+  // that references it. If that transaction rolls back, the object is an orphan for the sweep.
+  async putControllerObject(orgId: string, body: Buffer): Promise<{ storageKey: string; sha256: string; sizeBytes: number }> {
+    const digest = createHash('sha256').update(body).digest('hex');
+    const temporaryKey = `tmp/${orgId}/controller-${randomUUID()}`;
+    await this.o.store.putTemp(temporaryKey, body, body.length);
+    const storageKey = finalKeyFor(orgId, digest);
+    if ((await this.o.store.promote(temporaryKey, storageKey)) === 'exists') {
+      const h = createHash('sha256');
+      for await (const chunk of this.o.store.read(storageKey)) h.update(chunk);
+      if (h.digest('hex') !== digest) throw new ArtifactError('integrity_incident', `immutable object ${storageKey} does not match its digest`);
+    }
+    return { storageKey, sha256: digest, sizeBytes: body.length };
+  }
+
+  async registerControllerArtifact(tx: Tx, input: { orgId: string; taskId: string; producerId: string; object: { storageKey: string; sha256: string; sizeBytes: number }; mediaType: string; schemaVersion: string; classification: Classification; purpose: string }): Promise<ArtifactRef> {
+    if (input.object.storageKey !== finalKeyFor(input.orgId, input.object.sha256)) throw new ArtifactError('invalid_request', 'object key does not match its digest');
+    const task = await tx.query<{ embargo_group_id: string | null; data_classification: string | null }>(
+      'SELECT t.embargo_group_id, a.data_classification FROM factory.task t JOIN factory.application a ON a.org_id = t.org_id AND a.id = t.primary_application_id WHERE t.id = $1', [input.taskId]);
+    const labels = task.rows[0];
+    if (!labels) throw new ArtifactError('not_found', 'unknown task');
+    const retention = new Date(this.now() + (this.o.retentionMs ?? 365 * 24 * 60 * 60 * 1000));
+    const inserted = await tx.query<{ id: string }>(`INSERT INTO factory.artifact (org_id, id, sha256, media_type, schema_version, size_bytes, storage_key, producer_id, classification, data_classification, finalized_at, retention_until, embargo_group_id)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,now(),$11,$12) ON CONFLICT (org_id, sha256, media_type, schema_version, classification, data_classification, embargo_group_id) DO NOTHING RETURNING id`,
+      [input.orgId, randomUUID(), input.object.sha256, input.mediaType, input.schemaVersion, input.object.sizeBytes, input.object.storageKey, input.producerId, input.classification, labels.data_classification, retention, labels.embargo_group_id]);
+    let artifactId = inserted.rows[0]?.id;
+    if (!artifactId) {
+      const existing = await tx.query<{ id: string }>(`UPDATE factory.artifact SET retention_until = GREATEST(retention_until, $7), updated_at = now()
+        WHERE sha256 = $1 AND media_type = $2 AND schema_version = $3 AND classification = $4 AND data_classification IS NOT DISTINCT FROM $5 AND embargo_group_id IS NOT DISTINCT FROM $6 RETURNING id`,
+        [input.object.sha256, input.mediaType, input.schemaVersion, input.classification, labels.data_classification, labels.embargo_group_id, retention]);
+      artifactId = existing.rows[0]?.id;
+      if (!artifactId) throw new ArtifactError('state_conflict', 'matching artifact registration is not visible');
+    }
+    await tx.query('INSERT INTO factory.artifact_link (org_id, id, artifact_id, task_id, purpose, retain_until) VALUES ($1,$2,$3,$4,$5,$6)', [input.orgId, randomUUID(), artifactId, input.taskId, input.purpose, retention]);
+    return { artifactId, sha256: input.object.sha256, mediaType: input.mediaType, schemaVersion: input.schemaVersion, sizeBytes: input.object.sizeBytes };
+  }
+
   private async visibleArtifact(tx: Tx, ctx: AuthContext, artifactId: string): Promise<{ row: ArtifactRow; links: Array<{ taskId: string; stageRunId: string | null; candidateId: string | null; purpose: string; retainUntil: Date }> }> {
     const r = await tx.query<ArtifactRow>('SELECT id, sha256, media_type, schema_version, size_bytes, storage_key, producer_id, classification, data_classification, created_at, retention_until FROM factory.artifact WHERE id = $1', [artifactId]);
     const row = r.rows[0];

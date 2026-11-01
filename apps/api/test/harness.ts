@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { Database, createMigratedDatabase, provisionOrganization, type MigratedDatabase, type Tx } from '@factory/database';
 import { ArtifactService, FileObjectStore, startDownloadOrigin, type DownloadOrigin } from '@factory/artifacts';
 import { startTestIssuer, type TestIssuer } from '@factory/test-support';
-import { OidcVerifier, RBAC_ARTIFACT_READS, buildApi } from '../src/index.ts';
+import { OidcVerifier, RBAC_ARTIFACT_READS, TaskService, buildApi, type TaskServiceOptions } from '../src/index.ts';
 import type { FastifyInstance } from 'fastify';
 
 export const AUDIENCE = 'software-factory-api';
@@ -18,7 +18,8 @@ export type Org = { orgId: string; issuer: TestIssuer; applicationId: string; ot
 export type User = { principalId: string; subject: string; token: () => Promise<string> };
 
 export type ApiHarness = {
-  m: MigratedDatabase; db: Database; app: FastifyInstance; artifacts: ArtifactService; origin: DownloadOrigin; a: Org; b: Org;
+  m: MigratedDatabase; db: Database; app: FastifyInstance; artifacts: ArtifactService; tasks: TaskService; origin: DownloadOrigin; a: Org; b: Org;
+  appWith: (taskOptions: Partial<TaskServiceOptions>) => Promise<FastifyInstance>;
   user: (org: Org, roles: Array<{ role: string; scope: string[] }>, opts?: { groups?: string[] }) => Promise<User>;
   task: (org: Org, creator: User, applicationId?: string) => Promise<{ taskId: string; logicalStageId: string; stageRunId: string; allocationId: string; workspaceId: string; repositoryId: string }>;
   artifactFor: (org: Org, task: { taskId: string; logicalStageId: string }, body: Buffer, mediaType?: string, classification?: 'ordinary' | 'restricted' | 'sensitive_session') => Promise<string>;
@@ -51,11 +52,19 @@ export async function createApiHarness(prefix: string): Promise<ApiHarness> {
   const artifacts = new ArtifactService({ db, store, signingKey: randomBytes(32), downloadOrigin: origin.url, retention, readAuthority: RBAC_ARTIFACT_READS });
   holder.s = artifacts;
   const verifier = new OidcVerifier([a, b].map((o) => ({ issuer: o.issuer.issuer, audience: AUDIENCE, jwksUrl: o.issuer.jwksUrl, orgId: o.orgId })));
-  const app = buildApi({ db, verifier, artifacts, dashboardOrigin: DASHBOARD_ORIGIN });
+  const tasks = new TaskService({ db, artifacts });
+  const app = buildApi({ db, verifier, artifacts, tasks, dashboardOrigin: DASHBOARD_ORIGIN });
   await app.ready();
+  const extraApps: FastifyInstance[] = [];
+  const appWith = async (taskOptions: Partial<TaskServiceOptions>) => {
+    const other = buildApi({ db, verifier, artifacts, tasks: new TaskService({ db, artifacts, ...taskOptions }), dashboardOrigin: DASHBOARD_ORIGIN });
+    await other.ready();
+    extraApps.push(other);
+    return other;
+  };
   const tx = <T>(org: Org, fn: (tx: Tx) => Promise<T>) => db.withTenant({ orgId: org.orgId }, fn);
   return {
-    m, db, app, artifacts, origin, a, b, tx,
+    m, db, app, artifacts, tasks, origin, a, b, tx, appWith,
     user: async (org, roles, opts = {}) => {
       const principalId = randomUUID();
       const subject = `sub-${principalId}`;
@@ -86,6 +95,6 @@ export async function createApiHarness(prefix: string): Promise<ApiHarness> {
       await artifacts.upload(r.uploadCapability, body);
       return (await artifacts.finalize(ctx, { uploadId: r.uploadId, expectedDigest: sha256(body), expectedBytes: body.length, producerId: ctx.actorId })).artifactId;
     },
-    close: async () => { await app.close(); await origin.close(); await a.issuer.close(); await b.issuer.close(); await db.close(); await retention.close(); await m.drop(); rmSync(storeRoot, { recursive: true, force: true }); },
+    close: async () => { for (const x of extraApps) await x.close(); await app.close(); await origin.close(); await a.issuer.close(); await b.issuer.close(); await db.close(); await retention.close(); await m.drop(); rmSync(storeRoot, { recursive: true, force: true }); },
   };
 }

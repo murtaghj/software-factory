@@ -9,12 +9,13 @@ import { AuthenticationError, type OidcVerifier } from './auth/oidc.ts';
 import { AuthorizationError, resolvePrincipal } from './auth/principal.ts';
 import type { Principal } from './auth/rbac.ts';
 import { problem, sendProblem } from './http/problem.ts';
+import { ApiError, type TaskService } from './tasks/service.ts';
 
 declare module 'fastify' {
   interface FastifyRequest { principal?: Principal; requestId: string }
 }
 
-export type ApiDeps = { db: Database; verifier: OidcVerifier; artifacts: ArtifactService; dashboardOrigin: string };
+export type ApiDeps = { db: Database; verifier: OidcVerifier; artifacts: ArtifactService; tasks: TaskService; dashboardOrigin: string };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -52,6 +53,7 @@ export function buildApi(deps: ApiDeps): FastifyInstance {
   });
 
   app.setErrorHandler((err, req, reply) => {
+    if (err instanceof ApiError) return sendProblem(reply, problem(err.status, err.code, err.message, req.id, err.fieldErrors.length ? { fieldErrors: err.fieldErrors } : {}));
     if (err instanceof ArtifactError) {
       const status = err.code === 'not_found' ? 404 : err.code === 'forbidden' ? 403 : err.code === 'invalid_request' ? 422 : err.code === 'artifact_unavailable' ? 503 : 409;
       return sendProblem(reply, problem(status, err.code, status === 404 ? 'unknown or inaccessible resource' : err.message, req.id));
@@ -75,6 +77,36 @@ export function buildApi(deps: ApiDeps): FastifyInstance {
     if (!body.ok) return sendProblem(reply, problem(422, 'invalid_request', 'invalid ArtifactAccessRequest', req.id, { fieldErrors: body.errors.map((e) => `${e.path || '/'} ${e.message}`).slice(0, 10) }));
     if (!UUID.test(req.params.artifactId)) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
     return deps.artifacts.access(authContext(req), req.params.artifactId, body.value.purpose);
+  });
+
+  app.post('/v2/tasks', async (req, reply) => {
+    const principal = req.principal;
+    if (!principal) throw new AuthorizationError('unauthenticated');
+    const key = req.headers['idempotency-key'];
+    const outcome = await deps.tasks.create(principal, typeof key === 'string' ? key : undefined, req.body, req.id);
+    return reply.code(outcome.status).header('location', outcome.body.statusUrl).send(outcome.body);
+  });
+
+  app.get<{ Params: { taskId: string } }>('/v2/tasks/:taskId', async (req, reply) => {
+    const principal = req.principal;
+    if (!principal) throw new AuthorizationError('unauthenticated');
+    const view = UUID.test(req.params.taskId) ? await deps.tasks.get(principal, req.params.taskId) : undefined;
+    if (!view) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
+    return view;
+  });
+
+  app.get<{ Querystring: Record<string, string | undefined> }>('/v2/tasks', async (req) => {
+    const principal = req.principal;
+    if (!principal) throw new AuthorizationError('unauthenticated');
+    const q = req.query;
+    for (const key of ['applicationId', 'creatorId', 'ownerPrincipalId'] as const) {
+      const v = q[key];
+      if (v !== undefined && !UUID.test(v)) throw new ApiError(422, 'invalid_filter', `${key} must be a UUID`);
+    }
+    return deps.tasks.list(principal, {
+      ...(q.cursor ? { cursor: q.cursor } : {}), ...(q.limit ? { limit: Number(q.limit) } : {}),
+      ...Object.fromEntries((['applicationId', 'workType', 'deliveryScope', 'targetKind', 'status', 'creatorId', 'ownerPrincipalId', 'createdAfter', 'createdBefore', 'reviewMode'] as const).flatMap((k) => (q[k] ? [[k, q[k]]] : []))),
+    });
   });
 
   return app;
