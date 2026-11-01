@@ -1,2 +1,2 @@
-// @factory/domain — public entry point.
-export const packageName = '@factory/domain';
+// @factory/domain — deterministic state, gate, budget and evidence rules (no I/O).
+export * from './evidence.ts';

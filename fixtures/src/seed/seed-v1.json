@@ -1,0 +1,9 @@
+{
+  "seedVersion": "v1",
+  "customers": ["cust-alice", "cust-bob"],
+  "stock": [
+    { "sku": "SKU-RED-1", "available": 20 },
+    { "sku": "SKU-BLUE-2", "available": 20 },
+    { "sku": "SKU-GREEN-3", "available": 5 }
+  ]
+}

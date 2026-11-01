@@ -9,6 +9,7 @@ type PackageRule = { allowWorkspace: string[]; denyExternal: string[] };
 type RestrictedPath = { package: string; glob: string; allowPackages: string[]; allowRelativeWithin: string; reason: string };
 type Rules = {
   packages: Record<string, PackageRule>;
+  dynamicImports?: Array<{ package: string; file: string; reason: string }>;
   importableApps: Record<string, string[]>;
   restrictedPaths: RestrictedPath[];
 };
@@ -103,7 +104,11 @@ export function checkBoundaries(root: string): string[] {
       for (const ref of moduleReferences(file, text)) {
         const spec = ref.specifier;
         const where = `${pkg.name}/${rel}:${String(ref.line)}`;
-        if (spec === undefined) { violations.push(`${where}: module reference is not a string literal and cannot be checked`); continue; }
+        if (spec === undefined) {
+          const allowed = (rules.dynamicImports ?? []).some((d) => d.package === pkg.name && d.file === rel && d.reason.length > 0);
+          if (!allowed) violations.push(`${where}: module reference is not a string literal and cannot be checked`);
+          continue;
+        }
         for (const r of restricted) {
           if (spec.startsWith('.')) {
             const allowedDir = resolve(pkg.dir, r.allowRelativeWithin);

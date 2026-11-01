@@ -164,5 +164,12 @@
       "allowRelativeWithin": "src/workflows",
       "reason": "INV-01: workflow code is deterministic coordination; I/O happens in Activities"
     }
+  ],
+  "dynamicImports": [
+    {
+      "package": "@factory/fixtures",
+      "file": "src/runner/runner.ts",
+      "reason": "fixture-test-runner loads a canonical test package's scenarios.ts from the package directory it is given"
+    }
   ]
 }

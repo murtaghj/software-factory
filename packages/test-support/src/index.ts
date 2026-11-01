@@ -1,2 +1,2 @@
-// @factory/test-support — public entry point.
-export const packageName = '@factory/test-support';
+// @factory/test-support — shared helpers for suites that need real infrastructure.
+export * from './postgres.ts';

@@ -3,6 +3,17 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "dependencies": { "@factory/contracts": "workspace:*" }
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@factory/contracts": "workspace:*",
+    "@factory/domain": "workspace:*",
+    "@factory/test-support": "workspace:*",
+    "ajv": "8.20.0",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1"
+  }
 }

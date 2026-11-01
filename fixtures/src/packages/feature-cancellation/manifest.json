@@ -1,0 +1,14 @@
+{
+  "id": "feature-cancellation",
+  "version": "1.0.0",
+  "framework": "fixture-test-runner",
+  "frameworkVersion": "1.0.0",
+  "criteria": {
+    "CAN-USER": "An authorized customer can cancel their own unfulfilled order and its stock is released.",
+    "CAN-IDEMPOTENT": "Repeated cancellation is idempotent: stock is released once and one audit entry exists.",
+    "CAN-PERMISSION": "Another customer cannot cancel the order.",
+    "CAN-ERROR": "Cancelling an unknown order returns not found.",
+    "CAN-AUDIT": "Audit history of the cancellation remains queryable."
+  },
+  "environment": { "faults": {} }
+}

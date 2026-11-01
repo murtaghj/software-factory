@@ -1,0 +1,114 @@
+{
+  "releases": {
+    "orders-1.0.0": {
+      "sourceDigest": "91826d34b9651438c1c7af42fc031634b9ed4dd435402f9c1ae27d9d60b95581",
+      "schemaDigest": "a32e60ea5f023e886f8d26e7b444f91f21c98e0fc9ea5ceef2ff80df311881b7",
+      "seedDigest": "c16840e9531fcd22732ea2b18d73ea7e3bd9407c5ba47d7375fa37f1d1d25715",
+      "contractsDigest": "dd9a159f0704a0c08a642cdafa3227cef14962f3464b6ca7b6b6bd4200c2b43f",
+      "sourceFiles": [
+        "system/deps.ts",
+        "system/http.ts",
+        "system/inventory/reserve.idempotent.ts",
+        "system/inventory/service.ts",
+        "system/orders/inventory-client.ts",
+        "system/orders/service.ts",
+        "system/tracing.ts",
+        "system/web/storefront.ts",
+        "system/worker/event-worker.ts"
+      ]
+    },
+    "orders-1.1.0": {
+      "sourceDigest": "7720e623e7a0fa004aed46a515fc8164c5d6f04a18c6e4daed1c487ab21e0b78",
+      "schemaDigest": "a32e60ea5f023e886f8d26e7b444f91f21c98e0fc9ea5ceef2ff80df311881b7",
+      "seedDigest": "c16840e9531fcd22732ea2b18d73ea7e3bd9407c5ba47d7375fa37f1d1d25715",
+      "contractsDigest": "dd9a159f0704a0c08a642cdafa3227cef14962f3464b6ca7b6b6bd4200c2b43f",
+      "sourceFiles": [
+        "system/deps.ts",
+        "system/http.ts",
+        "system/inventory/reserve.idempotent.ts",
+        "system/inventory/reserve.non-idempotent.ts",
+        "system/inventory/service.ts",
+        "system/orders/inventory-client.ts",
+        "system/orders/service.ts",
+        "system/tracing.ts",
+        "system/web/storefront.ts",
+        "system/worker/event-worker.ts"
+      ]
+    },
+    "orders-1.1.1": {
+      "sourceDigest": "91826d34b9651438c1c7af42fc031634b9ed4dd435402f9c1ae27d9d60b95581",
+      "schemaDigest": "a32e60ea5f023e886f8d26e7b444f91f21c98e0fc9ea5ceef2ff80df311881b7",
+      "seedDigest": "c16840e9531fcd22732ea2b18d73ea7e3bd9407c5ba47d7375fa37f1d1d25715",
+      "contractsDigest": "dd9a159f0704a0c08a642cdafa3227cef14962f3464b6ca7b6b6bd4200c2b43f",
+      "sourceFiles": [
+        "system/deps.ts",
+        "system/http.ts",
+        "system/inventory/reserve.idempotent.ts",
+        "system/inventory/service.ts",
+        "system/orders/inventory-client.ts",
+        "system/orders/service.ts",
+        "system/tracing.ts",
+        "system/web/storefront.ts",
+        "system/worker/event-worker.ts"
+      ]
+    },
+    "orders-2.0.0": {
+      "sourceDigest": "bdb3c41a4a2c7aebf7135a9f4c1a254fe07bbffc521d59076f819cef5153b03d",
+      "schemaDigest": "42ffbba4259edfebc6857d0ea8cc6a5d8647ad52597509f914887c62a4b932a5",
+      "seedDigest": "c16840e9531fcd22732ea2b18d73ea7e3bd9407c5ba47d7375fa37f1d1d25715",
+      "contractsDigest": "dd9a159f0704a0c08a642cdafa3227cef14962f3464b6ca7b6b6bd4200c2b43f",
+      "sourceFiles": [
+        "system/deps.ts",
+        "system/http.ts",
+        "system/inventory/reserve.idempotent.ts",
+        "system/inventory/service.ts",
+        "system/orders/cancel.complete.ts",
+        "system/orders/inventory-client.ts",
+        "system/orders/service.ts",
+        "system/tracing.ts",
+        "system/web/storefront.ts",
+        "system/worker/event-worker.ts"
+      ]
+    },
+    "orders-2.0.0-happy-path": {
+      "sourceDigest": "88c1f0e103dcbfb0e7a74ada12bbe84282f713c3d41ee13b9727bc16a2e823f4",
+      "schemaDigest": "42ffbba4259edfebc6857d0ea8cc6a5d8647ad52597509f914887c62a4b932a5",
+      "seedDigest": "c16840e9531fcd22732ea2b18d73ea7e3bd9407c5ba47d7375fa37f1d1d25715",
+      "contractsDigest": "dd9a159f0704a0c08a642cdafa3227cef14962f3464b6ca7b6b6bd4200c2b43f",
+      "sourceFiles": [
+        "system/deps.ts",
+        "system/http.ts",
+        "system/inventory/reserve.idempotent.ts",
+        "system/inventory/service.ts",
+        "system/orders/cancel.happy-path.ts",
+        "system/orders/inventory-client.ts",
+        "system/orders/service.ts",
+        "system/tracing.ts",
+        "system/web/storefront.ts",
+        "system/worker/event-worker.ts"
+      ]
+    },
+    "orders-3.0.0": {
+      "sourceDigest": "ef61a523d44a087b9b69ac201537fa4b376e92d95bfc2358aa2ae019caaaec22",
+      "schemaDigest": "a32e60ea5f023e886f8d26e7b444f91f21c98e0fc9ea5ceef2ff80df311881b7",
+      "seedDigest": "c16840e9531fcd22732ea2b18d73ea7e3bd9407c5ba47d7375fa37f1d1d25715",
+      "contractsDigest": "dd9a159f0704a0c08a642cdafa3227cef14962f3464b6ca7b6b6bd4200c2b43f",
+      "sourceFiles": [
+        "system/deps.ts",
+        "system/http.ts",
+        "system/inventory/reserve.idempotent.ts",
+        "system/inventory/service.ts",
+        "system/orders/inventory-client.qty-field.ts",
+        "system/orders/inventory-client.ts",
+        "system/orders/service.ts",
+        "system/tracing.ts",
+        "system/web/storefront.ts",
+        "system/worker/event-worker.ts"
+      ]
+    }
+  },
+  "packages": {
+    "bug-duplicate-reservation": "e6792f19d01b82926d6d6f4e53dce881e0fa8d279034f106f846ab3176977af6",
+    "feature-cancellation": "bce2f44d2f34e02581dfebc34fd1ea58557675479ab6d22b2210c510fa288fcf"
+  }
+}

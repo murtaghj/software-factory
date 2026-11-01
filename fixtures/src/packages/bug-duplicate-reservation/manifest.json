@@ -1,0 +1,12 @@
+{
+  "id": "bug-duplicate-reservation",
+  "version": "1.0.0",
+  "framework": "fixture-test-runner",
+  "frameworkVersion": "1.0.0",
+  "criteria": {
+    "BUG-1": "A reservation retried after its response was lost reserves stock exactly once.",
+    "REG-1": "Stock decreases by exactly the ordered quantity.",
+    "REG-2": "A placed order produces one fulfillment request on the same trace."
+  },
+  "environment": { "faults": { "inventoryDropFirstReserveResponse": true } }
+}

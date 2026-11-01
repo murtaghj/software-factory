@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fixtures.factory.example/inventory-http-v1",
+  "title": "Inventory API v1 (fixture)",
+  "$defs": {
+    "ReservationRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["orderId", "sku", "quantity", "idempotencyKey"],
+      "properties": {
+        "orderId": { "type": "string", "format": "uuid" },
+        "sku": { "type": "string", "pattern": "^SKU-[A-Z0-9-]+$" },
+        "quantity": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "idempotencyKey": { "type": "string", "minLength": 1 }
+      }
+    },
+    "Reservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reservationId", "orderId", "sku", "quantity", "released"],
+      "properties": {
+        "reservationId": { "type": "integer", "minimum": 1 },
+        "orderId": { "type": "string", "format": "uuid" },
+        "sku": { "type": "string" },
+        "quantity": { "type": "integer", "minimum": 1 },
+        "released": { "type": "boolean" }
+      }
+    },
+    "ReleaseRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["orderId"],
+      "properties": { "orderId": { "type": "string", "format": "uuid" } }
+    }
+  }
+}
