@@ -11,6 +11,7 @@
     "@factory/contracts": "workspace:*",
     "@factory/database": "workspace:*",
     "@factory/domain": "workspace:*",
+    "@factory/policy": "workspace:*",
     "@factory/test-support": "workspace:*",
     "@temporalio/activity": "1.25.0",
     "@temporalio/client": "1.25.0",

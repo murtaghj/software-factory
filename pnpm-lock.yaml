@@ -270,6 +270,9 @@ importers:
       '@factory/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@factory/policy':
+        specifier: workspace:*
+        version: link:../../packages/policy
       '@factory/test-support':
         specifier: workspace:*
         version: link:../../packages/test-support

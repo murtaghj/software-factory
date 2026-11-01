@@ -129,7 +129,8 @@ export type Assurance = 'fast' | 'standard' | 'enhanced';
 export type RiskTrigger = 'public_api_change' | 'auth_or_authorization' | 'payment' | 'data_sensitivity' | 'persistent_data_migration' | 'several_services' | 'unknown_blast_radius' | 'critical_application' | 'privileged_infrastructure' | 'performance_risk';
 const RANK: Record<Assurance, number> = { fast: 0, standard: 1, enhanced: 2 };
 
-export function effectiveAssurance(requested: Assurance, applicationMinimum: Assurance, triggers: readonly RiskTrigger[]): Assurance {
+// Triggers are policy-profile names (e.g. RiskTrigger values or the profile's own vocabulary).
+export function effectiveAssurance(requested: Assurance, applicationMinimum: Assurance, triggers: readonly string[]): Assurance {
   const floor = triggers.length > 0 ? 'enhanced' : 'fast';
   return ([requested, applicationMinimum, floor] as Assurance[]).reduce((a, b) => (RANK[b] > RANK[a] ? b : a));
 }

@@ -10,6 +10,7 @@
 //   as history only and cannot advance the new plan (AC-07, INV-04).
 import { allHandlersFinished, condition, continueAsNew, defineQuery, defineUpdate, patched, proxyActivities, setHandler, workflowInfo } from '@temporalio/workflow';
 import { canonicalHash } from '@factory/domain';
+import { AUTHORING_STAGE_KINDS, checkCeilings } from '@factory/policy';
 import { TERMINAL, type Checkpoint, type CommandPayload, type LaunchPayload, type NodeState, type PlanSnapshot, type Receipt, type TaskActivities, type WorkflowView } from './types.ts';
 
 export const applyCommand = defineUpdate<Receipt, [CommandPayload]>('applyCommand');
@@ -21,6 +22,7 @@ const execute = proxyActivities<TaskActivities>({ startToCloseTimeout: '50 minut
 
 const HISTORY_SOFT_LIMIT = 5000;
 export const GATE_ENGINE_V1 = 'gate-engine-v1';
+export const BUDGET_V1 = 'budget-v1';
 
 export const logicalStageId = (taskId: string, planVersion: number, nodeId: string, attempt: number): string => `task-${taskId}/plan-${String(planVersion)}/${nodeId}/attempt-${String(attempt)}`;
 
@@ -66,6 +68,9 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
   }
   const state: Checkpoint = initialized;
   const view = (): WorkflowView => viewOf(state);
+  // budget-v1: open the task's account before any stage; later builds reserve before each stage.
+  const budgeted = patched(BUDGET_V1) && state.plan.budget !== undefined;
+  if (budgeted && !checkpoint && state.plan.budget) await persist.openBudget({ orgId: launch.orgId, taskId: launch.taskId, limitMicroUsd: state.plan.budget.maxMicroUsd });
 
   const project = async (status: Checkpoint['status'], eventType: string, extra: { currentNodeId?: string | null; waitingReason?: string | null; refs?: Record<string, unknown> } = {}): Promise<void> => {
     state.status = status;
@@ -112,6 +117,18 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
     const ns = state.nodes[node.id] ?? { status: 'pending', attempt: 1 };
     const planVersion = state.plan.version;
     const logicalId = logicalStageId(launch.taskId, planVersion, node.id, ns.attempt);
+    if (budgeted && state.plan.budget) {
+      // Ceilings and reservation precede the stage; exhaustion is an explicit incomplete outcome (INV-11).
+      const authoring = AUTHORING_STAGE_KINDS.has(node.stageKind);
+      const ceiling = checkCeilings(state.plan.budget, { chargedMicroUsd: 0, reservedMicroUsd: 0, activeSeconds: 0, calendarSeconds: 0, authoringInvocations: state.authoringInvocations ?? 0, maxSemanticAttemptsUsed: 0 }, { authoring, estimateMicroUsd: 0, semanticAttempt: ns.attempt });
+      const admission = ceiling.admit ? await persist.reserveStageBudget({ orgId: launch.orgId, taskId: launch.taskId, operationKey: logicalId, nodeId: node.id }) : undefined;
+      if (!ceiling.admit || !admission?.admitted) {
+        const reasons = ceiling.admit ? (admission?.reasons ?? ['budget reservation failed']) : ceiling.reasons;
+        await project('incomplete', 'task.completed', { currentNodeId: node.id, waitingReason: 'budget_exhausted', refs: { outcome: 'budget_exhausted', reasons, unmetNodeIds: state.plan.nodes.filter((n) => state.nodes[n.id]?.status !== 'passed').map((n) => n.id) } });
+        break;
+      }
+      if (authoring) state.authoringInvocations = (state.authoringInvocations ?? 0) + 1;
+    }
     const dependencies = node.dependsOn.map((d) => ({ nodeId: d, resultRef: state.nodes[d]?.resultRef ?? null }));
     const binding = { taskSpecVersion: state.specVersion, planVersion, planHash: state.plan.planHash, policyRef: state.plan.policyRef, workflowTemplateRef: state.plan.templateRef, nodeId: node.id, semanticAttempt: ns.attempt, dependencies };
     const inputHash = canonicalHash(binding);
@@ -121,6 +138,7 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
 
     const result = await execute.executeFakeStage({ orgId: launch.orgId, taskId: launch.taskId, logicalId, nodeId: node.id, stageKind: node.stageKind, attempt: ns.attempt, inputHash, specVersion: state.specVersion, planVersion });
     stagesThisRun += 1;
+    if (budgeted) await persist.chargeStageBudget({ orgId: launch.orgId, taskId: launch.taskId, operationKey: logicalId, nodeId: node.id }); // actual usage, recorded truthfully
     // Validate provenance and binding against the stage as it was issued, and against the *current*
     // plan. A result for a superseded binding is history only.
     const producerKind: string = result.producerKind; // arrives over the wire: check it, do not trust the type

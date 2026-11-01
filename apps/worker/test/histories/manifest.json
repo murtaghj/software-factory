@@ -58,5 +58,35 @@
     "workflowId": "factory/cd008dd0-10ac-479f-9763-7a5cb7e5b0a1/a12b91fc-72f5-4957-ae03-de7fec9e91fc",
     "capturedWithWorkflowCodeDigest": "b1977ca3d30479d50d04f6748f17183374f02ed0cd74337e2ffc948ba1e7d322",
     "events": 103
+  },
+  "completed-budget-v1": {
+    "description": "Investigation plan run to success through fake stages",
+    "workflowId": "factory/362cd4b3-c43b-43e9-9064-eed46a343c77/4e5bb1b3-3ec0-435d-991a-c8d7233bb032",
+    "capturedWithWorkflowCodeDigest": "1d56985cb79487c52be4c38268e0bc3e3915683ec43ae2036ae48583ce49090e",
+    "events": 291
+  },
+  "failed-budget-v1": {
+    "description": "Mandatory evidence_review stage reports a product failure",
+    "workflowId": "factory/362cd4b3-c43b-43e9-9064-eed46a343c77/90b7e5b5-d959-42da-855e-5843b60713fe",
+    "capturedWithWorkflowCodeDigest": "1d56985cb79487c52be4c38268e0bc3e3915683ec43ae2036ae48583ce49090e",
+    "events": 183
+  },
+  "active-mid-stage-budget-v1": {
+    "description": "Open history: the investigate stage is still executing",
+    "workflowId": "factory/362cd4b3-c43b-43e9-9064-eed46a343c77/685c806c-e7b9-4f96-a2e4-953a7fdad207",
+    "capturedWithWorkflowCodeDigest": "1d56985cb79487c52be4c38268e0bc3e3915683ec43ae2036ae48583ce49090e",
+    "events": 108
+  },
+  "amended-budget-v1": {
+    "description": "amend_spec races an in-flight stage; plan 2 supersedes plan 1",
+    "workflowId": "factory/362cd4b3-c43b-43e9-9064-eed46a343c77/34d341c2-f589-493b-9ea0-2d27c2218743",
+    "capturedWithWorkflowCodeDigest": "1d56985cb79487c52be4c38268e0bc3e3915683ec43ae2036ae48583ce49090e",
+    "events": 407
+  },
+  "continued-as-new-budget-v1": {
+    "description": "First run of a task that rolls over after two stages",
+    "workflowId": "factory/362cd4b3-c43b-43e9-9064-eed46a343c77/9b7ad4bd-3e00-4676-a090-891fe783ea3d",
+    "capturedWithWorkflowCodeDigest": "1d56985cb79487c52be4c38268e0bc3e3915683ec43ae2036ae48583ce49090e",
+    "events": 135
   }
 }

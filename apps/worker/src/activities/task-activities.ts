@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { ApplicationFailure } from '@temporalio/activity';
 import { validateContract } from '@factory/contracts';
 import { canonicalHash, canonicalJson, evaluateOutcomeRecorded, evaluateReviewPassed, evaluateScopeAccepted, gateBinding, gateInputHash, type GateDecision, type GateId } from '@factory/domain';
-import { projectTransition, type Database, type Tx } from '@factory/database';
+import { budgetUsage, chargeBudget, openBudgetAccount, projectTransition, reserveBudget, type Database, type Tx } from '@factory/database';
 import type { ArtifactService } from '@factory/artifacts';
 import type { ArtifactRefLike, FakeStageResult, GateResult, PlanSnapshot, TaskActivities } from '../workflows/types.ts';
 
@@ -21,6 +21,9 @@ export type FakeStageBehavior = {
   outcome?: (nodeId: string, attempt: number, planVersion: number) => FakeStageResult['status'];
   // Overrides the structured evidence the fake stage emits (e.g. a blocking review finding).
   evidence?: (nodeId: string, defaults: Record<string, unknown>) => Record<string, unknown>;
+  // Estimated and actual model cost of a fake stage, in micro-USD (default 1 USD each).
+  estimateMicroUsd?: (nodeId: string) => number;
+  actualMicroUsd?: (nodeId: string) => number;
 };
 
 const EVALUATOR_ID = 'gate-evaluator:m1';
@@ -65,7 +68,9 @@ export function createTaskActivities(deps: ActivityDeps): TaskActivities {
       const criteriaRef = await store(orgId, taskId, { schemaVersion: '2.0', specVersion, criteria }, 'criteria');
       const nodes = template.nodes.map((n) => ({ id: n.id, stageKind: n.stageKind, role: n.role, dependsOn: n.dependsOn, requiredGateIds: n.requiredGateIds, timeoutClass: n.timeoutClass, mandatory: n.mandatory }));
       const body = { taskId, version: planVersion, specVersion, templateRef: { id: template.id, version: template.version, definitionRef }, policyRef, nodes };
-      const plan: PlanSnapshot = { version: planVersion, specVersion, planHash: canonicalHash({ ...body, criteriaRef }), policyRef, templateRef: body.templateRef, nodes, criteriaRef };
+      const b = (spec.rows[0]?.spec as { budget?: PlanSnapshot['budget'] }).budget;
+      const budget = b ? { maxMicroUsd: b.maxMicroUsd, maxActiveSeconds: b.maxActiveSeconds, maxCalendarSeconds: b.maxCalendarSeconds, maxAuthoringInvocations: b.maxAuthoringInvocations, maxSemanticAttemptsPerNode: b.maxSemanticAttemptsPerNode, invocationMode: b.invocationMode } : undefined;
+      const plan: PlanSnapshot = { version: planVersion, specVersion, planHash: canonicalHash({ ...body, criteriaRef, budget }), policyRef, templateRef: body.templateRef, nodes, criteriaRef, ...(budget ? { budget } : {}) };
       const planRef = await store(orgId, taskId, plan, 'execution_plan');
       await tenant(orgId, (tx) => tx.query(`INSERT INTO factory.execution_plan (org_id, id, task_id, version, spec_version, plan_ref, policy_ref, plan_hash, template_id, template_version, template_ref)
         VALUES ($1, $11, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT (org_id, task_id, version) DO NOTHING`,
@@ -187,6 +192,35 @@ export function createTaskActivities(deps: ActivityDeps): TaskActivities {
           await tx.query('UPDATE factory.gate_evaluation SET superseded_by = $2, updated_at = now() WHERE id = $1', [r.id, marker]);
         }
         return rows.rowCount ?? 0;
+      });
+    },
+
+    async openBudget({ orgId, taskId, limitMicroUsd }) {
+      return tenant(orgId, async (tx) => {
+        const scope = await tx.query<{ delivery_scope: string }>('SELECT delivery_scope FROM factory.task WHERE id = $1', [taskId]);
+        return { accountId: await openBudgetAccount(tx, { orgId, taskId, limitMicroUsd, deliveryScope: scope.rows[0]?.delivery_scope ?? 'report' }) };
+      });
+    },
+
+    async reserveStageBudget({ orgId, taskId, operationKey, nodeId }) {
+      return tenant(orgId, async (tx) => {
+        const account = await tx.query<{ id: string }>('SELECT id FROM factory.budget_account WHERE task_id = $1', [taskId]);
+        const accountId = account.rows[0]?.id;
+        if (!accountId) return { admitted: false, reasons: ['no budget account'], chargedMicroUsd: 0, reservedMicroUsd: 0, limitMicroUsd: 0 };
+        const r = await reserveBudget(tx, { orgId, accountId, operationKey, amountMicroUsd: deps.fakeStage?.estimateMicroUsd?.(nodeId) ?? 1_000_000 });
+        const own = r.chain.at(-1);
+        return { admitted: r.admitted, reasons: r.admitted ? [] : [`${r.reason} on account ${r.blockingAccountId}`], chargedMicroUsd: own?.chargedMicroUsd ?? 0, reservedMicroUsd: own?.reservedMicroUsd ?? 0, limitMicroUsd: own?.limitMicroUsd ?? 0 };
+      });
+    },
+
+    async chargeStageBudget({ orgId, taskId, operationKey, nodeId }) {
+      return tenant(orgId, async (tx) => {
+        const account = await tx.query<{ id: string }>('SELECT id FROM factory.budget_account WHERE task_id = $1', [taskId]);
+        const accountId = account.rows[0]?.id;
+        if (!accountId) return { admitted: false, reasons: ['no budget account'], chargedMicroUsd: 0, reservedMicroUsd: 0, limitMicroUsd: 0 };
+        await chargeBudget(tx, { orgId, accountId, operationKey, actualMicroUsd: deps.fakeStage?.actualMicroUsd?.(nodeId) ?? deps.fakeStage?.estimateMicroUsd?.(nodeId) ?? 1_000_000 });
+        const u = await budgetUsage(tx, accountId);
+        return { admitted: true, reasons: [], chargedMicroUsd: u?.chargedMicroUsd ?? 0, reservedMicroUsd: u?.reservedMicroUsd ?? 0, limitMicroUsd: u?.limitMicroUsd ?? 0 };
       });
     },
 

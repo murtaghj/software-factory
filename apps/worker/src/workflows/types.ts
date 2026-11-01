@@ -20,7 +20,11 @@ export type PlanSnapshot = {
   nodes: PlanNodeSnapshot[];
   // Added with gate-engine-v1. Absent in plans resolved by earlier builds.
   criteriaRef?: ArtifactRefLike;
+  // Added with budget-v1: the accepted TaskSpec budget.
+  budget?: { maxMicroUsd: number; maxActiveSeconds: number; maxCalendarSeconds: number; maxAuthoringInvocations: number; maxSemanticAttemptsPerNode: number; invocationMode: 'one' | 'bounded' };
 };
+
+export type BudgetAdmission = { admitted: boolean; reasons: string[]; chargedMicroUsd: number; reservedMicroUsd: number; limitMicroUsd: number };
 
 export type GateResult = { gateId: string; verdict: 'passed' | 'failed' | 'inconclusive'; evaluationId: string; reasonCodes: string[] };
 
@@ -47,6 +51,7 @@ export type Checkpoint = {
   receipts: Record<string, Receipt>;
   pendingAmendSpecVersion?: number;
   supersededResults: number;
+  authoringInvocations?: number;
   // Test knob for Continue-As-New coverage: roll over after this many completed stages in a run.
   rolloverAfterStages?: number;
 };
@@ -62,5 +67,8 @@ export interface TaskActivities {
   supersedeStages(i: { orgId: string; taskId: string; oldPlanVersion: number; newPlanVersion: number }): Promise<number>;
   evaluateGates(i: { orgId: string; taskId: string; nodeId: string; logicalId: string; stageKind: string; requiredGateIds: string[]; binding: Record<string, unknown>; outputRefs: ArtifactRefLike[]; dependencyRefs: ArtifactRefLike[] }): Promise<{ allPassed: boolean; results: GateResult[] }>;
   supersedeGates(i: { orgId: string; taskId: string; oldPlanVersion: number; newPlanVersion: number }): Promise<number>;
+  openBudget(i: { orgId: string; taskId: string; limitMicroUsd: number }): Promise<{ accountId: string }>;
+  reserveStageBudget(i: { orgId: string; taskId: string; operationKey: string; nodeId: string }): Promise<BudgetAdmission>;
+  chargeStageBudget(i: { orgId: string; taskId: string; operationKey: string; nodeId: string }): Promise<BudgetAdmission>;
   project(i: { orgId: string; taskId: string; sequence: number; state: { status: TaskStatus; currentNodeId?: string | null; waitingReason?: string | null; specVersion: number; planVersion: number; controlRevision: number }; refs: Record<string, unknown>; eventType: string; correlationId: string }): Promise<{ outcome: 'applied' | 'duplicate' | 'stale' }>;
 }

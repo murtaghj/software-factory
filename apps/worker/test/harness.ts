@@ -13,7 +13,7 @@ import { bundleWorkflows, createWorker, type FakeStageBehavior, type LaunchPaylo
 
 export type WorkerHarness = {
   env: TestWorkflowEnvironment; m: MigratedDatabase; db: Database; artifacts: ArtifactService; orgId: string; principalId: string; applicationId: string; bundle: WorkflowBundleWithSourceMap;
-  newTask: () => Promise<{ taskId: string; launch: LaunchPayload }>;
+  newTask: (budget?: Record<string, unknown>) => Promise<{ taskId: string; launch: LaunchPayload }>;
   withWorker: <T>(behavior: FakeStageBehavior | undefined, fn: (taskQueue: string) => Promise<T>) => Promise<T>;
   close: () => Promise<void>;
 };
@@ -21,7 +21,7 @@ export type WorkerHarness = {
 export const investigationSpec = (applicationId: string, title = 'Why do orders fail intermittently?') => ({
   schemaVersion: '2.0', title, intent: 'Explain intermittent order failures with evidence.', applicationIds: [applicationId], workType: 'investigation',
   acceptanceCriteria: ['The report distinguishes observations, inference and open questions.'], assurance: 'standard', deliveryScope: 'report',
-  budget: { maxMicroUsd: 5_000_000, maxActiveSeconds: 3600, maxCalendarSeconds: 86_400, maxAuthoringInvocations: 4, maxSemanticAttemptsPerNode: 3, maxDesignReturns: 2, invocationMode: 'bounded' },
+  budget: { maxMicroUsd: 25_000_000, maxActiveSeconds: 3600, maxCalendarSeconds: 86_400, maxAuthoringInvocations: 4, maxSemanticAttemptsPerNode: 3, maxDesignReturns: 2, invocationMode: 'bounded' },
   targetContext: { kind: 'existing_application', applicationId }, priorityClass: 'normal',
 });
 
@@ -44,9 +44,10 @@ export async function createWorkerHarness(prefix: string): Promise<WorkerHarness
   const namespace = env.namespace ?? 'default';
   return {
     env, m, db, artifacts, orgId, principalId, applicationId, bundle,
-    newTask: async () => {
+    newTask: async (budget) => {
       const taskId = randomUUID();
-      const spec = investigationSpec(applicationId);
+      const base = investigationSpec(applicationId);
+      const spec = budget ? { ...base, budget: { ...base.budget, ...budget } } : base;
       await db.withTenant({ orgId }, async (tx) => {
         await tx.query("INSERT INTO factory.task (org_id, id, creator_id, primary_application_id, target_kind, target_context, work_type, change_class, delivery_scope, status, projected_at, last_event_sequence) VALUES ($1,$2,$3,$4,'existing_application',$5,'investigation','investigation','report','accepted',now(),0)",
           [orgId, taskId, principalId, applicationId, JSON.stringify(spec.targetContext)]);
