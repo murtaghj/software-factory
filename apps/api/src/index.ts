@@ -1,2 +1,9 @@
-// @factory/api — public entry point.
-export const packageName = '@factory/api';
+// @factory/api — task API, OIDC, RBAC, SSE and registry endpoints.
+export * from './server.ts';
+export * from './auth/oidc.ts';
+export * from './auth/rbac.ts';
+export * from './auth/principal.ts';
+export * from './auth/capability-proxy.ts';
+export * from './auth/release-authority.ts';
+export * from './auth/artifact-reads.ts';
+export * from './http/problem.ts';

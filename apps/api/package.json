@@ -3,6 +3,20 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "dependencies": { "@factory/contracts": "workspace:*", "@factory/domain": "workspace:*" }
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@factory/artifacts": "workspace:*",
+    "@factory/contracts": "workspace:*",
+    "@factory/database": "workspace:*",
+    "@factory/domain": "workspace:*",
+    "@factory/test-support": "workspace:*",
+    "fastify": "5.12.7"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1",
+    "jose": "6.2.14",
+    "pg": "8.23.1"
+  }
 }

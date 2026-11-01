@@ -16,7 +16,7 @@ import { CapabilitySigner, type DownloadCapability } from './capability.ts';
 import { ArtifactError } from './errors.ts';
 import { ObjectNotFound, ObjectTooLarge, type ObjectStore } from './object-store.ts';
 
-export type AuthContext = { orgId: string; actorId: string; actorKind: 'human' | 'service'; taskId?: string; principalId?: string; grantIds: string[]; correlationId: string };
+export type AuthContext = { orgId: string; actorId: string; actorKind: 'human' | 'service'; taskId?: string; principalId?: string; groups?: string[]; grantIds: string[]; correlationId: string };
 export type Classification = 'ordinary' | 'restricted' | 'sensitive_session';
 export type Owner = { kind: 'application_draft'; applicationId: string } | { kind: 'organization_controller'; controllerKind: 'emergency_stop' | 'policy_release' };
 
@@ -29,11 +29,11 @@ export const DENY_ALL_OWNERS: OwnerAuthority = { verify: () => Promise.resolve(u
 
 // Decides whether a caller may read an artifact through one of its caller-visible links.
 export interface ReadAuthority {
-  canRead(ctx: AuthContext, links: Array<{ taskId: string }>, tx: Tx): Promise<boolean>;
+  canRead(ctx: AuthContext, artifact: { links: Array<{ taskId: string }>; classification: Classification }, tx: Tx): Promise<boolean>;
 }
 // Default: a caller bound to a task may read artifacts linked to that task; nothing else.
 export const TASK_BOUND_READS: ReadAuthority = {
-  canRead: (ctx, links) => Promise.resolve(ctx.taskId !== undefined && links.some((l) => l.taskId === ctx.taskId)),
+  canRead: (ctx, artifact) => Promise.resolve(ctx.taskId !== undefined && artifact.links.some((l) => l.taskId === ctx.taskId)),
 };
 
 export type ArtifactServiceOptions = {
@@ -285,7 +285,7 @@ export class ArtifactService {
     const links = row ? (await tx.query<{ task_id: string; logical_id: string | null; candidate_id: string | null; purpose: string; retain_until: Date }>(
       'SELECT l.task_id, s.logical_id, l.candidate_id, l.purpose, l.retain_until FROM factory.artifact_link l LEFT JOIN factory.stage_run s ON s.org_id = l.org_id AND s.id = l.stage_run_id WHERE l.artifact_id = $1 ORDER BY l.created_at, l.id', [artifactId])).rows
       .map((l) => ({ taskId: l.task_id, stageRunId: l.logical_id, candidateId: l.candidate_id, purpose: l.purpose, retainUntil: l.retain_until })) : [];
-    if (!row || !(await (this.o.readAuthority ?? TASK_BOUND_READS).canRead(ctx, links, tx))) {
+    if (!row || !(await (this.o.readAuthority ?? TASK_BOUND_READS).canRead(ctx, { links, classification: row.classification }, tx))) {
       await this.auditDenied(ctx, 'artifact.read', artifactId, { reason: 'unknown or inaccessible artifact' });
       throw new ArtifactError('not_found', 'unknown or inaccessible artifact'); // knowing an ID confers no access (INV-14)
     }
