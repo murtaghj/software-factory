@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
-import { ApplicationFailure } from '@temporalio/activity';
+import { ApplicationFailure, CancelledFailure, Context } from '@temporalio/activity';
 import { validateContract } from '@factory/contracts';
 import { canonicalHash, canonicalJson, evaluateOutcomeRecorded, evaluateReviewPassed, evaluateScopeAccepted, gateBinding, gateInputHash, type GateDecision, type GateId } from '@factory/domain';
 import { budgetUsage, chargeBudget, openBudgetAccount, projectTransition, reserveBudget, type Database, type Tx } from '@factory/database';
@@ -12,7 +12,12 @@ import type { ArtifactService } from '@factory/artifacts';
 import type { ArtifactRefLike, FakeStageResult, GateResult, PlanSnapshot, TaskActivities } from '../workflows/types.ts';
 
 export const TEMPLATES_DIR = join(import.meta.dirname, '..', 'templates');
-const TEMPLATE_BY_WORK_TYPE: Record<string, string> = { investigation: 'investigation-0.1.0.json' };
+// Pinned template per work type. investigation 0.2.0 carries the mandatory plan + plan_review
+// (peer sign-off) nodes; the 0.1.0 skeleton (no human gate) is only selectable through an explicit
+// templateOverrides entry, which the scheduler-mechanics tests use.
+const TEMPLATE_BY_WORK_TYPE: Record<string, string> = { investigation: 'investigation-0.2.0.json' };
+export const PLAN_SECTIONS = ['intent_scope', 'current_state', 'design', 'interfaces_data', 'implementation', 'acceptance_tests', 'quality_security', 'delivery_recovery', 'operations', 'risks_decisions', 'definition_of_done', 'review_ownership'] as const;
+export const DEFAULT_DECISION_TTL_MS = 72 * 60 * 60 * 1000;
 // M1 default policy (A-10). W-013 replaces this with the resolved PolicyProfile.
 export const M1_POLICY = { id: 'm1-default-policy', revision: 1, defaultAssurance: 'standard' } as const;
 
@@ -29,7 +34,7 @@ export type FakeStageBehavior = {
 const EVALUATOR_ID = 'gate-evaluator:m1';
 const REVIEWER_PRODUCER = 'fake-reviewer';
 const AUTHOR_PRODUCER = 'fake-runner';
-export type ActivityDeps = { db: Database; artifacts: ArtifactService; fakeStage?: FakeStageBehavior };
+export type ActivityDeps = { db: Database; artifacts: ArtifactService; fakeStage?: FakeStageBehavior; templateOverrides?: Record<string, string>; decisionTtlMs?: number };
 
 const CONTROLLER = 'control-plane:worker';
 
@@ -57,7 +62,7 @@ export function createTaskActivities(deps: ActivityDeps): TaskActivities {
       const spec = await tenant(orgId, (tx) => tx.query<{ spec: { workType: string } }>('SELECT spec FROM factory.task_spec_version WHERE task_id = $1 AND version = $2', [taskId, specVersion]));
       const workType = spec.rows[0]?.spec.workType;
       if (!workType) throw ApplicationFailure.nonRetryable(`task spec ${String(specVersion)} not found`, 'spec_not_found');
-      const file = TEMPLATE_BY_WORK_TYPE[workType];
+      const file = deps.templateOverrides?.[workType] ?? TEMPLATE_BY_WORK_TYPE[workType];
       if (!file) throw ApplicationFailure.nonRetryable(`no compatible pinned template for ${workType}`, 'no_compatible_template');
       const template = JSON.parse(readFileSync(join(TEMPLATES_DIR, file), 'utf8')) as { id: string; version: string; nodes: PlanSnapshot['nodes'] };
       const valid = validateContract('WorkflowTemplateDefinition', template);
@@ -104,7 +109,16 @@ export function createTaskActivities(deps: ActivityDeps): TaskActivities {
     // artifacts and a schema-valid StageResult bound to the issued stage.
     async executeFakeStage({ orgId, taskId, logicalId, nodeId, stageKind, attempt, inputHash, planVersion }) {
       const delay = deps.fakeStage?.delayMs?.(nodeId, attempt, planVersion) ?? 0;
-      if (delay > 0) await new Promise((r) => setTimeout(r, delay));
+      if (delay > 0) {
+        // Heartbeat while working so cancellation reaches the stage promptly.
+        const ctx = Context.current();
+        const until = Date.now() + delay;
+        while (Date.now() < until) {
+          ctx.heartbeat();
+          await Promise.race([new Promise((r) => setTimeout(r, 50)), ctx.cancelled.catch(() => undefined)]);
+          if (ctx.cancellationSignal.aborted) throw new CancelledFailure('stage cancelled');
+        }
+      }
       const status = deps.fakeStage?.outcome?.(nodeId, attempt, planVersion) ?? 'completed';
       const criteria = await tenant(orgId, (tx) => tx.query<{ spec: { acceptanceCriteria?: string[] } }>('SELECT s.spec FROM factory.task_spec_version s JOIN factory.execution_plan p ON p.org_id = s.org_id AND p.task_id = s.task_id AND p.spec_version = s.version WHERE p.task_id = $1 AND p.version = $2', [taskId, planVersion]));
       const criteriaIds = (criteria.rows[0]?.spec.acceptanceCriteria ?? []).map((_t, i) => `C${String(i + 1)}`);
@@ -112,6 +126,7 @@ export function createTaskActivities(deps: ActivityDeps): TaskActivities {
         discover: { criteriaIds, mappedCriteriaIds: criteriaIds, blockingGaps: [] },
         review: { findings: [], reviewerProducerId: REVIEWER_PRODUCER, authorProducerIds: [AUTHOR_PRODUCER], scopeReviewed: true },
         learn_close: { outcomeManifestPresent: true, cleanupKnown: true },
+        plan: { sections: PLAN_SECTIONS.map((id) => ({ id, applicable: true, summary: `fake ${id} section` })), criteriaIds },
       };
       const evidence = deps.fakeStage?.evidence?.(nodeId, defaults[stageKind] ?? {}) ?? defaults[stageKind] ?? {};
       const output = await store(orgId, taskId, { schemaVersion: '2.0', kind: 'fake_stage_output', stageKind, nodeId, stageRunId: logicalId, inputHash, summary: `fake ${stageKind} output for ${nodeId}`, ...evidence }, 'stage_output');
@@ -227,6 +242,98 @@ export function createTaskActivities(deps: ActivityDeps): TaskActivities {
         const u = await budgetUsage(tx, accountId);
         return { admitted: true, reasons: [], chargedMicroUsd: u?.chargedMicroUsd ?? 0, reservedMicroUsd: u?.reservedMicroUsd ?? 0, limitMicroUsd: u?.limitMicroUsd ?? 0 };
       });
+    },
+
+    // amend_spec: the new TaskSpec version is created only when the workflow applies the command.
+    async materializeSpec({ orgId, taskId, specRef, version, actorCommandId }) {
+      let doc: unknown;
+      try { doc = await readJson<unknown>(orgId, taskId, specRef); } catch (e) { return { ok: false, reason: `spec artifact unreadable: ${e instanceof Error ? e.message : 'error'}` }; }
+      const valid = validateContract('TaskRequest', doc);
+      if (!valid.ok) return { ok: false, reason: 'amended spec is not a valid TaskRequest' };
+      return tenant(orgId, async (tx) => {
+        const task = await tx.query<{ delivery_scope: string; primary_application_id: string; creator_id: string }>('SELECT delivery_scope, primary_application_id, creator_id FROM factory.task WHERE id = $1', [taskId]);
+        const t = task.rows[0];
+        if (!t) return { ok: false as const, reason: 'task not found' };
+        if ((t.delivery_scope === 'design') !== (valid.value.deliveryScope === 'design')) return { ok: false as const, reason: 'design_scope_change_requires_new_task' };
+        if (valid.value.targetContext.applicationId !== t.primary_application_id) return { ok: false as const, reason: 'primary target cannot change; create a linked task' };
+        const cmd = await tx.query<{ principal_id: string }>('SELECT principal_id FROM factory.command WHERE id = $1', [actorCommandId]);
+        await tx.query('INSERT INTO factory.task_spec_version (org_id, id, task_id, version, spec, spec_hash, actor_id) VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (org_id, task_id, version) DO NOTHING',
+          [orgId, randomUUID(), taskId, version, JSON.stringify(valid.value), canonicalHash(valid.value), cmd.rows[0]?.principal_id ?? t.creator_id]);
+        return { ok: true as const, version };
+      });
+    },
+
+    // change_budget: a decrease never erases actual charges.
+    async adjustBudget({ orgId, taskId, limitMicroUsd }) {
+      return tenant(orgId, async (tx) => {
+        const r = await tx.query<{ charged_micro_usd: string; reserved_micro_usd: string; limit_micro_usd: string }>(
+          'UPDATE factory.budget_account SET limit_micro_usd = GREATEST($2::bigint, charged_micro_usd), revision = revision + 1, updated_at = now() WHERE task_id = $1 RETURNING charged_micro_usd, reserved_micro_usd, limit_micro_usd', [taskId, limitMicroUsd]);
+        const row = r.rows[0];
+        return { admitted: row !== undefined, reasons: row ? [] : ['no budget account'], chargedMicroUsd: Number(row?.charged_micro_usd ?? 0), reservedMicroUsd: Number(row?.reserved_micro_usd ?? 0), limitMicroUsd: Number(row?.limit_micro_usd ?? 0) };
+      });
+    },
+
+    // Opens the bound approve_plan request for one independent required peer: an active reviewer on
+    // the application who is neither the task's creator nor its owner.
+    async requestPlanReview({ orgId, taskId, planVersion, nodeId, packetRef, policyRef }) {
+      return tenant(orgId, async (tx) => {
+        const task = await tx.query<{ creator_id: string; owner_principal_id: string; primary_application_id: string }>('SELECT creator_id, owner_principal_id, primary_application_id FROM factory.task WHERE id = $1', [taskId]);
+        const t = task.rows[0];
+        if (!t) return { ok: false as const, reason: 'task_not_found' };
+        const authors = [...new Set([t.creator_id, t.owner_principal_id])];
+        const reviewers = await tx.query<{ principal_id: string }>(`SELECT DISTINCT m.principal_id FROM factory.membership m JOIN factory.principal p ON p.org_id = m.org_id AND p.id = m.principal_id
+          WHERE m.role = 'reviewer' AND m.revoked_at IS NULL AND p.disabled_at IS NULL AND (m.application_scope ? $1 OR m.application_scope ? '*') AND NOT (m.principal_id = ANY($2::uuid[])) ORDER BY m.principal_id`, [t.primary_application_id, authors]);
+        const required = reviewers.rows[0]?.principal_id;
+        if (!required) return { ok: false as const, reason: 'no_eligible_independent_reviewer' };
+        const ttlMs = deps.decisionTtlMs ?? DEFAULT_DECISION_TTL_MS;
+        const sectionIds = [...PLAN_SECTIONS];
+        const subjectHash = canonicalHash({ action: 'approve_plan', taskId, planVersion, nodeId, packetRef, policyRef, requiredPrincipalId: required, sectionIds });
+        await tx.query(`INSERT INTO factory.decision_request (org_id, id, task_id, action, subject_hash, subject_ref, policy_ref, evidence_refs, eligible_roles, required_principal_id, state, expires_at, reason)
+          VALUES ($1,$2,$3,'approve_plan',$4,$5,$6,$7,'["reviewer"]',$8,'pending',now() + make_interval(secs => $9::bigint / 1000.0),$10)
+          ON CONFLICT (org_id, task_id, subject_hash, required_principal_id) WHERE action = 'approve_plan' DO NOTHING`,
+          [orgId, randomUUID(), taskId, subjectHash, JSON.stringify(packetRef), JSON.stringify(policyRef), JSON.stringify([packetRef]), required, ttlMs, 'Approve the exact engineering plan packet before implementation']);
+        const r = await tx.query<{ id: string }>("SELECT id FROM factory.decision_request WHERE task_id = $1 AND subject_hash = $2 AND required_principal_id = $3 AND action = 'approve_plan'", [taskId, subjectHash, required]);
+        const id = r.rows[0]?.id;
+        if (!id) throw new Error('decision request not persisted');
+        return { ok: true as const, decision: { nodeId, requestId: id, subjectHash, requiredPrincipalId: required, sectionIds, authorPrincipalIds: authors, ttlMs, state: 'pending' as const } };
+      });
+    },
+
+    // Records the immutable human decision (or the expiry/supersession) and evaluates
+    // plan_peer_approved, re-checking the decider's authority at application time.
+    async settleDecision({ orgId, taskId, decision, binding }) {
+      return tenant(orgId, async (tx) => {
+        const reasons: string[] = [];
+        if (decision.state === 'approve' || decision.state === 'reject' || decision.state === 'request_changes') {
+          const decider = decision.deciderPrincipalId ?? '';
+          const authority = await tx.query<{ id: string }>(`SELECT m.id FROM factory.membership m JOIN factory.principal p ON p.org_id = m.org_id AND p.id = m.principal_id JOIN factory.task t ON t.id = $2
+            WHERE m.principal_id = $1 AND m.role = 'reviewer' AND m.revoked_at IS NULL AND p.disabled_at IS NULL AND (m.application_scope ? t.primary_application_id::text OR m.application_scope ? '*')`, [decider, taskId]);
+          const membership = authority.rows[0]?.id;
+          if (!membership) reasons.push('decider_authority_revoked');
+          await tx.query(`INSERT INTO factory.decision (org_id, id, request_id, decider_id, subject_hash, command_id, reviewed_section_ids, outcome, reason, authority_ref)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT (org_id, request_id) DO NOTHING`,
+            [orgId, randomUUID(), decision.requestId, decider, decision.subjectHash, decision.commandId ?? randomUUID(), JSON.stringify(decision.reviewedSectionIds ?? []), decision.state, decision.reason ?? decision.state, JSON.stringify({ role: 'reviewer', membershipId: membership ?? null, revalidatedAtApply: true })]);
+          const stateName = decision.state === 'approve' ? 'approved' : decision.state === 'reject' ? 'rejected' : 'changes_requested';
+          await tx.query("UPDATE factory.decision_request SET state = $2, updated_at = now() WHERE id = $1 AND state = 'pending'", [decision.requestId, stateName]);
+        } else {
+          await tx.query("UPDATE factory.decision_request SET state = $2, updated_at = now() WHERE id = $1 AND state = 'pending'", [decision.requestId, decision.state]);
+          reasons.push(decision.state === 'expired' ? 'decision_expired' : 'decision_superseded');
+        }
+        if (decision.state !== 'approve') reasons.push(`outcome_${decision.state}`);
+        const passed = reasons.length === 0;
+        const request = await tx.query<{ subject_ref: ArtifactRefLike; policy_ref: unknown }>('SELECT subject_ref, policy_ref FROM factory.decision_request WHERE id = $1', [decision.requestId]);
+        const approvals = await store(orgId, taskId, { schemaVersion: '2.0', requestId: decision.requestId, subjectHash: decision.subjectHash, decisions: [{ decider: decision.deciderPrincipalId ?? null, outcome: decision.state, reviewedSectionIds: decision.reviewedSectionIds ?? [] }] }, 'plan_approval_set', tx);
+        const full = { ...binding, reviewPacketRef: request.rows[0]?.subject_ref, planApprovalSetRef: approvals };
+        const inputs = { ...gateBinding('plan_peer_approved', full), ...(binding.applicationSnapshotRef ? { applicationSnapshotRef: binding.applicationSnapshotRef } : {}), subjectHash: decision.subjectHash };
+        await tx.query(`INSERT INTO factory.gate_evaluation (org_id, id, task_id, gate_id, input_hash, input_binding, verdict, evidence_refs, evaluator_id, policy_ref, reason_codes, resolved_mode)
+          VALUES ($1,$2,$3,'plan_peer_approved',$4,$5,$6,$7,$8,$9,$10,'human')`,
+          [orgId, randomUUID(), taskId, gateInputHash('plan_peer_approved', full), JSON.stringify(inputs), passed ? 'passed' : 'failed', JSON.stringify([approvals]), EVALUATOR_ID, JSON.stringify(request.rows[0]?.policy_ref ?? null), JSON.stringify(passed ? ['exact_subject_peer_approval'] : reasons)]);
+        return { gate: passed ? 'passed' as const : 'failed' as const, reasonCodes: passed ? ['exact_subject_peer_approval'] : reasons };
+      });
+    },
+
+    async supersedeDecisions({ orgId, taskId }) {
+      return tenant(orgId, async (tx) => (await tx.query("UPDATE factory.decision_request SET state = 'superseded', updated_at = now() WHERE task_id = $1 AND state = 'pending'", [taskId])).rowCount ?? 0);
     },
 
     async project({ orgId, taskId, sequence, state, refs, eventType, correlationId }) {

@@ -175,6 +175,16 @@ describe('W-010 outbox dispatcher', () => {
       expect((await gateway.describe(workflowId))?.runId).toBe(desc?.runId);
     });
 
+    it('a command for a closed task workflow is rejected without blocking delivery of others', async () => {
+      const { workflowId } = await newTask();
+      await dispatcher().runOnce();
+      await env.client.workflow.getHandle(workflowId).signal('finish');
+      await env.client.workflow.getHandle(workflowId).result();
+      const late = await command(workflowId.split('/')[2] ?? '', workflowId, 'pause');
+      await dispatcher().runOnce();
+      expect(await commandRow(late)).toEqual({ state: 'rejected', rejection_reason: 'task workflow is completed' });
+    });
+
     it('a workflow rejection is recorded with its reason', async () => {
       const { workflowId } = await newTask();
       await dispatcher().runOnce();

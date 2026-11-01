@@ -53,7 +53,7 @@ describe('AC-09 worker version replay', () => {
       const { launch } = await h.newTask();
       const taskQueue = `tq-redeploy-${launch.taskId}`;
       const namespace = h.env.namespace ?? 'default';
-      const old = await createWorker({ connection: h.env.nativeConnection, namespace, taskQueue, workflowBundle: h.bundle, db: h.db, artifacts: h.artifacts, fakeStage: { delayMs: (n) => (n === 'investigate' ? 1500 : 0) } });
+      const old = await createWorker({ connection: h.env.nativeConnection, namespace, taskQueue, workflowBundle: h.bundle, db: h.db, artifacts: h.artifacts, templateOverrides: { investigation: 'investigation-0.1.0.json' }, fakeStage: { delayMs: (n) => (n === 'investigate' ? 1500 : 0) } });
       const handle = await h.env.client.workflow.start('TaskWorkflow', { taskQueue, workflowId: launch.workflowId, args: [launch] });
       await old.runUntil(async () => {
         for (let i = 0; i < 200; i += 1) {
@@ -63,7 +63,7 @@ describe('AC-09 worker version replay', () => {
         throw new Error('stage never started');
       });
       // The old worker is gone. A new deployment (newly bundled code) picks the workflow up.
-      const fresh = await createWorker({ connection: h.env.nativeConnection, namespace, taskQueue, workflowBundle: await bundleWorkflows(), db: h.db, artifacts: h.artifacts });
+      const fresh = await createWorker({ connection: h.env.nativeConnection, namespace, taskQueue, workflowBundle: await bundleWorkflows(), db: h.db, artifacts: h.artifacts, templateOverrides: { investigation: 'investigation-0.1.0.json' } });
       const view = await fresh.runUntil(handle.result()) as WorkflowView;
       expect(view.status).toBe('succeeded');
       expect(view.nodes.investigate?.status).toBe('passed');

@@ -14,7 +14,7 @@ import { bundleWorkflows, createWorker, type FakeStageBehavior, type LaunchPaylo
 export type WorkerHarness = {
   env: TestWorkflowEnvironment; m: MigratedDatabase; db: Database; artifacts: ArtifactService; orgId: string; principalId: string; applicationId: string; bundle: WorkflowBundleWithSourceMap;
   newTask: (budget?: Record<string, unknown>) => Promise<{ taskId: string; launch: LaunchPayload }>;
-  withWorker: <T>(behavior: FakeStageBehavior | undefined, fn: (taskQueue: string) => Promise<T>) => Promise<T>;
+  withWorker: <T>(behavior: FakeStageBehavior | undefined, fn: (taskQueue: string) => Promise<T>, options?: { template?: string; decisionTtlMs?: number }) => Promise<T>;
   close: () => Promise<void>;
 };
 
@@ -55,9 +55,12 @@ export async function createWorkerHarness(prefix: string): Promise<WorkerHarness
       });
       return { taskId, launch: { workflowId: `factory/${orgId}/${taskId}`, taskId, orgId, specVersion: 1, specHash: canonicalHash(spec), operationId: randomUUID() } };
     },
-    withWorker: async (behavior, fn) => {
+    withWorker: async (behavior, fn, options = {}) => {
       const taskQueue = `tq-${randomUUID()}`;
-      const worker: Worker = await createWorker({ connection: env.nativeConnection, namespace, taskQueue, workflowBundle: bundle, db, artifacts, ...(behavior ? { fakeStage: behavior } : {}) });
+      // Scheduler-mechanics suites run the 0.1.0 skeleton (no human gate) explicitly; production
+      // resolution pins investigation 0.2.0 with mandatory plan review.
+      const template = options.template ?? 'investigation-0.1.0.json';
+      const worker: Worker = await createWorker({ connection: env.nativeConnection, namespace, taskQueue, workflowBundle: bundle, db, artifacts, templateOverrides: { investigation: template }, ...(options.decisionTtlMs === undefined ? {} : { decisionTtlMs: options.decisionTtlMs }), ...(behavior ? { fakeStage: behavior } : {}) });
       return worker.runUntil(fn(taskQueue));
     },
     close: async () => { await db.close(); await retention.close(); await m.drop(); await env.teardown(); rmSync(storeRoot, { recursive: true, force: true }); },

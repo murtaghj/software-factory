@@ -26,6 +26,8 @@ export type DispatcherOptions = {
   // shift that clock forward with an offset instead of mixing in the host clock.
   clockOffsetMs?: () => number;
   workerBuildId?: string;
+  // Upper bound for one Update round trip; a slower answer is treated as an unknown outcome.
+  updateTimeoutMs?: number;
 };
 
 type OutboxRow = { id: string; org_id: string; kind: string; aggregate_id: string; payload: Record<string, unknown>; attempts: number };
@@ -45,7 +47,7 @@ export function backoffMs(attempts: number): number {
 export class Dispatcher {
   private readonly o: Required<DispatcherOptions>;
   constructor(o: DispatcherOptions) {
-    this.o = { owner: `dispatcher-${randomUUID()}`, leaseMs: 30_000, batchSize: 20, maxAttempts: 10, workerBuildId: 'unversioned', clockOffsetMs: () => 0, ...o };
+    this.o = { owner: `dispatcher-${randomUUID()}`, leaseMs: 30_000, batchSize: 20, maxAttempts: 10, workerBuildId: 'unversioned', clockOffsetMs: () => 0, updateTimeoutMs: 30_000, ...o };
   }
 
   private tenant<T>(orgId: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
@@ -123,11 +125,30 @@ export class Dispatcher {
       const ok = await this.tenant(row.org_id, (tx) => this.finish(tx, row, 'dead_letter', 'command payload lacks workflowId/commandId'));
       return { outboxId: row.id, kind: row.kind, result: ok ? 'dead_letter' : 'lease_lost', detail: 'invalid command payload' };
     }
+    // A closed task workflow can never apply a command: record that, without calling Update.
+    let described;
+    try { described = await this.o.temporal.describe(workflowId); } catch (e) { return this.retryOrDeadLetter(row, `describe failed before command delivery: ${String(e)}`); }
+    if (!described) return this.retryOrDeadLetter(row, 'task workflow not started yet');
+    if (described.status !== 'RUNNING') {
+      const ok = await this.tenant(row.org_id, async (tx) => {
+        await tx.query("UPDATE factory.command SET state = 'rejected', rejection_reason = $2, updated_at = now() WHERE id = $1 AND state IN ('queued','delivered')", [commandId, `task workflow is ${described.status.toLowerCase()}`]);
+        return this.finish(tx, row, 'delivered');
+      });
+      return { outboxId: row.id, kind: row.kind, result: ok ? 'delivered' : 'lease_lost', detail: 'workflow closed' };
+    }
     // Mark the attempt before the call: a lost reply must leave `delivered`, never `rejected`.
     await this.tenant(row.org_id, (tx) => tx.query("UPDATE factory.command SET state = 'delivered', updated_at = now() WHERE id = $1 AND state = 'queued'", [commandId]));
     let result: UpdateResult;
     try {
-      result = await this.o.temporal.update(workflowId, commandId, [row.payload]);
+      let timer: NodeJS.Timeout | undefined;
+      try {
+        result = await Promise.race([
+          this.o.temporal.update(workflowId, commandId, [row.payload]),
+          new Promise<never>((_, reject) => { timer = setTimeout(() => { reject(Object.assign(new Error('update deadline exceeded'), { code: 4 })); }, this.o.updateTimeoutMs); }),
+        ]);
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
     } catch (e) {
       if (e instanceof UpdateRejected) {
         result = { state: 'rejected', reason: e.message };

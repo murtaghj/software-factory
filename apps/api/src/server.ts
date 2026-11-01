@@ -11,13 +11,14 @@ import type { Principal } from './auth/rbac.ts';
 import { problem, sendProblem } from './http/problem.ts';
 import { ApiError, type TaskService } from './tasks/service.ts';
 import { listGates, listRuns } from './tasks/views.ts';
+import type { CommandService } from './tasks/commands.ts';
 import { streamTaskEvents, type StreamOptions } from './events/sse.ts';
 
 declare module 'fastify' {
   interface FastifyRequest { principal?: Principal; identity?: VerifiedIdentity; requestId: string }
 }
 
-export type ApiDeps = { db: Database; verifier: OidcVerifier; artifacts: ArtifactService; tasks: TaskService; dashboardOrigin: string; events?: StreamOptions };
+export type ApiDeps = { db: Database; verifier: OidcVerifier; artifacts: ArtifactService; tasks: TaskService; commands?: CommandService; dashboardOrigin: string; events?: StreamOptions };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -134,6 +135,37 @@ export function buildApi(deps: ApiDeps): FastifyInstance {
       try { return (await deps.tasks.get(await resolvePrincipal(deps.db, identity), req.params.taskId)) !== undefined; } catch { return false; }
     };
     return streamTaskEvents(req, reply, { db: deps.db, principal: ok.principal, canRead, options: deps.events ?? { retentionMs: 30 * 24 * 60 * 60 * 1000 } });
+  });
+
+  const commands = (): CommandService => {
+    if (!deps.commands) throw new ApiError(503, 'commands_unavailable', 'command service not configured');
+    return deps.commands;
+  };
+  const principalOf = (req: FastifyRequest): Principal => {
+    if (!req.principal) throw new AuthorizationError('unauthenticated');
+    return req.principal;
+  };
+  const header = (req: FastifyRequest, name: string): string | undefined => { const v = req.headers[name]; return typeof v === 'string' ? v : undefined; };
+
+  app.post<{ Params: { taskId: string } }>('/v2/tasks/:taskId/commands', async (req, reply) => {
+    if (!UUID.test(req.params.taskId)) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
+    return reply.code(202).send(await commands().submit(principalOf(req), req.params.taskId, header(req, 'if-match'), header(req, 'idempotency-key'), req.body));
+  });
+  app.get<{ Params: { commandId: string } }>('/v2/commands/:commandId', async (req, reply) => {
+    if (!UUID.test(req.params.commandId)) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
+    return commands().get(principalOf(req), req.params.commandId);
+  });
+  app.get<{ Querystring: { taskId?: string; state?: string } }>('/v2/decisions', async (req) => {
+    if (req.query.taskId !== undefined && !UUID.test(req.query.taskId)) throw new ApiError(422, 'invalid_filter', 'taskId must be a UUID');
+    return commands().listDecisions(principalOf(req), { ...(req.query.taskId ? { taskId: req.query.taskId } : {}), ...(req.query.state ? { state: req.query.state } : {}) });
+  });
+  app.get<{ Params: { decisionId: string } }>('/v2/decisions/:decisionId', async (req, reply) => {
+    if (!UUID.test(req.params.decisionId)) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
+    return commands().getDecision(principalOf(req), req.params.decisionId);
+  });
+  app.post<{ Params: { decisionId: string } }>('/v2/decisions/:decisionId/responses', async (req, reply) => {
+    if (!UUID.test(req.params.decisionId)) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
+    return reply.code(202).send(await commands().respond(principalOf(req), req.params.decisionId, header(req, 'idempotency-key'), req.body));
   });
 
   app.get<{ Querystring: Record<string, string | undefined> }>('/v2/tasks', async (req) => {

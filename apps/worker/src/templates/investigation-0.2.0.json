@@ -1,0 +1,130 @@
+{
+  "schemaVersion": "2.0",
+  "id": "investigation",
+  "version": "0.2.0",
+  "workType": "investigation",
+  "targetKind": "existing_application",
+  "nodes": [
+    {
+      "id": "scope",
+      "stageKind": "discover",
+      "role": "discovery",
+      "dependsOn": [],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "scope_accepted"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "execute",
+      "sessionPolicy": "fresh",
+      "returnTargets": [],
+      "mandatory": true
+    },
+    {
+      "id": "plan",
+      "stageKind": "plan",
+      "role": "planner",
+      "dependsOn": [
+        "scope"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [],
+      "requiredCapabilities": [],
+      "timeoutClass": "execute",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "scope"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "plan_review",
+      "stageKind": "plan_peer_review",
+      "role": "reviewer",
+      "dependsOn": [
+        "plan"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "plan_peer_approved"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "human_wait",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "plan"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "investigate",
+      "stageKind": "investigate",
+      "role": "discovery",
+      "dependsOn": [
+        "plan_review"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [],
+      "requiredCapabilities": [],
+      "timeoutClass": "execute",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "scope"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "evidence_review",
+      "stageKind": "review",
+      "role": "reviewer",
+      "dependsOn": [
+        "investigate"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "review_passed"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "execute",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "investigate"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "deliver",
+      "stageKind": "deliver",
+      "role": "publisher",
+      "dependsOn": [
+        "evidence_review"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [],
+      "requiredCapabilities": [],
+      "timeoutClass": "provider",
+      "sessionPolicy": "fresh",
+      "returnTargets": [
+        "evidence_review"
+      ],
+      "mandatory": true
+    },
+    {
+      "id": "close",
+      "stageKind": "learn_close",
+      "role": "knowledge_curator",
+      "dependsOn": [
+        "deliver"
+      ],
+      "inputArtifactRefs": [],
+      "requiredGateIds": [
+        "outcome_recorded"
+      ],
+      "requiredCapabilities": [],
+      "timeoutClass": "execute",
+      "sessionPolicy": "fresh",
+      "returnTargets": [],
+      "mandatory": true
+    }
+  ]
+}
