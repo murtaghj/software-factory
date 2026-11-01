@@ -7,12 +7,18 @@ import pg from 'pg';
 
 export const MIGRATOR_LOGIN = { name: 'factory_migrate_login', password: 'factory_migrate_local' } as const;
 export const RUNTIME_LOGIN = { name: 'factory_app_login', password: 'factory_app_local' } as const;
+// Separate audited retention/sweep job role (reference DDL: "retention deletion runs as a separate
+// audited job role"). BYPASSRLS so reachability checks also see embargoed rows; its grants are
+// limited to the columns a sweep reads (migration 0013). Never used by API, worker or runner.
+export const RETENTION_LOGIN = { name: 'factory_retention_login', password: 'factory_retention_local' } as const;
 
 const ROLE_STATEMENTS = [
   `CREATE ROLE factory_migrator NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEROLE NOCREATEDB NOREPLICATION`,
   `CREATE ROLE factory_runtime NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEROLE NOCREATEDB NOREPLICATION`,
   `CREATE ROLE ${MIGRATOR_LOGIN.name} LOGIN NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEROLE NOCREATEDB PASSWORD '${MIGRATOR_LOGIN.password}'`,
   `CREATE ROLE ${RUNTIME_LOGIN.name} LOGIN INHERIT NOSUPERUSER NOBYPASSRLS NOCREATEROLE NOCREATEDB PASSWORD '${RUNTIME_LOGIN.password}'`,
+  `CREATE ROLE factory_retention NOLOGIN NOSUPERUSER BYPASSRLS NOCREATEROLE NOCREATEDB NOREPLICATION`,
+  `CREATE ROLE ${RETENTION_LOGIN.name} LOGIN INHERIT NOSUPERUSER NOBYPASSRLS NOCREATEROLE NOCREATEDB PASSWORD '${RETENTION_LOGIN.password}'`,
 ];
 
 async function tolerateExisting(client: pg.Client, sql: string): Promise<void> {
@@ -33,9 +39,10 @@ export async function bootstrapDatabase(adminDatabaseUrl: string, database: stri
     for (const sql of ROLE_STATEMENTS) await tolerateExisting(admin, sql);
     await tolerateExisting(admin, `GRANT factory_migrator TO ${MIGRATOR_LOGIN.name} WITH INHERIT FALSE, SET TRUE`);
     await tolerateExisting(admin, `GRANT factory_runtime TO ${RUNTIME_LOGIN.name} WITH INHERIT TRUE, SET FALSE`);
+    await tolerateExisting(admin, `GRANT factory_retention TO ${RETENTION_LOGIN.name} WITH INHERIT FALSE, SET TRUE`);
     await admin.query(`REVOKE ALL ON DATABASE ${database} FROM PUBLIC`);
     await admin.query(`GRANT CONNECT, CREATE ON DATABASE ${database} TO factory_migrator`);
-    await admin.query(`GRANT CONNECT ON DATABASE ${database} TO factory_runtime, ${MIGRATOR_LOGIN.name}, ${RUNTIME_LOGIN.name}`);
+    await admin.query(`GRANT CONNECT ON DATABASE ${database} TO factory_runtime, factory_retention, ${MIGRATOR_LOGIN.name}, ${RUNTIME_LOGIN.name}, ${RETENTION_LOGIN.name}`);
   } finally {
     await admin.end();
   }

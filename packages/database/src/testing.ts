@@ -1,9 +1,9 @@
 // Test harness: a fresh, fully migrated PostgreSQL 18 database with the real role split.
 import { adminUrl, createIsolatedDatabase, urlForDatabase } from '@factory/test-support';
-import { bootstrapDatabase, MIGRATOR_LOGIN, RUNTIME_LOGIN } from './roles.ts';
+import { bootstrapDatabase, MIGRATOR_LOGIN, RETENTION_LOGIN, RUNTIME_LOGIN } from './roles.ts';
 import { migrate, type MigrateOptions } from './migrate.ts';
 
-export type MigratedDatabase = { name: string; adminUrl: string; migratorUrl: string; runtimeUrl: string; drop: () => Promise<void> };
+export type MigratedDatabase = { name: string; adminUrl: string; migratorUrl: string; runtimeUrl: string; retentionUrl: string; drop: () => Promise<void> };
 
 export async function createBootstrappedDatabase(prefix = 'factory_test'): Promise<MigratedDatabase> {
   const db = await createIsolatedDatabase(prefix);
@@ -13,6 +13,7 @@ export async function createBootstrappedDatabase(prefix = 'factory_test'): Promi
     adminUrl: db.url,
     migratorUrl: urlForDatabase(adminUrl(), db.name, MIGRATOR_LOGIN),
     runtimeUrl: urlForDatabase(adminUrl(), db.name, RUNTIME_LOGIN),
+    retentionUrl: urlForDatabase(adminUrl(), db.name, RETENTION_LOGIN),
     drop: db.drop,
   };
 }

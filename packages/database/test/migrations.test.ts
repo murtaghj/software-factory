@@ -78,8 +78,18 @@ describe('W-006 role split and migration integrity', () => {
     await c.connect();
     try {
       const roles = await c.query<{ rolname: string; rolsuper: boolean; rolbypassrls: boolean; rolcreaterole: boolean }>(
-        "SELECT rolname, rolsuper, rolbypassrls, rolcreaterole FROM pg_roles WHERE rolname IN ('factory_runtime','factory_migrator','factory_app_login','factory_migrate_login') ORDER BY rolname");
-      expect(roles.rows).toHaveLength(4);
+        "SELECT rolname, rolsuper, rolbypassrls, rolcreaterole FROM pg_roles WHERE rolname IN ('factory_runtime','factory_migrator','factory_app_login','factory_migrate_login','factory_retention_login') ORDER BY rolname");
+      expect(roles.rows).toHaveLength(5);
+      // Only the dedicated retention job role may bypass RLS, and it can read just the sweep columns.
+      const retention = await c.query<{ rolbypassrls: boolean; rolcanlogin: boolean }>("SELECT rolbypassrls, rolcanlogin FROM pg_roles WHERE rolname = 'factory_retention'");
+      expect(retention.rows[0]).toEqual({ rolbypassrls: true, rolcanlogin: false });
+      const retentionGrants = await c.query<{ table_name: string; column_name: string; privilege_type: string }>("SELECT table_name, column_name, privilege_type FROM information_schema.column_privileges WHERE grantee = 'factory_retention' AND table_schema = 'factory' ORDER BY 1, 2, 3");
+      expect(retentionGrants.rows.map((g) => `${g.privilege_type} ${g.table_name}.${g.column_name}`).sort()).toEqual([
+        'SELECT artifact.id', 'SELECT artifact.org_id', 'SELECT artifact.storage_key',
+        'INSERT audit_event.actor_id', 'INSERT audit_event.action', 'INSERT audit_event.correlation_id', 'INSERT audit_event.created_at', 'INSERT audit_event.details_ref', 'INSERT audit_event.embargo_group_id', 'INSERT audit_event.id', 'INSERT audit_event.org_id', 'INSERT audit_event.outcome', 'INSERT audit_event.request_digest', 'INSERT audit_event.resource_id', 'INSERT audit_event.resource_kind', 'INSERT audit_event.updated_at',
+        'SELECT artifact_upload.expires_at', 'SELECT artifact_upload.id', 'SELECT artifact_upload.org_id', 'SELECT artifact_upload.state', 'SELECT artifact_upload.temporary_key', 'UPDATE artifact_upload.state', 'UPDATE artifact_upload.updated_at',
+        'SELECT organization.id',
+      ].sort());
       for (const r of roles.rows) expect([r.rolname, r.rolsuper, r.rolbypassrls, r.rolcreaterole]).toEqual([r.rolname, false, false, false]);
       const owners = await c.query<{ owner: string; n: string }>("SELECT pg_get_userbyid(relowner) AS owner, count(*) AS n FROM pg_class WHERE relnamespace = 'factory'::regnamespace GROUP BY 1");
       expect(owners.rows.map((r) => r.owner)).toEqual(['factory_migrator']);
@@ -113,7 +123,7 @@ describe('W-006 role split and migration integrity', () => {
   });
 
   it('every migration declares a phase and contract migrations must declare what they retire', () => {
-    expect(loadMigrations().map((m) => m.phase)).toEqual(Array(12).fill('expand'));
+    expect(loadMigrations().map((m) => m.phase)).toEqual(Array(13).fill('expand'));
     const dir = mkdtempSync(join(tmpdir(), 'bad-migrations-'));
     try {
       writeFileSync(join(dir, '0001_drop_things.sql'), '-- phase: contract\nDROP TABLE x;\n');
