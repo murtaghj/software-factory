@@ -1,5 +1,20 @@
 {
   "extends": "./tsconfig.base.json",
-  "include": ["packages/*/src/**/*.ts", "packages/*/scripts/**/*.ts", "packages/*/test/**/*.ts", "apps/*/src/**/*.ts", "apps/*/test/**/*.ts", "tests/**/*.ts", "fixtures/**/*.ts", "tools/**/*.ts", "vitest.config.ts", "eslint.config.ts"],
-  "exclude": ["**/node_modules/**", "tools/test-fixtures/**"]
+  "include": [
+    "packages/*/src/**/*.ts",
+    "packages/*/scripts/**/*.ts",
+    "packages/*/test/**/*.ts",
+    "apps/*/src/**/*.ts",
+    "apps/*/scripts/**/*.ts",
+    "apps/*/test/**/*.ts",
+    "tests/**/*.ts",
+    "fixtures/**/*.ts",
+    "tools/**/*.ts",
+    "vitest.config.ts",
+    "eslint.config.ts"
+  ],
+  "exclude": [
+    "**/node_modules/**",
+    "tools/test-fixtures/**"
+  ]
 }

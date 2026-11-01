@@ -1,0 +1,32 @@
+{
+  "completed": {
+    "description": "Investigation plan run to success through fake stages",
+    "workflowId": "factory/3dc429fb-e4e6-4433-838d-ca399bdc385c/6bde9ef8-6452-4236-ab5c-370e15ce1433",
+    "capturedWithWorkflowCodeDigest": "23af133171d83db9deee439864b836381f5fc405b6cbef8a76723f9ef4739fcf",
+    "events": 185
+  },
+  "failed": {
+    "description": "Mandatory evidence_review stage reports a product failure",
+    "workflowId": "factory/3dc429fb-e4e6-4433-838d-ca399bdc385c/87f8ede1-952b-4aca-b353-7ee9806456f7",
+    "capturedWithWorkflowCodeDigest": "23af133171d83db9deee439864b836381f5fc405b6cbef8a76723f9ef4739fcf",
+    "events": 125
+  },
+  "active-mid-stage": {
+    "description": "Open history: the investigate stage is still executing",
+    "workflowId": "factory/3dc429fb-e4e6-4433-838d-ca399bdc385c/17f318b4-c730-4f03-a842-ee0dd6057051",
+    "capturedWithWorkflowCodeDigest": "23af133171d83db9deee439864b836381f5fc405b6cbef8a76723f9ef4739fcf",
+    "events": 74
+  },
+  "amended": {
+    "description": "amend_spec races an in-flight stage; plan 2 supersedes plan 1",
+    "workflowId": "factory/3dc429fb-e4e6-4433-838d-ca399bdc385c/18e8844b-cb9d-425f-821b-8a39461e1197",
+    "capturedWithWorkflowCodeDigest": "23af133171d83db9deee439864b836381f5fc405b6cbef8a76723f9ef4739fcf",
+    "events": 262
+  },
+  "continued-as-new": {
+    "description": "First run of a task that rolls over after two stages",
+    "workflowId": "factory/3dc429fb-e4e6-4433-838d-ca399bdc385c/bc7e73d6-3fa4-4640-905a-e49c131513fe",
+    "capturedWithWorkflowCodeDigest": "23af133171d83db9deee439864b836381f5fc405b6cbef8a76723f9ef4739fcf",
+    "events": 89
+  }
+}
