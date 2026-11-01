@@ -108,7 +108,8 @@ async function captureWith(baseName: string, description: string, behavior: Para
   manifest[name] = { description, workflowId, capturedWithWorkflowCodeDigest: build, events: history.events?.length ?? 0 };
   console.log(`captured ${name} (${String(history.events?.length ?? 0)} events)`);
 }
-if (suffix === '-commands-v1') {
+// Command scenarios need the production template (plan review); captured for every build since commands-v1.
+if (suffix === '-commands-v1' || suffix === '-outcome-v1') {
   await captureWith('plan-review-approved', 'Production template: plan review approved by an independent peer', undefined, async (tq) => {
     const { taskId, launch } = await h.newTask();
     const handle = await start(tq, launch, launch.workflowId);

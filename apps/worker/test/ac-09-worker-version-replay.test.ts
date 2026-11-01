@@ -28,11 +28,13 @@ async function replay(bundle: Awaited<ReturnType<typeof bundleWorkflows>>): Prom
 describe('AC-09 worker version replay', () => {
   it('replays every stored representative history (completed, failed, open mid-stage, amended, continued-as-new) without nondeterminism', async () => {
     const names = fixtures.map((f) => f.name);
-    // Histories from every accepted build: W-011 (no gate engine) and gate-engine-v1 (W-012).
+    // Histories from every accepted build: W-011 (no gate engine), gate-engine-v1 (W-012),
+    // budget-v1 (W-013), commands-v1 (W-015) and outcome-v1 (W-016: controller delivery + manifest).
     for (const base of ['active-mid-stage', 'amended', 'completed', 'continued-as-new', 'failed']) {
       expect(names).toContain(base);
-      expect(names).toContain(`${base}-gate-engine-v1`);
+      for (const build of ['gate-engine-v1', 'budget-v1', 'commands-v1', 'outcome-v1']) expect(names).toContain(`${base}-${build}`);
     }
+    for (const base of ['plan-review-approved', 'paused-resumed', 'cancelled-in-flight']) for (const build of ['commands-v1', 'outcome-v1']) expect(names).toContain(`${base}-${build}`);
     const results = await replay(await bundleWorkflows());
     expect(results).toEqual(fixtures.map((f) => ({ name: f.name, error: undefined })).sort((a, b) => a.name.localeCompare(b.name)));
   });

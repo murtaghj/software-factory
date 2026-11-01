@@ -10,7 +10,7 @@ type FastifyInstance = ReturnType<typeof buildApi>;
 import { Database, createMigratedDatabase, provisionOrganization, type MigratedDatabase, type Tx } from '@factory/database';
 import { ArtifactService, FileObjectStore, startDownloadOrigin, type DownloadOrigin } from '@factory/artifacts';
 import { startTestIssuer, type TestIssuer } from '@factory/test-support';
-import { CommandService, OidcVerifier, RBAC_ARTIFACT_READS, TaskService, buildApi } from '@factory/api';
+import { CommandService, OidcVerifier, OutcomeBundleService, RBAC_ARTIFACT_READS, TaskService, buildApi } from '@factory/api';
 import { TestWorkflowEnvironment } from '@temporalio/testing';
 import type { Worker } from '@temporalio/worker';
 import { bundleWorkflows, createWorker, type FakeStageBehavior } from '@factory/worker';
@@ -22,7 +22,7 @@ export const AUDIENCE = 'software-factory-api';
 export type SystemUser = { principalId: string; subject: string; token: () => Promise<string> };
 export type SystemHarness = {
   m: MigratedDatabase; db: Database; retention: Database; artifacts: ArtifactService; tasks: TaskService; issuer: TestIssuer; orgId: string; applicationId: string;
-  api: FastifyInstance; apiUrl: string; origin: DownloadOrigin;
+  api: FastifyInstance; apiUrl: string; origin: DownloadOrigin; storeRoot: string;
   user: (roles: Array<{ role: string; scope: string[] }>) => Promise<SystemUser>;
   temporal?: { env: TestWorkflowEnvironment; taskQueue: string; dispatch: (gateway?: TemporalGateway) => Promise<number>; gateway: ClientGateway };
   call: (user: SystemUser, method: string, path: string, body?: unknown, headers?: Record<string, string>) => Promise<{ status: number; body: unknown }>;
@@ -49,7 +49,7 @@ export async function createSystemHarness(prefix: string, options: SystemOptions
   const issuer = await startTestIssuer('system');
   const tasks = new TaskService({ db, artifacts });
   const commands = new CommandService({ db, artifacts });
-  const api = buildApi({ db, verifier: new OidcVerifier([{ issuer: issuer.issuer, audience: AUDIENCE, jwksUrl: issuer.jwksUrl, orgId }]), artifacts, tasks, commands, dashboardOrigin: 'http://localhost:4173', ...(options.events ? { events: options.events } : {}) });
+  const api = buildApi({ db, verifier: new OidcVerifier([{ issuer: issuer.issuer, audience: AUDIENCE, jwksUrl: issuer.jwksUrl, orgId }]), artifacts, tasks, commands, outcomes: new OutcomeBundleService({ db, artifacts }), dashboardOrigin: 'http://localhost:4173', ...(options.events ? { events: options.events } : {}) });
   const apiUrl = await api.listen({ port: 0, host: '127.0.0.1' });
   const tx = <T>(fn: (t: Tx) => Promise<T>) => db.withTenant({ orgId }, fn);
   let temporal: SystemHarness['temporal'];
@@ -71,7 +71,7 @@ export async function createSystemHarness(prefix: string, options: SystemOptions
     return { status: res.status, body: text.length > 0 ? JSON.parse(text) as unknown : undefined };
   };
   return {
-    m, db, retention, artifacts, tasks, issuer, orgId, applicationId, api, apiUrl, origin, tx, call, ...(temporal ? { temporal } : {}),
+    m, db, retention, artifacts, tasks, issuer, orgId, applicationId, api, apiUrl, origin, storeRoot, tx, call, ...(temporal ? { temporal } : {}),
     user: async (roles) => {
       const principalId = randomUUID();
       const subject = `sub-${principalId}`;

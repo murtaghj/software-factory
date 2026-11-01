@@ -11,7 +11,7 @@
 import { CancellationScope, allHandlersFinished, condition, continueAsNew, defineQuery, defineUpdate, isCancellation, patched, proxyActivities, setHandler, sleep, workflowInfo } from '@temporalio/workflow';
 import { canonicalHash } from '@factory/domain';
 import { AUTHORING_STAGE_KINDS, checkCeilings } from '@factory/policy';
-import { TERMINAL, type Checkpoint, type CommandPayload, type LaunchPayload, type NodeState, type PendingDecision, type PlanSnapshot, type Receipt, type TaskActivities, type WorkflowView } from './types.ts';
+import { TERMINAL, type Checkpoint, type CommandPayload, type ControllerOutput, type LaunchPayload, type NodeState, type PendingDecision, type PlanSnapshot, type Receipt, type TaskActivities, type WorkflowView } from './types.ts';
 
 export const applyCommand = defineUpdate<Receipt, [CommandPayload]>('applyCommand');
 export const stateQuery = defineQuery<WorkflowView>('state');
@@ -24,6 +24,7 @@ const HISTORY_SOFT_LIMIT = 5000;
 export const GATE_ENGINE_V1 = 'gate-engine-v1';
 export const BUDGET_V1 = 'budget-v1';
 export const COMMANDS_V1 = 'commands-v1';
+export const OUTCOME_V1 = 'outcome-v1';
 const PAUSABLE: readonly string[] = ['queued', 'running', 'waiting_input', 'waiting_decision'];
 const CANCELLABLE: readonly string[] = ['accepted', 'queued', 'running', 'waiting_input', 'waiting_decision', 'paused'];
 
@@ -125,7 +126,7 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
     state.projectionSequence += 1;
     await persist.project({
       orgId: launch.orgId, taskId: launch.taskId, sequence: state.projectionSequence, eventType, correlationId: launch.operationId,
-      state: { status, currentNodeId: extra.currentNodeId ?? null, waitingReason: extra.waitingReason ?? null, specVersion: state.specVersion, planVersion: state.plan.version, controlRevision: state.controlRevision },
+      state: { status, currentNodeId: extra.currentNodeId ?? null, waitingReason: extra.waitingReason ?? null, specVersion: state.specVersion, planVersion: state.plan.version, controlRevision: state.controlRevision, ...(status === 'succeeded' && state.outcomeRef ? { outcomeRef: state.outcomeRef } : {}) },
       refs: { planHash: state.plan.planHash, ...extra.refs },
     });
   };
@@ -247,6 +248,61 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
     return 'stop';
   };
 
+  // deliver and close (outcome-v1) are trusted controller stages: no runner is involved, so no
+  // runner result is accepted for them. Delivery re-verifies every upstream gate on the current plan
+  // and the review binding before recording the report; close builds the OutcomeManifest from
+  // control-plane facts and outcome_recorded is evaluated on that manifest.
+  const ancestorsOf = (nodeId: string): string[] => {
+    const seen = new Set<string>();
+    const walk = (id: string): void => { for (const d of state.plan.nodes.find((n) => n.id === id)?.dependsOn ?? []) if (!seen.has(d)) { seen.add(d); walk(d); } };
+    walk(nodeId);
+    return [...seen];
+  };
+  const runControllerStage = async (node: PlanSnapshot['nodes'][number], logicalId: string, ns: NodeState): Promise<void> => {
+    const planVersion = state.plan.version;
+    const dependencies = node.dependsOn.map((d) => ({ nodeId: d, resultRef: state.nodes[d]?.resultRef ?? null }));
+    const binding = { taskSpecVersion: state.specVersion, planVersion, planHash: state.plan.planHash, policyRef: state.plan.policyRef, workflowTemplateRef: state.plan.templateRef, nodeId: node.id, semanticAttempt: ns.attempt, dependencies, ...(state.plan.applicationSnapshotRef ? { applicationSnapshotRef: state.plan.applicationSnapshotRef } : {}) };
+    const inputHash = canonicalHash(binding);
+    const { stageRunId } = await persist.startStage({ orgId: launch.orgId, taskId: launch.taskId, planVersion, nodeId: node.id, attempt: ns.attempt, role: node.role, logicalId, inputHash, binding });
+    state.nodes[node.id] = { ...ns, status: 'running', stageRunId, inputHash };
+    await project('running', 'stage.started', { currentNodeId: node.id, refs: { stageRunId: logicalId } });
+    let out: ControllerOutput;
+    if (node.stageKind === 'deliver') {
+      const reviewNodeId = node.dependsOn[0] ?? '';
+      const reviewRef = state.nodes[reviewNodeId]?.resultRef;
+      const candidateRef = state.nodes[state.plan.nodes.find((n) => n.id === reviewNodeId)?.dependsOn[0] ?? '']?.resultRef;
+      const requiredGateIds = [...new Set(ancestorsOf(node.id).flatMap((id) => state.plan.nodes.find((n) => n.id === id)?.requiredGateIds ?? []))];
+      out = reviewRef && candidateRef ? await persist.deliverReport({ orgId: launch.orgId, taskId: launch.taskId, logicalId, planVersion, candidateRef, reviewRef, requiredGateIds }) : { ok: false, reason: 'no_reviewed_candidate' };
+    } else {
+      const deliveredRefs = ancestorsOf(node.id).flatMap((id) => (state.plan.nodes.find((n) => n.id === id)?.stageKind === 'deliver' ? (state.nodes[id]?.outputRefs ?? []) : []));
+      const info = workflowInfo();
+      const providerHandles = [`temporal:workflow:${info.workflowId}`, `temporal:run:${info.firstExecutionRunId}`, ...(info.runId === info.firstExecutionRunId ? [] : [`temporal:run:${info.runId}`]), `dispatcher:operation:${launch.operationId}`,
+        ...state.plan.nodes.flatMap((n) => (state.nodes[n.id]?.status === 'passed' && n.stageKind !== 'deliver' && n.stageKind !== 'plan_peer_review' ? [`fake-runner:${logicalStageId(launch.taskId, planVersion, n.id, state.nodes[n.id]?.attempt ?? 1)}`] : []))];
+      out = await persist.recordOutcome({ orgId: launch.orgId, taskId: launch.taskId, logicalId, planVersion, deliveredRefs, providerHandles });
+    }
+    if (budgeted) await persist.chargeStageBudget({ orgId: launch.orgId, taskId: launch.taskId, operationKey: logicalId, nodeId: node.id, actualMicroUsd: 0 }); // controller work has no model cost
+    const stillCurrent = state.plan.version === planVersion && state.pendingAmendSpecVersion === undefined;
+    if (!out.ok || !stillCurrent) {
+      await persist.finishStage({ orgId: launch.orgId, logicalId, status: out.ok ? 'inconclusive' : 'failed', errorClass: out.ok ? 'superseded_binding' : out.reason });
+      if (stillCurrent) state.nodes[node.id] = { ...ns, status: 'failed', stageRunId, inputHash };
+      await project('running', 'stage.completed', { currentNodeId: node.id, refs: { stageRunId: logicalId, outcome: out.ok ? 'superseded' : 'failed', ...(out.ok ? {} : { reason: out.reason }) } });
+      return;
+    }
+    if (node.requiredGateIds.length > 0) {
+      const gates = await persist.evaluateGates({ orgId: launch.orgId, taskId: launch.taskId, nodeId: node.id, logicalId, stageKind: node.stageKind, requiredGateIds: node.requiredGateIds, binding: { ...binding, ...(state.plan.criteriaRef ? { criteriaRef: state.plan.criteriaRef } : {}) }, outputRefs: [out.ref], dependencyRefs: dependencies.flatMap((d) => (d.resultRef ? [d.resultRef] : [])) });
+      await project('running', 'gate.evaluated', { currentNodeId: node.id, refs: { stageRunId: logicalId, gates: gates.results.map((g) => ({ gateId: g.gateId, verdict: g.verdict, evaluationId: g.evaluationId })) } });
+      if (!gates.allPassed) {
+        await persist.finishStage({ orgId: launch.orgId, logicalId, status: 'failed', errorClass: 'gate_failed' });
+        state.nodes[node.id] = { ...ns, status: 'failed', stageRunId, inputHash };
+        return;
+      }
+    }
+    await persist.finishStage({ orgId: launch.orgId, logicalId, status: 'passed', resultRef: out.ref });
+    state.nodes[node.id] = { ...ns, status: 'passed', stageRunId, inputHash, outputRefs: [out.ref], resultRef: out.ref };
+    if (node.stageKind === 'learn_close') state.outcomeRef = out.ref;
+    await project('running', 'stage.completed', { currentNodeId: node.id, refs: { stageRunId: logicalId, outcome: 'passed', ...(node.stageKind === 'learn_close' ? { outcomeManifestRef: out.ref } : {}) } });
+  };
+
   while (!TERMINAL.includes(state.status)) {
     if (commandsV1) {
       if (cancelRequested()) { await finishCancelled(); break; }
@@ -295,7 +351,13 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
     }
     if (commandsV1 && node.stageKind === 'plan_peer_review') {
       const outcome = await runPlanReview(node.id, logicalId, ns);
+      // outcome-v1: the review is controller work; settle its reservation at zero actual cost.
+      if (budgeted && patched(OUTCOME_V1)) await persist.chargeStageBudget({ orgId: launch.orgId, taskId: launch.taskId, operationKey: logicalId, nodeId: node.id, actualMicroUsd: 0 });
       if (outcome === 'stop') break;
+      continue;
+    }
+    if (commandsV1 && (node.stageKind === 'deliver' || node.stageKind === 'learn_close') && patched(OUTCOME_V1)) {
+      await runControllerStage(node, logicalId, ns);
       continue;
     }
     const dependencies = node.dependsOn.map((d) => ({ nodeId: d, resultRef: state.nodes[d]?.resultRef ?? null }));

@@ -1,6 +1,7 @@
 // Stage-run and gate views (W-014). Rows are mapped onto the exact RunView / GateEvaluation
 // contracts; nothing is invented to fill a field.
 import type { GateEvaluation, GatePage, RunPage, RunView } from '@factory/contracts';
+import { gateEvaluationView, type GateRow } from '@factory/domain';
 import type { Tx } from '@factory/database';
 
 type StageRow = { logical_id: string; task_id: string; node_id: string; plan_version: number; semantic_attempt: number; status: RunView['status']; role: RunView['role']; input_hash: string; result_ref: RunView['resultRef'] | null; started_at: Date | null; completed_at: Date | null; superseded_at: Date | null; superseded_by_plan_version: number | null; superseded_logical_id: string | null; generations: string };
@@ -26,9 +27,6 @@ export async function listRuns(tx: Tx, taskId: string, q: { nodeId?: string; sta
   };
 }
 
-const INPUT_BINDING_KEYS = ['taskSpecVersion', 'planVersion', 'policyRef', 'applicationSnapshotRef', 'criteriaRef', 'candidateRef', 'canonicalPackageRef', 'setupProfileRef', 'environmentPlanRef', 'baselineRef', 'reviewPacketRef', 'planApprovalSetRef'] as const;
-type GateRow = { id: string; task_id: string; gate_id: GateEvaluation['gateId']; input_hash: string; input_binding: Record<string, unknown>; verdict: GateEvaluation['verdict']; evidence_refs: GateEvaluation['evidenceRefs']; evaluator_id: string; reason_codes: string[]; created_at: Date; superseded_by: string | null; resolved_mode: GateEvaluation['resolvedMode'] | null };
-
 // Gate evaluations as recorded. By default only current requirements are listed; historical
 // (superseded) evaluations and invalidation markers are included on request. Rows whose stored
 // binding cannot be expressed as an InputBinding (e.g. created before the snapshot was pinned) are
@@ -39,15 +37,8 @@ export async function listGates(tx: Tx, taskId: string, q: { includeHistorical: 
     ORDER BY created_at, id LIMIT $4`, [taskId, q.includeHistorical, q.inputHash ?? null, q.limit]);
   const items: GateEvaluation[] = [];
   for (const g of r.rows) {
-    const b = g.input_binding;
-    const template = b.workflowTemplateRef as { definitionRef?: unknown } | undefined;
-    if (b.applicationSnapshotRef === undefined || template?.definitionRef === undefined) continue;
-    const inputBinding = Object.fromEntries(INPUT_BINDING_KEYS.flatMap((k) => (b[k] === undefined ? [] : [[k, b[k]]]))) as unknown as GateEvaluation['inputBinding'];
-    (inputBinding as unknown as Record<string, unknown>).workflowTemplateRef = template.definitionRef;
-    const view: GateEvaluation = { id: g.id, taskId: g.task_id, gateId: g.gate_id, inputBinding, inputHash: g.input_hash, verdict: g.verdict, evidenceRefs: g.evidence_refs, evaluatorId: g.evaluator_id, reasonCodes: g.reason_codes, evaluatedAt: g.created_at.toISOString() };
-    if (g.superseded_by) view.supersededBy = g.superseded_by;
-    if (g.resolved_mode) view.resolvedMode = g.resolved_mode;
-    items.push(view);
+    const view = gateEvaluationView(g);
+    if (view) items.push(view);
   }
   return { items };
 }

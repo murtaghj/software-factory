@@ -13,7 +13,7 @@ export type Principal = {
   grants: RoleGrant[];
 };
 
-export type Action = 'task.read' | 'task.create' | 'artifact.read' | 'release.authorize' | 'roles.manage';
+export type Action = 'task.read' | 'task.create' | 'artifact.read' | 'release.authorize' | 'roles.manage' | 'outcome.export';
 export type ArtifactClassification = 'ordinary' | 'restricted' | 'sensitive_session';
 export type Resource = { applicationId: string; applicationOwnerIds?: string[]; classification?: ArtifactClassification; taskCreatorId?: string; taskOwnerId?: string };
 export type Decision = { allowed: boolean; reason: string; viaRole?: Role };
@@ -24,6 +24,8 @@ const ACTION_ROLES: Record<Action, readonly Role[]> = {
   'artifact.read': ROLES,
   'release.authorize': ['release_manager'],
   'roles.manage': ['organization_admin'],
+  // Chapter 12 "Audit interaction": operators export a task outcome bundle.
+  'outcome.export': ['operator'],
 };
 
 const inScope = (g: RoleGrant, applicationId: string): boolean => g.applicationScope === 'all' || g.applicationScope.includes(applicationId);

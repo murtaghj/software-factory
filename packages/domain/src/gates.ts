@@ -116,11 +116,7 @@ export function evaluateReviewPassed(e: { findings?: unknown; reviewerProducerId
   return blocking.length > 0 ? { verdict: 'failed', reasonCodes: ['unresolved_blocking_findings'] } : { verdict: 'passed', reasonCodes: ['no_blocking_findings'] };
 }
 
-export function evaluateOutcomeRecorded(e: { outcomeManifestPresent?: unknown; cleanupKnown?: unknown }): GateDecision {
-  if (e.outcomeManifestPresent !== true) return { verdict: 'failed', reasonCodes: ['outcome_manifest_missing'] };
-  if (e.cleanupKnown !== true) return { verdict: 'failed', reasonCodes: ['cleanup_owner_or_expiry_unknown'] };
-  return { verdict: 'passed', reasonCodes: ['outcome_recorded'] };
-}
+// outcome_recorded is evaluated from the real OutcomeManifest: see outcome.ts.
 
 // --- Gate-set resolution with risk escalation (chapter 05 "Assurance" and "Proportional
 // scrutiny"). The effective tier is the maximum of requested, application minimum and discovered

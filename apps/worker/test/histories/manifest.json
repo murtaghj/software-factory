@@ -136,5 +136,53 @@
     "workflowId": "factory/e36e702c-bbde-469e-a580-2b87a493faef/68ab5565-cffa-4e5d-a590-54fe725bdaf3",
     "capturedWithWorkflowCodeDigest": "40988e7fdc350c6b6d2db919e02a683f11112057fbdfb3b715f34d61ead2d416",
     "events": 234
+  },
+  "completed-outcome-v1": {
+    "description": "Investigation plan run to success through fake stages",
+    "workflowId": "factory/fd3ee95b-0dc0-47fc-830a-b366c97c6402/77cd724e-147d-4bdd-96b5-701b1fb817cf",
+    "capturedWithWorkflowCodeDigest": "833847da4ea3f2147b9dcf1dc47f79a947ddc51d29f259ca4fbcf87f9df6c0f4",
+    "events": 295
+  },
+  "failed-outcome-v1": {
+    "description": "Mandatory evidence_review stage reports a product failure",
+    "workflowId": "factory/fd3ee95b-0dc0-47fc-830a-b366c97c6402/8c43a509-2712-4c9e-9597-3a933e75e9ea",
+    "capturedWithWorkflowCodeDigest": "833847da4ea3f2147b9dcf1dc47f79a947ddc51d29f259ca4fbcf87f9df6c0f4",
+    "events": 185
+  },
+  "active-mid-stage-outcome-v1": {
+    "description": "Open history: the investigate stage is still executing",
+    "workflowId": "factory/fd3ee95b-0dc0-47fc-830a-b366c97c6402/798017b8-d4d0-4821-82b1-ca13c20292bf",
+    "capturedWithWorkflowCodeDigest": "833847da4ea3f2147b9dcf1dc47f79a947ddc51d29f259ca4fbcf87f9df6c0f4",
+    "events": 113
+  },
+  "amended-outcome-v1": {
+    "description": "amend_spec races an in-flight stage; plan 2 supersedes plan 1",
+    "workflowId": "factory/fd3ee95b-0dc0-47fc-830a-b366c97c6402/83b485e5-6923-4b47-8ee8-bdc8662198cd",
+    "capturedWithWorkflowCodeDigest": "833847da4ea3f2147b9dcf1dc47f79a947ddc51d29f259ca4fbcf87f9df6c0f4",
+    "events": 420
+  },
+  "continued-as-new-outcome-v1": {
+    "description": "First run of a task that rolls over after two stages",
+    "workflowId": "factory/fd3ee95b-0dc0-47fc-830a-b366c97c6402/00509d00-d4a7-45a2-9521-a6e7e87eb612",
+    "capturedWithWorkflowCodeDigest": "833847da4ea3f2147b9dcf1dc47f79a947ddc51d29f259ca4fbcf87f9df6c0f4",
+    "events": 137
+  },
+  "plan-review-approved-outcome-v1": {
+    "description": "Production template: plan review approved by an independent peer",
+    "workflowId": "factory/97b53218-2c00-434e-8d7d-7853b23f28d2/a672afab-4d17-4895-946f-c1fe9adb7822",
+    "capturedWithWorkflowCodeDigest": "833847da4ea3f2147b9dcf1dc47f79a947ddc51d29f259ca4fbcf87f9df6c0f4",
+    "events": 391
+  },
+  "paused-resumed-outcome-v1": {
+    "description": "Paused during a stage, then resumed",
+    "workflowId": "factory/97b53218-2c00-434e-8d7d-7853b23f28d2/44af5072-ddb8-48d3-8207-dab0688ff4e2",
+    "capturedWithWorkflowCodeDigest": "833847da4ea3f2147b9dcf1dc47f79a947ddc51d29f259ca4fbcf87f9df6c0f4",
+    "events": 401
+  },
+  "cancelled-in-flight-outcome-v1": {
+    "description": "Cancelled while a stage was executing",
+    "workflowId": "factory/97b53218-2c00-434e-8d7d-7853b23f28d2/b0f7404a-71ac-4270-a8d3-b44957d5844c",
+    "capturedWithWorkflowCodeDigest": "833847da4ea3f2147b9dcf1dc47f79a947ddc51d29f259ca4fbcf87f9df6c0f4",
+    "events": 258
   }
 }

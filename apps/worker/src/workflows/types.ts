@@ -26,6 +26,7 @@ export type PlanSnapshot = {
   budget?: { maxMicroUsd: number; maxActiveSeconds: number; maxCalendarSeconds: number; maxAuthoringInvocations: number; maxSemanticAttemptsPerNode: number; invocationMode: 'one' | 'bounded' };
 };
 
+export type ControllerOutput = { ok: true; ref: ArtifactRefLike } | { ok: false; reason: string };
 export type BudgetAdmission = { admitted: boolean; reasons: string[]; chargedMicroUsd: number; reservedMicroUsd: number; limitMicroUsd: number };
 
 export type GateResult = { gateId: string; verdict: 'passed' | 'failed' | 'inconclusive'; evaluationId: string; reasonCodes: string[] };
@@ -63,6 +64,8 @@ export type Checkpoint = {
   pendingAmendSpecRef?: ArtifactRefLike;
   pendingBudgetMicroUsd?: number;
   decision?: PendingDecision;
+  // outcome-v1: the recorded OutcomeManifest, set on the succeeded projection.
+  outcomeRef?: ArtifactRefLike;
   // Test knob for Continue-As-New coverage: roll over after this many completed stages in a run.
   rolloverAfterStages?: number;
 };
@@ -80,11 +83,13 @@ export interface TaskActivities {
   supersedeGates(i: { orgId: string; taskId: string; oldPlanVersion: number; newPlanVersion: number }): Promise<number>;
   openBudget(i: { orgId: string; taskId: string; limitMicroUsd: number }): Promise<{ accountId: string }>;
   reserveStageBudget(i: { orgId: string; taskId: string; operationKey: string; nodeId: string }): Promise<BudgetAdmission>;
-  chargeStageBudget(i: { orgId: string; taskId: string; operationKey: string; nodeId: string }): Promise<BudgetAdmission>;
+  chargeStageBudget(i: { orgId: string; taskId: string; operationKey: string; nodeId: string; actualMicroUsd?: number }): Promise<BudgetAdmission>;
   materializeSpec(i: { orgId: string; taskId: string; specRef: ArtifactRefLike; version: number; actorCommandId: string }): Promise<{ ok: true; version: number } | { ok: false; reason: string }>;
   adjustBudget(i: { orgId: string; taskId: string; limitMicroUsd: number }): Promise<BudgetAdmission>;
   requestPlanReview(i: { orgId: string; taskId: string; planVersion: number; nodeId: string; logicalId: string; packetRef: ArtifactRefLike; policyRef: ArtifactRefLike }): Promise<{ ok: true; decision: PendingDecision } | { ok: false; reason: string }>;
   settleDecision(i: { orgId: string; taskId: string; decision: PendingDecision; binding: Record<string, unknown> }): Promise<{ gate: 'passed' | 'failed'; reasonCodes: string[] }>;
   supersedeDecisions(i: { orgId: string; taskId: string; reason: string }): Promise<number>;
-  project(i: { orgId: string; taskId: string; sequence: number; state: { status: TaskStatus; currentNodeId?: string | null; waitingReason?: string | null; specVersion: number; planVersion: number; controlRevision: number }; refs: Record<string, unknown>; eventType: string; correlationId: string }): Promise<{ outcome: 'applied' | 'duplicate' | 'stale' }>;
+  deliverReport(i: { orgId: string; taskId: string; logicalId: string; planVersion: number; candidateRef: ArtifactRefLike; reviewRef: ArtifactRefLike; requiredGateIds: string[] }): Promise<ControllerOutput>;
+  recordOutcome(i: { orgId: string; taskId: string; logicalId: string; planVersion: number; deliveredRefs: ArtifactRefLike[]; providerHandles: string[] }): Promise<ControllerOutput>;
+  project(i: { orgId: string; taskId: string; sequence: number; state: { status: TaskStatus; currentNodeId?: string | null; waitingReason?: string | null; specVersion: number; planVersion: number; controlRevision: number; outcomeRef?: ArtifactRefLike }; refs: Record<string, unknown>; eventType: string; correlationId: string }): Promise<{ outcome: 'applied' | 'duplicate' | 'stale' }>;
 }

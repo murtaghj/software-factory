@@ -12,13 +12,14 @@ import { problem, sendProblem } from './http/problem.ts';
 import { ApiError, type TaskService } from './tasks/service.ts';
 import { listGates, listRuns } from './tasks/views.ts';
 import type { CommandService } from './tasks/commands.ts';
+import type { OutcomeBundleService } from './tasks/outcome-bundle.ts';
 import { streamTaskEvents, type StreamOptions } from './events/sse.ts';
 
 declare module 'fastify' {
   interface FastifyRequest { principal?: Principal; identity?: VerifiedIdentity; requestId: string }
 }
 
-export type ApiDeps = { db: Database; verifier: OidcVerifier; artifacts: ArtifactService; tasks: TaskService; commands?: CommandService; dashboardOrigin: string; events?: StreamOptions };
+export type ApiDeps = { db: Database; verifier: OidcVerifier; artifacts: ArtifactService; tasks: TaskService; commands?: CommandService; outcomes?: OutcomeBundleService; dashboardOrigin: string; events?: StreamOptions };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -123,6 +124,15 @@ export function buildApi(deps: ApiDeps): FastifyInstance {
     if (!ok) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
     const limit = limitOf(req.query.limit);
     return deps.db.withTenant({ orgId: ok.principal.orgId, principalId: ok.principal.principalId }, (tx) => listGates(tx, req.params.taskId, { limit, includeHistorical: req.query.includeHistorical === 'true', ...(req.query.inputHash ? { inputHash: req.query.inputHash } : {}) }));
+  });
+
+  // Not in the rev 1.13 OpenAPI (A-14): the operator outcome-bundle export of chapter 12 / AC-54.
+  app.get<{ Params: { taskId: string } }>('/v2/tasks/:taskId/outcome-bundle', async (req, reply) => {
+    const principal = req.principal;
+    if (!principal) throw new AuthorizationError('unauthenticated');
+    if (!deps.outcomes) return sendProblem(reply, problem(503, 'dependency_unavailable', 'outcome export is not configured', req.id));
+    if (!UUID.test(req.params.taskId)) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
+    return deps.outcomes.export(principal, req.params.taskId, req.id);
   });
 
   app.get<{ Params: { taskId: string }; Querystring: { after?: string } }>('/v2/tasks/:taskId/events', async (req, reply) => {
