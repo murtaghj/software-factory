@@ -31,6 +31,26 @@ describe('AC-34 budget concurrency (workflow half: unmet work never becomes succ
     expect(charged).toBe('30000000');
   });
 
+  it('the active-time ceiling stops the next admission once stage execution has used it up', async () => {
+    const { taskId, launch } = await h.newTask({ maxActiveSeconds: 1 });
+    const view = await h.withWorker<WorkflowView>({ delayMs: (n) => (n === 'scope' ? 1300 : 0) }, async (tq) => (await start(tq, launch, launch.workflowId)).result() as Promise<WorkflowView>);
+    expect(view.status).toBe('incomplete');
+    expect(view.nodes.scope?.status).toBe('passed');
+    expect(view.nodes.investigate?.status).toBe('pending');
+    const last = await tx(async (t) => (await t.query<{ waiting_reason: string }>('SELECT waiting_reason FROM factory.task WHERE id = $1', [taskId])).rows[0]);
+    expect(last?.waiting_reason).toBe('budget_exhausted');
+    const payload = await tx(async (t) => (await t.query<{ event_type: string }>("SELECT event_type FROM factory.task_event WHERE task_id = $1 ORDER BY sequence DESC LIMIT 1", [taskId])).rows[0]);
+    expect(payload?.event_type).toBe('task.completed');
+  });
+
+  it('the calendar ceiling counts waiting as well as working', async () => {
+    const { launch } = await h.newTask({ maxCalendarSeconds: 1, maxActiveSeconds: 3600 });
+    // No single stage is long, but the task's lifetime passes one second before investigate.
+    const view = await h.withWorker<WorkflowView>({ delayMs: (n) => (n === 'scope' ? 1300 : 0) }, async (tq) => (await start(tq, launch, launch.workflowId)).result() as Promise<WorkflowView>);
+    expect(view.status).toBe('incomplete');
+    expect(view.nodes.investigate?.status).toBe('pending');
+  });
+
   it('invocation mode one admits the plan\'s single authoring stage and independent checks still run', async () => {
     const { launch } = await h.newTask({ invocationMode: 'one' });
     const view = await h.withWorker<WorkflowView>(undefined, async (tq) => (await start(tq, launch, launch.workflowId)).result() as Promise<WorkflowView>);

@@ -7,7 +7,7 @@ import { canonicalHash } from '@factory/domain';
 import type { Database, Tx } from '@factory/database';
 import type { ArtifactService } from '@factory/artifacts';
 import { effectiveRoles, type Principal } from '../auth/rbac.ts';
-import { ApiError, workflowIdFor } from './service.ts';
+import { ApiError, admitTaskRequest, workflowIdFor } from './service.ts';
 
 const M1_COMMANDS = new Set(['pause', 'resume', 'cancel', 'amend_spec', 'change_budget']);
 const RESPONSE_ENDPOINT_ACTIONS = new Set(['confirm_intent', 'approve_plan', 'approve_rule_exception']);
@@ -48,6 +48,17 @@ export class CommandService {
     return { commandId: envelope.commandId, taskId: t.id, state: 'queued', statusUrl: `/v2/commands/${envelope.commandId}` };
   }
 
+  // A retried command is reconciled by commandId before any state check: once the first attempt has
+  // been applied the revision has moved (or the task closed), and the retry must get the original
+  // receipt, not 412/409 (AC-212). The same commandId with a different request is a conflict.
+  private async replayIfKnown(tx: Tx, p: Principal, commandId: string, taskId: string, requestHash: string): Promise<CommandReceipt | undefined> {
+    const prior = await tx.query<{ request_hash: string; task_id: string; principal_id: string }>('SELECT request_hash, task_id, principal_id FROM factory.command WHERE id = $1', [commandId]);
+    const row = prior.rows[0];
+    if (!row) return undefined;
+    if (row.request_hash !== requestHash || row.task_id !== taskId || row.principal_id !== p.principalId) throw new ApiError(409, 'command_conflict', 'this commandId was already used for a different command');
+    return this.receipt(tx, commandId);
+  }
+
   private async receipt(tx: Tx, commandId: string): Promise<CommandReceipt> {
     const r = await tx.query<{ task_id: string; state: CommandReceipt['state']; rejection_reason: string | null; workflow_result: { resultingRevision?: number } | null }>('SELECT task_id, state, rejection_reason, workflow_result FROM factory.command WHERE id = $1', [commandId]);
     const c = r.rows[0];
@@ -63,6 +74,8 @@ export class CommandService {
     if (ifMatch === undefined || ifMatch.replace(/"/g, '') !== String(env.expectedRevision)) throw new ApiError(412, 'if_match_mismatch', 'If-Match must carry the expected control revision');
     return this.tenant(p, async (tx) => {
       const t = await this.loadTask(tx, p, taskId);
+      const replayed = await this.replayIfKnown(tx, p, env.commandId, t.id, canonicalHash(env));
+      if (replayed) return replayed;
       if (env.kind === 'respond_decision' || env.decisionId !== undefined) {
         const d = await tx.query<{ action: string }>('SELECT action FROM factory.decision_request WHERE id = $1 AND task_id = $2', [env.decisionId ?? null, taskId]);
         if (d.rows[0] && RESPONSE_ENDPOINT_ACTIONS.has(d.rows[0].action)) throw new ApiError(422, 'decision_requires_response_endpoint', `${d.rows[0].action} decisions use POST /decisions/{decisionId}/responses`);
@@ -86,10 +99,29 @@ export class CommandService {
         }
         if ((spec.deliveryScope === 'design') !== (t.delivery_scope === 'design')) throw new ApiError(422, 'design_scope_change_requires_new_task', 'a change into or out of design scope requires a new task');
         if (spec.targetContext.applicationId !== t.primary_application_id) throw new ApiError(422, 'target_change_requires_new_task', 'the primary target cannot change; create a linked task');
+        // The amended spec is admitted exactly like a new request (application authority, incident
+        // priority, unsupported capabilities), and may not change what the task row and budget
+        // account were opened for: scope, priority and budget change only through their own paths.
+        await admitTaskRequest(tx, p, spec);
+        const current = await tx.query<{ spec: TaskRequest }>('SELECT s.spec FROM factory.task_spec_version s JOIN factory.task t ON t.org_id = s.org_id AND t.id = s.task_id AND t.spec_version = s.version WHERE t.id = $1', [t.id]);
+        const was = current.rows[0]?.spec;
+        if (!was) throw new ApiError(409, 'spec_not_found', 'the current task spec is not recorded');
+        if (spec.deliveryScope !== was.deliveryScope) throw new ApiError(422, 'delivery_scope_change_not_supported', 'changing delivery scope by amendment is not available in this release');
+        if ((spec.priorityClass ?? 'normal') !== (was.priorityClass ?? 'normal')) throw new ApiError(422, 'priority_change_not_supported', 'changing priority by amendment is not available in this release');
+        if (canonicalHash(spec.budget) !== canonicalHash(was.budget)) throw new ApiError(422, 'budget_change_requires_change_budget', 'budgets change only through change_budget');
+        const linked = await tx.query('SELECT 1 FROM factory.artifact_link WHERE artifact_id = $1 AND task_id = $2 LIMIT 1', [env.specRef.artifactId, t.id]);
+        if ((linked.rowCount ?? 0) === 0) throw new ApiError(422, 'invalid_spec', 'specRef is not a readable finalized artifact of this task');
         payload.specRef = env.specRef;
       }
       if (env.kind === 'change_budget') {
         if (!env.budget) throw new ApiError(422, 'invalid_command', 'change_budget requires budget');
+        // Raising a limit is a budget-owner decision (chapter 03): the application owner or an
+        // operator. A task controller may only lower it.
+        const account = await tx.query<{ limit_micro_usd: string }>('SELECT limit_micro_usd FROM factory.budget_account WHERE task_id = $1', [t.id]);
+        const limit = account.rows[0] ? Number(account.rows[0].limit_micro_usd) : undefined;
+        const owners = Array.isArray(t.owner_ids) ? (t.owner_ids as unknown[]).filter((x): x is string => typeof x === 'string') : [];
+        const budgetOwner = effectiveRoles(p, { applicationId: t.primary_application_id, applicationOwnerIds: owners }).some((g) => g.role === 'operator' || g.role === 'application_owner');
+        if ((limit === undefined || env.budget.maxMicroUsd > limit) && !budgetOwner) throw new ApiError(403, 'budget_increase_not_authorized', 'raising a task budget requires the application owner or an operator');
         payload.budgetMicroUsd = env.budget.maxMicroUsd;
       }
       return this.insertCommand(tx, p, t, env, payload, canonicalHash(env));
@@ -124,12 +156,19 @@ export class CommandService {
 
   async listDecisions(p: Principal, q: { taskId?: string; state?: string }): Promise<DecisionPage> {
     return this.tenant(p, async (tx) => {
-      const r = await tx.query<Parameters<CommandService['toDecisionView']>[0]>(`${this.decisionSql} WHERE ($1::uuid IS NULL OR r.task_id = $1) AND ($2::text IS NULL OR r.state = $2) ORDER BY r.created_at, r.id LIMIT 100`, [q.taskId ?? null, q.state ?? null]);
+      // Newest first; rows the caller may not read are skipped before the page limit, so they
+      // never hide readable decisions.
       const items: DecisionView[] = [];
-      for (const row of r.rows) {
-        try { await this.loadTask(tx, p, row.task_id); items.push(this.toDecisionView(row)); } catch (e) { if (!(e instanceof ApiError)) throw e; }
+      let offset = 0;
+      for (;;) {
+        const r = await tx.query<Parameters<CommandService['toDecisionView']>[0]>(`${this.decisionSql} WHERE ($1::uuid IS NULL OR r.task_id = $1) AND ($2::text IS NULL OR r.state = $2) ORDER BY r.created_at DESC, r.id DESC LIMIT 200 OFFSET $3`, [q.taskId ?? null, q.state ?? null, offset]);
+        for (const row of r.rows) {
+          try { await this.loadTask(tx, p, row.task_id); items.push(this.toDecisionView(row)); } catch (e) { if (!(e instanceof ApiError)) throw e; }
+          if (items.length === 100) return { items };
+        }
+        if (r.rows.length < 200) return { items };
+        offset += 200;
       }
-      return { items };
     });
   }
 
@@ -141,12 +180,15 @@ export class CommandService {
     if (!v.ok) throw new ApiError(422, 'invalid_decision_response', 'request does not match DecisionResponse', v.errors.slice(0, 10).map((e) => `${e.path || '/'} ${e.message}`));
     const resp = v.value;
     return this.tenant(p, async (tx) => {
-      const r = await tx.query<{ task_id: string; state: string; subject_hash: string; required_principal_id: string | null }>('SELECT task_id, state, subject_hash, required_principal_id FROM factory.decision_request WHERE id = $1', [decisionId]);
+      const r = await tx.query<{ task_id: string; state: string; subject_hash: string; required_principal_id: string | null; expired: boolean }>('SELECT task_id, state, subject_hash, required_principal_id, expires_at <= now() AS expired FROM factory.decision_request WHERE id = $1', [decisionId]);
       const d = r.rows[0];
       if (!d) throw new ApiError(404, 'not_found', 'unknown or inaccessible resource');
       const t = await this.loadTask(tx, p, d.task_id);
+      const replayed = await this.replayIfKnown(tx, p, resp.commandId, t.id, canonicalHash({ decisionId, ...resp }));
+      if (replayed) return replayed;
       if (d.required_principal_id !== p.principalId) throw new ApiError(403, 'not_the_required_peer', 'this decision is assigned to another principal');
       if (d.state !== 'pending') throw new ApiError(409, 'decision_closed', `decision is ${d.state}`);
+      if (d.expired) throw new ApiError(409, 'decision_expired', 'the decision request has expired');
       if (resp.subjectHash !== d.subject_hash) throw new ApiError(409, 'stale_subject', 'the response names a different subject than the pending decision');
       const payload = { workflowId: workflowIdFor(p.orgId, t.id), commandId: resp.commandId, kind: 'respond_decision', expectedRevision: resp.expectedRevision, reason: resp.reason, decisionId, outcome: resp.outcome, subjectHash: resp.subjectHash, reviewedSectionIds: resp.reviewedSectionIds ?? [], deciderPrincipalId: p.principalId, channel: 'decision_response_endpoint' };
       return this.insertCommand(tx, p, t, { commandId: resp.commandId, kind: 'respond_decision', expectedRevision: resp.expectedRevision }, payload, canonicalHash({ decisionId, ...resp }));

@@ -20,11 +20,17 @@ const persist = proxyActivities<TaskActivities>({ startToCloseTimeout: '30 secon
 const resolve = proxyActivities<TaskActivities>({ startToCloseTimeout: '120 seconds', scheduleToCloseTimeout: '10 minutes', retry: { initialInterval: '1 second', backoffCoefficient: 2, maximumInterval: '30 seconds', maximumAttempts: 4 } });
 const execute = proxyActivities<TaskActivities>({ startToCloseTimeout: '50 minutes', heartbeatTimeout: '10 seconds', retry: { initialInterval: '1 second', backoffCoefficient: 2, maximumInterval: '30 seconds', maximumAttempts: 5 } });
 
+// Workflow time. Inside the Temporal sandbox `Date.now()` is the deterministic task time recorded in
+// history (constant within a workflow task and identical on replay), so this is the one sanctioned
+// use of Date in workflow code; the lint rule bans it everywhere else.
+// eslint-disable-next-line no-restricted-globals -- deterministic sandbox clock, see above
+const workflowNow = (): number => Date.now();
 const HISTORY_SOFT_LIMIT = 5000;
 export const GATE_ENGINE_V1 = 'gate-engine-v1';
 export const BUDGET_V1 = 'budget-v1';
 export const COMMANDS_V1 = 'commands-v1';
 export const OUTCOME_V1 = 'outcome-v1';
+export const SETTLE_V1 = 'settle-v1';
 const PAUSABLE: readonly string[] = ['queued', 'running', 'waiting_input', 'waiting_decision'];
 const CANCELLABLE: readonly string[] = ['accepted', 'queued', 'running', 'waiting_input', 'waiting_decision', 'paused'];
 
@@ -90,7 +96,7 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
     } else if (commandsV1 && cmd.kind === 'change_budget' && typeof cmd.budgetMicroUsd === 'number' && Number.isSafeInteger(cmd.budgetMicroUsd) && cmd.budgetMicroUsd >= 0) {
       st.controlRevision += 1; st.pendingBudgetMicroUsd = cmd.budgetMicroUsd; receipt = { state: 'applied', resultingRevision: st.controlRevision };
     } else if (commandsV1 && cmd.kind === 'amend_spec' && cmd.specRef !== undefined && st.pendingAmendSpecVersion === undefined && st.pendingAmendSpecRef === undefined) {
-      st.controlRevision += 1; st.pendingAmendSpecRef = cmd.specRef; st.pendingAmendSpecVersion = st.specVersion + 1;
+      st.controlRevision += 1; st.pendingAmendSpecRef = cmd.specRef; st.pendingAmendSpecVersion = st.specVersion + 1; st.pendingAmendCommandId = cmd.commandId;
       receipt = { state: 'applied', resultingRevision: st.controlRevision };
     } else if (commandsV1 && cmd.kind === 'respond_decision') {
       receipt = applyDecisionResponse(st, cmd);
@@ -117,6 +123,10 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
   // budget-v1: open the task's account before any stage; later builds reserve before each stage.
   const budgeted = patched(BUDGET_V1) && state.plan.budget !== undefined;
   if (budgeted && !checkpoint && state.plan.budget) await persist.openBudget({ orgId: launch.orgId, taskId: launch.taskId, limitMicroUsd: state.plan.budget.maxMicroUsd });
+  // settle-v1: meter calendar and active time for the ceilings, settle the reservation of a
+  // cancelled stage, and close a plan-review stage run that a cancel or amendment interrupted.
+  const settleV1 = patched(SETTLE_V1);
+  if (settleV1 && state.startedAtMs === undefined) state.startedAtMs = workflowNow();
 
   const project = async (requested: Checkpoint['status'], eventType: string, extra: { currentNodeId?: string | null; waitingReason?: string | null; refs?: Record<string, unknown> } = {}): Promise<void> => {
     // A pause applied while a stage was in flight wins over the stage's own "running" projection.
@@ -141,8 +151,10 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
     if (next === undefined) return;
     if (commandsV1 && state.pendingAmendSpecRef) {
       const specRef = state.pendingAmendSpecRef;
-      const made = await persist.materializeSpec({ orgId: launch.orgId, taskId: launch.taskId, specRef, version: next, actorCommandId: Object.keys(state.receipts).at(-1) ?? '' });
+      // The amending command is recorded when it is applied; later commands cannot take its place.
+      const made = await persist.materializeSpec({ orgId: launch.orgId, taskId: launch.taskId, specRef, version: next, actorCommandId: state.pendingAmendCommandId ?? Object.keys(state.receipts).at(-1) ?? '' });
       delete state.pendingAmendSpecRef;
+      delete state.pendingAmendCommandId;
       if (!made.ok) {
         delete state.pendingAmendSpecVersion;
         await project(state.status, 'plan.amendment_rejected', { refs: { reason: made.reason } });
@@ -230,7 +242,10 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
       if (decided() || deadlinePassed(deadline)) break;
       await project('waiting_decision', 'task.resumed', { currentNodeId: nodeId, waitingReason: 'plan_review' });
     }
-    if (cancelRequested() || state.pendingAmendSpecVersion !== undefined) return 'continue';
+    if (cancelRequested() || state.pendingAmendSpecVersion !== undefined) {
+      if (settleV1) await persist.finishStage({ orgId: launch.orgId, logicalId, status: 'inconclusive', errorClass: cancelRequested() ? 'cancelled' : 'superseded_binding' });
+      return 'continue';
+    }
     const current = decisionOf();
     const d: PendingDecision = !current || current.state === 'pending' ? { ...req.decision, state: 'expired' } : current;
     state.decision = d;
@@ -340,7 +355,11 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
     if (budgeted && state.plan.budget) {
       // Ceilings and reservation precede the stage; exhaustion is an explicit incomplete outcome (INV-11).
       const authoring = AUTHORING_STAGE_KINDS.has(node.stageKind);
-      const ceiling = checkCeilings(state.plan.budget, { chargedMicroUsd: 0, reservedMicroUsd: 0, activeSeconds: 0, calendarSeconds: 0, authoringInvocations: state.authoringInvocations ?? 0, maxSemanticAttemptsUsed: 0 }, { authoring, estimateMicroUsd: 0, semanticAttempt: ns.attempt });
+      // Money is enforced by the database reservation below (it sees every account on the chain); the
+      // workflow enforces invocation, attempt and (settle-v1) time ceilings.
+      const activeSeconds = settleV1 ? (state.activeMs ?? 0) / 1000 : 0;
+      const calendarSeconds = settleV1 ? (workflowNow() - (state.startedAtMs ?? workflowNow())) / 1000 : 0;
+      const ceiling = checkCeilings(state.plan.budget, { chargedMicroUsd: 0, reservedMicroUsd: 0, activeSeconds, calendarSeconds, authoringInvocations: state.authoringInvocations ?? 0, maxSemanticAttemptsUsed: 0 }, { authoring, estimateMicroUsd: 0, semanticAttempt: ns.attempt });
       const admission = ceiling.admit ? await persist.reserveStageBudget({ orgId: launch.orgId, taskId: launch.taskId, operationKey: logicalId, nodeId: node.id }) : undefined;
       if (!ceiling.admit || !admission?.admitted) {
         const reasons = ceiling.admit ? (admission?.reasons ?? ['budget reservation failed']) : ceiling.reasons;
@@ -373,16 +392,21 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
       // Cancellation stops the in-flight stage; its partial result is recorded as cancelled (INV-15).
       const scope = new CancellationScope();
       inflight = scope;
+      const began = workflowNow();
       try {
         result = await scope.run(() => execute.executeFakeStage(stageInput));
       } catch (e) {
         if (!isCancellation(e)) throw e;
         inflight = undefined;
+        if (settleV1) state.activeMs = (state.activeMs ?? 0) + (workflowNow() - began);
         await CancellationScope.nonCancellable(() => persist.finishStage({ orgId: launch.orgId, logicalId, status: 'inconclusive', errorClass: 'cancelled' }));
+        // The stage ran until cancelled: record its spend and release the reservation.
+        if (settleV1 && budgeted) await CancellationScope.nonCancellable(() => persist.chargeStageBudget({ orgId: launch.orgId, taskId: launch.taskId, operationKey: logicalId, nodeId: node.id }));
         state.nodes[node.id] = { ...ns, status: 'failed', stageRunId, inputHash };
         continue;
       }
       inflight = undefined;
+      if (settleV1) state.activeMs = (state.activeMs ?? 0) + (workflowNow() - began);
     } else {
       result = await execute.executeFakeStage(stageInput);
     }
@@ -402,7 +426,9 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
     // gate-engine-v1: a completed node passes only when every required gate has a current passing
     // evaluation for this exact binding. Histories from earlier builds keep their original path.
     if (result.status === 'completed' && node.requiredGateIds.length > 0 && patched(GATE_ENGINE_V1)) {
-      const gates = await persist.evaluateGates({ orgId: launch.orgId, taskId: launch.taskId, nodeId: node.id, logicalId, stageKind: node.stageKind, requiredGateIds: node.requiredGateIds, binding: { ...binding, ...(state.plan.criteriaRef ? { criteriaRef: state.plan.criteriaRef } : {}) }, outputRefs: result.outputRefs, dependencyRefs: dependencies.flatMap((d) => (d.resultRef ? [d.resultRef] : [])) });
+      const authorProducerIds = node.dependsOn.flatMap((d) => { const p = state.nodes[d]?.producerId; return p === undefined ? [] : [p]; });
+      const producers = authorProducerIds.length === node.dependsOn.length ? { reviewerProducerId: result.producerId, authorProducerIds } : undefined;
+      const gates = await persist.evaluateGates({ orgId: launch.orgId, taskId: launch.taskId, nodeId: node.id, logicalId, stageKind: node.stageKind, requiredGateIds: node.requiredGateIds, binding: { ...binding, ...(state.plan.criteriaRef ? { criteriaRef: state.plan.criteriaRef } : {}) }, outputRefs: result.outputRefs, dependencyRefs: dependencies.flatMap((d) => (d.resultRef ? [d.resultRef] : [])), ...(producers ? { producers } : {}) });
       if (!gates.allPassed) {
         await persist.finishStage({ orgId: launch.orgId, logicalId, status: 'failed', errorClass: 'gate_failed' });
         state.nodes[node.id] = { ...ns, status: 'failed', stageRunId, inputHash };
@@ -414,7 +440,7 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
     if (result.status === 'completed') {
       const resultRef = result.outputRefs[0];
       await persist.finishStage({ orgId: launch.orgId, logicalId, status: 'passed', ...(resultRef ? { resultRef } : {}) });
-      state.nodes[node.id] = { ...ns, status: 'passed', stageRunId, inputHash, outputRefs: result.outputRefs, ...(resultRef ? { resultRef } : {}) };
+      state.nodes[node.id] = { ...ns, status: 'passed', stageRunId, inputHash, outputRefs: result.outputRefs, producerId: result.producerId, ...(resultRef ? { resultRef } : {}) };
       await project('running', 'stage.completed', { currentNodeId: node.id, refs: { stageRunId: logicalId, outcome: 'passed' } });
     } else {
       await persist.finishStage({ orgId: launch.orgId, logicalId, status: result.status === 'product_failure' ? 'failed' : 'inconclusive', errorClass: result.status });

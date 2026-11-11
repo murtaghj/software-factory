@@ -35,10 +35,28 @@ describe('W-012 gate engine in TaskWorkflow', () => {
     expect((await gates(taskId)).find((g) => g.gate_id === 'review_passed')).toMatchObject({ verdict: 'failed', reason_codes: ['unresolved_blocking_findings'] });
   });
 
-  it('a reviewer that is the author fails independence, even with no findings', async () => {
+  it('a reviewer that is the author fails independence, even with no findings and a self-description claiming otherwise', async () => {
     const { taskId, launch } = await h.newTask();
-    await h.withWorker<WorkflowView>({ evidence: (node, d) => (node === 'evidence_review' ? { ...d, reviewerProducerId: 'fake-runner' } : d) }, async (tq) => (await start(tq, launch, launch.workflowId)).result() as Promise<WorkflowView>);
+    // The review stage really ran as the author's producer; its output still claims independence.
+    const view = await h.withWorker<WorkflowView>({ producerId: (node) => (node === 'evidence_review' ? 'fake-runner' : node === 'investigate' ? 'fake-runner' : 'fake-other') }, async (tq) => (await start(tq, launch, launch.workflowId)).result() as Promise<WorkflowView>);
     expect((await gates(taskId)).find((g) => g.gate_id === 'review_passed')).toMatchObject({ verdict: 'failed', reason_codes: ['reviewer_not_independent'] });
+    expect(view.status).toBe('failed');
+    expect(view.nodes.deliver?.status).toBe('pending');
+  });
+
+  it('the reviewer cannot make itself independent or dependent by describing itself: only recorded producers count', async () => {
+    const { taskId, launch } = await h.newTask();
+    const view = await h.withWorker<WorkflowView>({ evidence: (node, d) => (node === 'evidence_review' ? { ...d, reviewerProducerId: 'fake-runner' } : d) }, async (tq) => (await start(tq, launch, launch.workflowId)).result() as Promise<WorkflowView>);
+    expect((await gates(taskId)).find((g) => g.gate_id === 'review_passed')).toMatchObject({ verdict: 'passed' });
+    expect(view.status).toBe('succeeded');
+  });
+
+  it('scope_accepted maps the pinned criteria, not the discovery stage\'s own list', async () => {
+    const { taskId, launch } = await h.newTask();
+    // Discovery reports only a criterion it invented, and "maps" exactly that one.
+    const view = await h.withWorker<WorkflowView>({ evidence: (node, d) => (node === 'scope' ? { ...d, criteriaIds: ['C9'], mappedCriteriaIds: ['C9'] } : d) }, async (tq) => (await start(tq, launch, launch.workflowId)).result() as Promise<WorkflowView>);
+    expect(view.status).toBe('failed');
+    expect((await gates(taskId)).map((g) => [g.gate_id, g.verdict, g.reason_codes])).toEqual([['scope_accepted', 'failed', ['criteria_unmapped']]]);
   });
 
   it('a blocking context gap fails scope_accepted at the first node', async () => {

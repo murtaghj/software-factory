@@ -40,11 +40,37 @@ export type TaskServiceOptions = {
 type TaskRow = {
   id: string; org_id: string; creator_id: string; owner_principal_id: string; interactive_holder_principal_id: string | null; primary_application_id: string;
   status: TaskView['status']; control_revision: string; plan_version: number; current_node_id: string | null; projection_sequence: string; projected_at: Date | null;
-  created_at: Date; updated_at: Date; outcome_ref: TaskView['outcomeRef'] | null; cleanup_state: TaskView['cleanupState']; waiting_reason: string | null;
+  created_at: Date; created_cursor: string; updated_at: Date; outcome_ref: TaskView['outcomeRef'] | null; cleanup_state: TaskView['cleanupState']; waiting_reason: string | null;
   last_event_sequence: string; priority_class: TaskView['priorityClass']; change_class: string; spec: TaskRequest;
 };
 
 const KEY = /^[\x21-\x7e]{1,200}$/;
+
+// Admission checks that do not depend on the new task. Unsupported capabilities fail closed with
+// an explicit code rather than being silently accepted.
+export async function admitTaskRequest(tx: Tx, p: Principal, req: TaskRequest): Promise<void> {
+  if (req.targetContext.kind !== 'existing_application') throw new ApiError(422, 'new_application_not_supported', 'new-application (greenfield) intake is not available in this release');
+  if (req.deliveryScope === 'design') throw new ApiError(422, 'design_scope_not_supported', 'design-only delivery is not available in this release');
+  if (req.security !== undefined) throw new ApiError(422, 'security_tasks_not_supported', 'security/embargoed intake is not available in this release');
+  if (req.parentTaskId !== undefined) throw new ApiError(422, 'child_tasks_not_supported', 'mixed parent/child tasks are not available in this release');
+  if (req.designSource !== undefined) throw new ApiError(422, 'design_scope_not_supported', 'building from a design is not available in this release');
+  if (!req.applicationIds.includes(req.targetContext.applicationId)) throw new ApiError(422, 'invalid_target', 'the primary application must be listed in applicationIds');
+  const apps = await tx.query<{ id: string; lifecycle: string; owner_ids: unknown }>('SELECT id, lifecycle, owner_ids FROM factory.application WHERE id = ANY($1)', [req.applicationIds]);
+  const byId = new Map(apps.rows.map((a) => [a.id, a]));
+  for (const applicationId of new Set(req.applicationIds)) {
+    const app = byId.get(applicationId);
+    const owners = Array.isArray(app?.owner_ids) ? app.owner_ids.filter((x): x is string => typeof x === 'string') : [];
+    // Unknown and unauthorized applications are indistinguishable (INV-14).
+    if (!app || !authorize(p, 'task.create', { applicationId, applicationOwnerIds: owners }).allowed) throw new ApiError(403, 'application_not_authorized', 'not authorized to create tasks for one or more applications');
+    if (app.lifecycle === 'draft') throw new ApiError(422, 'target_not_registered', 'existing-application work requires a registered application, not a draft');
+  }
+  if (req.priorityClass === 'incident') {
+    const primary = byId.get(req.targetContext.applicationId);
+    const owners = Array.isArray(primary?.owner_ids) ? primary.owner_ids.filter((x): x is string => typeof x === 'string') : [];
+    const roles = effectiveRoles(p, { applicationId: req.targetContext.applicationId, applicationOwnerIds: owners }).map((g) => g.role);
+    if (!roles.some((r) => r === 'operator' || r === 'application_owner')) throw new ApiError(403, 'incident_priority_unauthorized', 'incident priority requires authorized intake');
+  }
+}
 
 export class TaskService {
   private readonly o: TaskServiceOptions;
@@ -67,32 +93,6 @@ export class TaskService {
     return { status: row.response_status, body: row.response_body, replayed: true };
   }
 
-  // Admission checks that do not depend on the new task. Unsupported capabilities fail closed with
-  // an explicit code rather than being silently accepted.
-  private async admit(tx: Tx, p: Principal, req: TaskRequest): Promise<void> {
-    if (req.targetContext.kind !== 'existing_application') throw new ApiError(422, 'new_application_not_supported', 'new-application (greenfield) intake is not available in this release');
-    if (req.deliveryScope === 'design') throw new ApiError(422, 'design_scope_not_supported', 'design-only delivery is not available in this release');
-    if (req.security !== undefined) throw new ApiError(422, 'security_tasks_not_supported', 'security/embargoed intake is not available in this release');
-    if (req.parentTaskId !== undefined) throw new ApiError(422, 'child_tasks_not_supported', 'mixed parent/child tasks are not available in this release');
-    if (req.designSource !== undefined) throw new ApiError(422, 'design_scope_not_supported', 'building from a design is not available in this release');
-    if (!req.applicationIds.includes(req.targetContext.applicationId)) throw new ApiError(422, 'invalid_target', 'the primary application must be listed in applicationIds');
-    const apps = await tx.query<{ id: string; lifecycle: string; owner_ids: unknown }>('SELECT id, lifecycle, owner_ids FROM factory.application WHERE id = ANY($1)', [req.applicationIds]);
-    const byId = new Map(apps.rows.map((a) => [a.id, a]));
-    for (const applicationId of new Set(req.applicationIds)) {
-      const app = byId.get(applicationId);
-      const owners = Array.isArray(app?.owner_ids) ? app.owner_ids.filter((x): x is string => typeof x === 'string') : [];
-      // Unknown and unauthorized applications are indistinguishable (INV-14).
-      if (!app || !authorize(p, 'task.create', { applicationId, applicationOwnerIds: owners }).allowed) throw new ApiError(403, 'application_not_authorized', 'not authorized to create tasks for one or more applications');
-      if (app.lifecycle === 'draft') throw new ApiError(422, 'target_not_registered', 'existing-application work requires a registered application, not a draft');
-    }
-    if (req.priorityClass === 'incident') {
-      const primary = byId.get(req.targetContext.applicationId);
-      const owners = Array.isArray(primary?.owner_ids) ? primary.owner_ids.filter((x): x is string => typeof x === 'string') : [];
-      const roles = effectiveRoles(p, { applicationId: req.targetContext.applicationId, applicationOwnerIds: owners }).map((g) => g.role);
-      if (!roles.some((r) => r === 'operator' || r === 'application_owner')) throw new ApiError(403, 'incident_priority_unauthorized', 'incident priority requires authorized intake');
-    }
-  }
-
   private normalize(req: TaskRequest): TaskRequest {
     const spec: TaskRequest = { ...req, priorityClass: req.priorityClass ?? 'normal' };
     if (req.deliveryScope === 'pr' && req.prCompletion === undefined) spec.prCompletion = { mode: 'pr_created', maxReviewRounds: 3, maxWaitSeconds: 604800 };
@@ -107,7 +107,7 @@ export class TaskService {
     const requestHash = canonicalHash(req);
     const prior = await this.tenant(p, (tx) => this.replay(tx, p, idempotencyKey, requestHash));
     if (prior) return prior;
-    await this.tenant(p, (tx) => this.admit(tx, p, req));
+    await this.tenant(p, (tx) => admitTaskRequest(tx, p, req));
 
     const taskId = randomUUID();
     const operationId = randomUUID();
@@ -126,7 +126,7 @@ export class TaskService {
         if (!replayed) throw new ApiError(409, 'idempotency_conflict', 'concurrent request with this Idempotency-Key is not visible');
         return replayed;
       }
-      await this.admit(tx, p, req); // re-check inside the transaction that commits the side effects
+      await admitTaskRequest(tx, p, req); // re-check inside the transaction that commits the side effects
       const target = req.targetContext;
       await tx.query(`INSERT INTO factory.task (org_id, id, creator_id, owner_principal_id, primary_application_id, target_kind, target_context, work_type, priority_class, change_class, incident_ref, delivery_scope, status, projected_at, last_event_sequence)
         VALUES ($1,$2,$3,$3,$4,$5,$6,$7,$8,$9,$10,$11,'accepted',now(),1)`,
@@ -159,7 +159,7 @@ export class TaskService {
     return view;
   }
 
-  private readonly selectTask = `SELECT t.*, s.spec FROM factory.task t JOIN factory.task_spec_version s ON s.org_id = t.org_id AND s.task_id = t.id AND s.version = t.spec_version`;
+  private readonly selectTask = `SELECT t.*, to_char(t.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_cursor, s.spec FROM factory.task t JOIN factory.task_spec_version s ON s.org_id = t.org_id AND s.task_id = t.id AND s.version = t.spec_version`;
 
   private async readable(tx: Tx, p: Principal, row: TaskRow): Promise<boolean> {
     const app = await tx.query<{ owner_ids: unknown }>('SELECT owner_ids FROM factory.application WHERE id = $1', [row.primary_application_id]);
@@ -196,6 +196,9 @@ export class TaskService {
     if (q.status) add('t.status = ?', q.status);
     if (q.creatorId) add('t.creator_id = ?::uuid', q.creatorId);
     if (q.ownerPrincipalId) add('t.owner_principal_id = ?::uuid', q.ownerPrincipalId);
+    for (const [name, v] of [['createdAfter', q.createdAfter], ['createdBefore', q.createdBefore]] as const) {
+      if (v !== undefined && (!/^\d{4}-\d{2}-\d{2}T/.test(v) || Number.isNaN(Date.parse(v)))) throw new ApiError(422, 'invalid_query', `${name} must be an RFC 3339 timestamp`);
+    }
     if (q.createdAfter) add('t.created_at > ?::timestamptz', q.createdAfter);
     if (q.createdBefore) add('t.created_at < ?::timestamptz', q.createdBefore);
     return this.tenant(p, async (tx) => {
@@ -205,7 +208,7 @@ export class TaskService {
       // Rows the caller may not read are skipped; keep fetching so a page is not cut short by them.
       while (items.length < limit && !exhausted) {
         const page = await tx.query<TaskRow>(`${this.selectTask}${where.length ? ` WHERE ${where.join(' AND ')}` : ''}${last ? `${where.length ? ' AND' : ' WHERE'} (t.created_at, t.id) < ($${String(params.length + 1)}::timestamptz, $${String(params.length + 2)}::uuid)` : ''} ORDER BY t.created_at DESC, t.id DESC LIMIT ${String(limit + 1)}`,
-          last ? [...params, last.created_at.toISOString(), last.id] : params);
+          last ? [...params, last.created_cursor, last.id] : params);
         exhausted = page.rows.length <= limit;
         for (const row of page.rows.slice(0, limit)) {
           last = row;
@@ -215,7 +218,7 @@ export class TaskService {
         if (page.rows.length === 0) exhausted = true;
       }
       const more = items.length === limit && last !== undefined && !exhausted;
-      return more && last ? { items, nextCursor: Buffer.from(JSON.stringify({ createdAt: last.created_at.toISOString(), id: last.id })).toString('base64url') } : { items };
+      return more && last ? { items, nextCursor: Buffer.from(JSON.stringify({ createdAt: last.created_cursor, id: last.id })).toString('base64url') } : { items };
     });
   }
 }

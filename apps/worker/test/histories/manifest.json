@@ -184,5 +184,77 @@
     "workflowId": "factory/97b53218-2c00-434e-8d7d-7853b23f28d2/b0f7404a-71ac-4270-a8d3-b44957d5844c",
     "capturedWithWorkflowCodeDigest": "833847da4ea3f2147b9dcf1dc47f79a947ddc51d29f259ca4fbcf87f9df6c0f4",
     "events": 258
+  },
+  "completed-settle-v1": {
+    "description": "Investigation plan run to success through fake stages",
+    "workflowId": "factory/9c6881f5-d409-4170-aa63-3552feed9b9c/aa94f8d8-94e1-4c32-8679-d30e37ba4f55",
+    "capturedWithWorkflowCodeDigest": "f4c1b0932c63b345b2fc4bbc6e1203ce5df0bfb85a7296904e031694883979ca",
+    "events": 297
+  },
+  "failed-settle-v1": {
+    "description": "Mandatory evidence_review stage reports a product failure",
+    "workflowId": "factory/9c6881f5-d409-4170-aa63-3552feed9b9c/fae74c78-645b-4e3f-9c7d-d6042a22f5d9",
+    "capturedWithWorkflowCodeDigest": "f4c1b0932c63b345b2fc4bbc6e1203ce5df0bfb85a7296904e031694883979ca",
+    "events": 187
+  },
+  "active-mid-stage-settle-v1": {
+    "description": "Open history: the investigate stage is still executing",
+    "workflowId": "factory/9c6881f5-d409-4170-aa63-3552feed9b9c/de00172b-9840-44e3-9308-52fbef91a427",
+    "capturedWithWorkflowCodeDigest": "f4c1b0932c63b345b2fc4bbc6e1203ce5df0bfb85a7296904e031694883979ca",
+    "events": 112
+  },
+  "amended-settle-v1": {
+    "description": "amend_spec races an in-flight stage; plan 2 supersedes plan 1",
+    "workflowId": "factory/9c6881f5-d409-4170-aa63-3552feed9b9c/f9ef6cb7-a374-4c91-b8fe-400cd80cf8a3",
+    "capturedWithWorkflowCodeDigest": "f4c1b0932c63b345b2fc4bbc6e1203ce5df0bfb85a7296904e031694883979ca",
+    "events": 422
+  },
+  "continued-as-new-settle-v1": {
+    "description": "First run of a task that rolls over after two stages",
+    "workflowId": "factory/9c6881f5-d409-4170-aa63-3552feed9b9c/63bb8cb6-8484-4841-8f68-7b3cde31a4f1",
+    "capturedWithWorkflowCodeDigest": "f4c1b0932c63b345b2fc4bbc6e1203ce5df0bfb85a7296904e031694883979ca",
+    "events": 139
+  },
+  "plan-review-approved-settle-v1": {
+    "description": "Production template: plan review approved by an independent peer",
+    "workflowId": "factory/9c6881f5-d409-4170-aa63-3552feed9b9c/19ff2d91-ee83-43d1-98fc-f412ff39427a",
+    "capturedWithWorkflowCodeDigest": "f4c1b0932c63b345b2fc4bbc6e1203ce5df0bfb85a7296904e031694883979ca",
+    "events": 393
+  },
+  "paused-resumed-settle-v1": {
+    "description": "Paused during a stage, then resumed",
+    "workflowId": "factory/9c6881f5-d409-4170-aa63-3552feed9b9c/3e5727e5-08ec-4ab7-9d8f-41f4124bd85a",
+    "capturedWithWorkflowCodeDigest": "f4c1b0932c63b345b2fc4bbc6e1203ce5df0bfb85a7296904e031694883979ca",
+    "events": 400
+  },
+  "cancelled-in-flight-settle-v1": {
+    "description": "Cancelled while a stage was executing",
+    "workflowId": "factory/9c6881f5-d409-4170-aa63-3552feed9b9c/89989d3d-7eca-4b40-bc7c-42ac5bc4cba1",
+    "capturedWithWorkflowCodeDigest": "f4c1b0932c63b345b2fc4bbc6e1203ce5df0bfb85a7296904e031694883979ca",
+    "events": 257
+  },
+  "budget-exhausted-settle-v1": {
+    "description": "Allowance runs out before the plan review: incomplete with reasons",
+    "workflowId": "factory/9c6881f5-d409-4170-aa63-3552feed9b9c/4d5bd886-4531-475e-a204-179a788d7ce5",
+    "capturedWithWorkflowCodeDigest": "f4c1b0932c63b345b2fc4bbc6e1203ce5df0bfb85a7296904e031694883979ca",
+    "events": 151
+  },
+  "plan-rejected-settle-v1": {
+    "description": "The required peer rejects the plan: incomplete, never approved",
+    "workflowId": "factory/9c6881f5-d409-4170-aa63-3552feed9b9c/b5168011-ccb0-4494-9556-9166bddfb1c2",
+    "capturedWithWorkflowCodeDigest": "f4c1b0932c63b345b2fc4bbc6e1203ce5df0bfb85a7296904e031694883979ca",
+    "events": 195
+  },
+  "decision-expired-settle-v1": {
+    "description": "Nobody answers the plan review: the durable timer expires it",
+    "workflowId": "factory/9c6881f5-d409-4170-aa63-3552feed9b9c/a32dee1e-af6c-449d-b269-fce871f3f9d6",
+    "capturedWithWorkflowCodeDigest": "f4c1b0932c63b345b2fc4bbc6e1203ce5df0bfb85a7296904e031694883979ca",
+    "events": 194
+  },
+  "amend-rejected-settle-v1": {
+    "description": "An amendment naming an invalid spec is rejected; the task then completes on plan 1",
+    "workflowId": "factory/9c6881f5-d409-4170-aa63-3552feed9b9c/57ebae85-97f0-4843-91ba-592659387743",
+    "capturedWithWorkflowCodeDigest": "f4c1b0932c63b345b2fc4bbc6e1203ce5df0bfb85a7296904e031694883979ca",
+    "events": 203
   }
 }

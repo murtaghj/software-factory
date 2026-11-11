@@ -57,7 +57,11 @@ export async function streamTaskEvents(req: FastifyRequest<{ Params: { taskId: s
       const rows = await tenant(async (tx) => (await tx.query<EventRow>('SELECT id, org_id, task_id, sequence, event_type, occurred_at, recorded_at, source, correlation_id, payload_ref, schema_version FROM factory.task_event WHERE task_id = $1 AND sequence > $2 ORDER BY sequence LIMIT 100', [taskId, position])).rows);
       for (const row of rows) {
         const e = toTaskEvent(row);
-        if (!res.write(`id: ${String(e.sequence)}\nevent: ${e.eventType}\ndata: ${JSON.stringify(e)}\n\n`)) await new Promise((r) => res.once('drain', r));
+        if (!res.write(`id: ${String(e.sequence)}\nevent: ${e.eventType}\ndata: ${JSON.stringify(e)}\n\n`)) {
+          // A client that disconnects while the buffer is full never drains: wake on close too.
+          await new Promise<void>((r) => { const done = (): void => { res.off('drain', done); res.off('close', done); r(); }; res.once('drain', done); res.once('close', done); });
+          if (res.destroyed || res.writableEnded) break;
+        }
         position = e.sequence;
         lastWrite = Date.now();
       }

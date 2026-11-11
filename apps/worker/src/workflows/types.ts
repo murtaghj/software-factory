@@ -31,7 +31,7 @@ export type BudgetAdmission = { admitted: boolean; reasons: string[]; chargedMic
 
 export type GateResult = { gateId: string; verdict: 'passed' | 'failed' | 'inconclusive'; evaluationId: string; reasonCodes: string[] };
 
-export type NodeState = { status: 'pending' | 'running' | 'passed' | 'failed'; attempt: number; stageRunId?: string; inputHash?: string; resultRef?: ArtifactRefLike; outputRefs?: ArtifactRefLike[] };
+export type NodeState = { status: 'pending' | 'running' | 'passed' | 'failed'; attempt: number; stageRunId?: string; inputHash?: string; resultRef?: ArtifactRefLike; outputRefs?: ArtifactRefLike[]; producerId?: string };
 
 export type StageBinding = { orgId: string; taskId: string; stageRunId: string; inputHash: string; allocationEpoch: number };
 export type FakeStageResult = {
@@ -64,6 +64,10 @@ export type Checkpoint = {
   pendingAmendSpecRef?: ArtifactRefLike;
   pendingBudgetMicroUsd?: number;
   decision?: PendingDecision;
+  pendingAmendCommandId?: string;
+  // settle-v1: workflow-clock start and accumulated stage execution time (ms).
+  startedAtMs?: number;
+  activeMs?: number;
   // outcome-v1: the recorded OutcomeManifest, set on the succeeded projection.
   outcomeRef?: ArtifactRefLike;
   // Test knob for Continue-As-New coverage: roll over after this many completed stages in a run.
@@ -79,7 +83,7 @@ export interface TaskActivities {
   executeFakeStage(i: { orgId: string; taskId: string; logicalId: string; nodeId: string; stageKind: string; attempt: number; inputHash: string; specVersion: number; planVersion: number }): Promise<FakeStageResult>;
   finishStage(i: { orgId: string; logicalId: string; status: 'passed' | 'failed' | 'inconclusive'; resultRef?: ArtifactRefLike; errorClass?: string }): Promise<void>;
   supersedeStages(i: { orgId: string; taskId: string; oldPlanVersion: number; newPlanVersion: number }): Promise<number>;
-  evaluateGates(i: { orgId: string; taskId: string; nodeId: string; logicalId: string; stageKind: string; requiredGateIds: string[]; binding: Record<string, unknown>; outputRefs: ArtifactRefLike[]; dependencyRefs: ArtifactRefLike[] }): Promise<{ allPassed: boolean; results: GateResult[] }>;
+  evaluateGates(i: { orgId: string; taskId: string; nodeId: string; logicalId: string; stageKind: string; requiredGateIds: string[]; binding: Record<string, unknown>; outputRefs: ArtifactRefLike[]; dependencyRefs: ArtifactRefLike[]; producers?: { reviewerProducerId: string; authorProducerIds: string[] } }): Promise<{ allPassed: boolean; results: GateResult[] }>;
   supersedeGates(i: { orgId: string; taskId: string; oldPlanVersion: number; newPlanVersion: number }): Promise<number>;
   openBudget(i: { orgId: string; taskId: string; limitMicroUsd: number }): Promise<{ accountId: string }>;
   reserveStageBudget(i: { orgId: string; taskId: string; operationKey: string; nodeId: string }): Promise<BudgetAdmission>;

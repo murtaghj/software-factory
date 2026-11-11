@@ -96,12 +96,12 @@ const approve = async (handle: WorkflowHandle, workflowId: string, taskId: strin
   await h.db.withTenant({ orgId: h.orgId }, (t) => t.query("INSERT INTO factory.command (org_id, id, task_id, principal_id, expected_revision, kind, request_hash, payload, state) VALUES ($1,$2,$3,$4,$5,'respond_decision',$6,'{}','delivered')", [h.orgId, commandId, taskId, reviewerId, rev, 'a'.repeat(64)]));
   await handle.executeUpdate('applyCommand', { args: [{ workflowId, commandId, kind: 'respond_decision', expectedRevision: rev, decisionId: d?.id, subjectHash: d?.subject_hash, outcome: 'approve', reason: 'ok', reviewedSectionIds: ['intent_scope', 'current_state', 'design', 'interfaces_data', 'implementation', 'acceptance_tests', 'quality_security', 'delivery_recovery', 'operations', 'risks_decisions', 'definition_of_done', 'review_ownership'], deciderPrincipalId: reviewerId, channel: 'decision_response_endpoint' }] });
 };
-const withTemplate = async (behavior: Parameters<typeof h.withWorker>[0], fn: (tq: string) => Promise<string>) => h.withWorker(behavior, fn, { template: 'investigation-0.2.0.json' });
-async function captureWith(baseName: string, description: string, behavior: Parameters<typeof h.withWorker>[0], run: (tq: string) => Promise<string>): Promise<void> {
+const withTemplate = async (behavior: Parameters<typeof h.withWorker>[0], fn: (tq: string) => Promise<string>, decisionTtlMs?: number) => h.withWorker(behavior, fn, { template: 'investigation-0.2.0.json', ...(decisionTtlMs === undefined ? {} : { decisionTtlMs }) });
+async function captureWith(baseName: string, description: string, behavior: Parameters<typeof h.withWorker>[0], run: (tq: string) => Promise<string>, decisionTtlMs?: number): Promise<void> {
   const name = `${baseName}${suffix}`;
   const file = join(outDir, `${name}.json`);
   if (existsSync(file)) { console.log(`keep existing ${name}`); return; }
-  const ids = await withTemplate(behavior, run);
+  const ids = await withTemplate(behavior, run, decisionTtlMs);
   const [workflowId, runId] = ids.split('|');
   const history = await h.env.client.workflow.getHandle(workflowId ?? '', runId).fetchHistory();
   writeFileSync(file, historyToJSON(history));
@@ -109,7 +109,7 @@ async function captureWith(baseName: string, description: string, behavior: Para
   console.log(`captured ${name} (${String(history.events?.length ?? 0)} events)`);
 }
 // Command scenarios need the production template (plan review); captured for every build since commands-v1.
-if (suffix === '-commands-v1' || suffix === '-outcome-v1') {
+if (suffix === '-commands-v1' || suffix === '-outcome-v1' || suffix === '-settle-v1') {
   await captureWith('plan-review-approved', 'Production template: plan review approved by an independent peer', undefined, async (tq) => {
     const { taskId, launch } = await h.newTask();
     const handle = await start(tq, launch, launch.workflowId);
@@ -137,6 +137,54 @@ if (suffix === '-commands-v1' || suffix === '-outcome-v1') {
     await until(async () => (await handle.query<View>('state')).nodes.investigate?.status === 'running');
     const rev = (await handle.query<View>('state')).controlRevision;
     await handle.executeUpdate('applyCommand', { args: [{ workflowId: launch.workflowId, commandId: randomUUID(), kind: 'cancel', expectedRevision: rev }] });
+    await handle.result();
+    return `${launch.workflowId}|${handle.firstExecutionRunId}`;
+  });
+}
+
+// Terminal branches that earlier builds did not record (settle-v1 onwards): budget exhaustion,
+// plan rejection, decision expiry on the durable timer, and a rejected amendment.
+if (suffix === '-settle-v1') {
+  const respondWith = async (handle: WorkflowHandle, workflowId: string, taskId: string, outcome: 'approve' | 'reject') => {
+    if (outcome === 'approve') { await approve(handle, workflowId, taskId); return; }
+    await until(async () => (await handle.query<View>('state')).status === 'waiting_decision');
+    const d = await h.db.withTenant({ orgId: h.orgId }, async (t) => (await t.query<{ id: string; subject_hash: string }>("SELECT id, subject_hash FROM factory.decision_request WHERE task_id = $1 AND state = 'pending'", [taskId])).rows[0]);
+    const rev = (await handle.query<View>('state')).controlRevision;
+    const commandId = randomUUID();
+    await h.db.withTenant({ orgId: h.orgId }, (t) => t.query("INSERT INTO factory.command (org_id, id, task_id, principal_id, expected_revision, kind, request_hash, payload, state) VALUES ($1,$2,$3,$4,$5,'respond_decision',$6,'{}','delivered')", [h.orgId, commandId, taskId, reviewerId, rev, 'a'.repeat(64)]));
+    await handle.executeUpdate('applyCommand', { args: [{ workflowId, commandId, kind: 'respond_decision', expectedRevision: rev, decisionId: d?.id, subjectHash: d?.subject_hash, outcome, reason: 'not acceptable', reviewedSectionIds: [], deciderPrincipalId: reviewerId, channel: 'decision_response_endpoint' }] });
+  };
+  await captureWith('budget-exhausted', 'Allowance runs out before the plan review: incomplete with reasons', undefined, async (tq) => {
+    const { launch } = await h.newTask({ maxMicroUsd: 2_500_000 });
+    const handle = await start(tq, launch, launch.workflowId);
+    await handle.result();
+    return `${launch.workflowId}|${handle.firstExecutionRunId}`;
+  });
+  await captureWith('plan-rejected', 'The required peer rejects the plan: incomplete, never approved', undefined, async (tq) => {
+    const { taskId, launch } = await h.newTask();
+    const handle = await start(tq, launch, launch.workflowId);
+    await respondWith(handle, launch.workflowId, taskId, 'reject');
+    await handle.result();
+    return `${launch.workflowId}|${handle.firstExecutionRunId}`;
+  });
+  await captureWith('decision-expired', 'Nobody answers the plan review: the durable timer expires it', undefined, async (tq) => {
+    const { launch } = await h.newTask();
+    const handle = await start(tq, launch, launch.workflowId);
+    await handle.result();
+    return `${launch.workflowId}|${handle.firstExecutionRunId}`;
+  }, 1500);
+  await captureWith('amend-rejected', 'An amendment naming an invalid spec is rejected; the task then completes on plan 1', undefined, async (tq) => {
+    const { taskId, launch } = await h.newTask();
+    const handle = await start(tq, launch, launch.workflowId);
+    await until(async () => (await handle.query<View>('state')).status === 'waiting_decision');
+    const object = await h.artifacts.putControllerObject(h.orgId, Buffer.from(JSON.stringify({ schemaVersion: '2.0', title: 'not a task request' })));
+    const specRef = await h.db.withTenant({ orgId: h.orgId }, (t) => h.artifacts.registerControllerArtifact(t, { orgId: h.orgId, taskId, producerId: 'capture', object, mediaType: 'application/json', schemaVersion: '2.0', classification: 'ordinary', purpose: 'amended_spec' }));
+    const rev = (await handle.query<View>('state')).controlRevision;
+    const commandId = randomUUID();
+    await h.db.withTenant({ orgId: h.orgId }, (t) => t.query("INSERT INTO factory.command (org_id, id, task_id, principal_id, expected_revision, kind, request_hash, payload, state) VALUES ($1,$2,$3,$4,$5,'amend_spec',$6,'{}','delivered')", [h.orgId, commandId, taskId, reviewerId, rev, 'a'.repeat(64)]));
+    await handle.executeUpdate('applyCommand', { args: [{ workflowId: launch.workflowId, commandId, kind: 'amend_spec', expectedRevision: rev, specRef }] });
+    await until(async () => (await handle.query<View>('state')).status === 'waiting_decision' && (await handle.query<View>('state')).controlRevision > rev);
+    await approve(handle, launch.workflowId, taskId);
     await handle.result();
     return `${launch.workflowId}|${handle.firstExecutionRunId}`;
   });

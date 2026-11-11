@@ -29,6 +29,8 @@ export type FakeStageBehavior = {
   // Estimated and actual model cost of a fake stage, in micro-USD (default 1 USD each).
   estimateMicroUsd?: (nodeId: string) => number;
   actualMicroUsd?: (nodeId: string) => number;
+  // Overrides the producer identity the fake runner reports (e.g. a reviewer that is the author).
+  producerId?: (nodeId: string) => string;
 };
 
 const EVALUATOR_ID = 'gate-evaluator:m1';
@@ -70,14 +72,15 @@ export function createTaskActivities(deps: ActivityDeps): TaskActivities {
   const outcomeDecision = async (orgId: string, taskId: string, manifestRef: ArtifactRefLike): Promise<GateDecision> => {
     let manifest: Record<string, unknown>;
     try { manifest = await readJson<Record<string, unknown>>(orgId, taskId, manifestRef); } catch { return { verdict: 'failed', reasonCodes: ['outcome_manifest_unreadable'] }; }
-    const task = await tenant(orgId, (tx) => tx.query<{ delivery_scope: string; cleanup_state: string }>('SELECT delivery_scope, cleanup_state FROM factory.task WHERE id = $1', [taskId]));
+    const task = await tenant(orgId, (tx) => tx.query<{ delivery_scope: string; cleanup_state: string; allocations: string }>(
+      'SELECT t.delivery_scope, t.cleanup_state, (SELECT count(*) FROM factory.execution_allocation a JOIN factory.stage_run s ON s.org_id = a.org_id AND s.id = a.stage_run_id WHERE s.task_id = t.id) AS allocations FROM factory.task t WHERE t.id = $1', [taskId]));
     const t = task.rows[0];
     if (!t) return { verdict: 'failed', reasonCodes: ['task_not_found'] };
     const delivered = Array.isArray(manifest.deliveredArtifactRefs) ? (manifest.deliveredArtifactRefs as ArtifactRefLike[]) : [];
     let verifiedDeliveredRefs = 0;
     for (const ref of delivered) if (await verifies(orgId, taskId, ref)) verifiedDeliveredRefs += 1;
     const provenance = checkOutcomeProvenance(manifest, await resolveAuthorities(manifest, authorityIo(orgId, taskId)), { aiOnlySupported: false, validate: contractCheck });
-    return evaluateOutcomeRecorded({ manifest, taskId, deliveryScope: t.delivery_scope, verifiedDeliveredRefs, provenance, cleanupKnown: t.cleanup_state === 'complete', validate: contractCheck });
+    return evaluateOutcomeRecorded({ manifest, taskId, deliveryScope: t.delivery_scope, verifiedDeliveredRefs, provenance, cleanupKnown: t.cleanup_state === 'complete' && Number(t.allocations) === 0, validate: contractCheck });
   };
 
   return {
@@ -161,7 +164,7 @@ export function createTaskActivities(deps: ActivityDeps): TaskActivities {
       };
       const evidence = deps.fakeStage?.evidence?.(nodeId, defaults[stageKind] ?? {}) ?? defaults[stageKind] ?? {};
       const output = await store(orgId, taskId, { schemaVersion: '2.0', kind: 'fake_stage_output', stageKind, nodeId, stageRunId: logicalId, inputHash, summary: `fake ${stageKind} output for ${nodeId}`, ...evidence }, 'stage_output');
-      const result: FakeStageResult = { schemaVersion: '2.0', orgId, taskId, stageRunId: logicalId, inputHash, allocationEpoch: 1, status, outputRefs: [output], usage: [], producerId: stageKind === 'review' ? REVIEWER_PRODUCER : AUTHOR_PRODUCER, completedAt: new Date().toISOString(), producerKind: 'runner' };
+      const result: FakeStageResult = { schemaVersion: '2.0', orgId, taskId, stageRunId: logicalId, inputHash, allocationEpoch: 1, status, outputRefs: [output], usage: [], producerId: deps.fakeStage?.producerId?.(nodeId) ?? (stageKind === 'review' ? REVIEWER_PRODUCER : AUTHOR_PRODUCER), completedAt: new Date().toISOString(), producerKind: 'runner' };
       const valid = validateContract('StageResult', result);
       if (!valid.ok) throw ApplicationFailure.nonRetryable('fake runner produced an invalid StageResult', 'invalid_result');
       return result;
@@ -185,7 +188,7 @@ export function createTaskActivities(deps: ActivityDeps): TaskActivities {
     // Trusted gate evaluation: reads finalized evidence, applies the pure evaluator and records an
     // immutable gate_evaluation bound to the gate's declared input projection (INV-04). A gate with
     // no qualified evaluator in this release is inconclusive, never passed.
-    async evaluateGates({ orgId, taskId, logicalId, requiredGateIds, binding, outputRefs, dependencyRefs }) {
+    async evaluateGates({ orgId, taskId, logicalId, requiredGateIds, binding, outputRefs, dependencyRefs, producers }) {
       const results: GateResult[] = [];
       const primary = outputRefs[0];
       for (const gateId of requiredGateIds as GateId[]) {
@@ -205,7 +208,15 @@ export function createTaskActivities(deps: ActivityDeps): TaskActivities {
             decision = await outcomeDecision(orgId, taskId, primary);
           } else {
             const doc = await readJson<Record<string, unknown>>(orgId, taskId, primary);
-            decision = gateId === 'scope_accepted' ? evaluateScopeAccepted(doc) : evaluateReviewPassed(doc);
+            if (gateId === 'scope_accepted') {
+              // The criteria to map are the pinned ones, not the discovery stage's own list.
+              const pinned = binding.criteriaRef ? (await readJson<{ criteria: Array<{ id: string }> }>(orgId, taskId, binding.criteriaRef as ArtifactRefLike)).criteria.map((c) => c.id) : doc.criteriaIds;
+              decision = evaluateScopeAccepted({ ...doc, criteriaIds: pinned });
+            } else {
+              // Independence comes from the producers recorded for the stage runs, not from the
+              // reviewer's description of itself.
+              decision = evaluateReviewPassed(producers ? { ...doc, reviewerProducerId: producers.reviewerProducerId, authorProducerIds: producers.authorProducerIds } : doc);
+            }
           }
         }
         let inputHash: string;
@@ -291,9 +302,15 @@ export function createTaskActivities(deps: ActivityDeps): TaskActivities {
         if (!t) return { ok: false as const, reason: 'task not found' };
         if ((t.delivery_scope === 'design') !== (valid.value.deliveryScope === 'design')) return { ok: false as const, reason: 'design_scope_change_requires_new_task' };
         if (valid.value.targetContext.applicationId !== t.primary_application_id) return { ok: false as const, reason: 'primary target cannot change; create a linked task' };
-        const cmd = await tx.query<{ principal_id: string }>('SELECT principal_id FROM factory.command WHERE id = $1', [actorCommandId]);
+        const current = await tx.query<{ spec: { deliveryScope?: string; priorityClass?: string; budget?: unknown } }>('SELECT s.spec FROM factory.task_spec_version s JOIN factory.task t ON t.org_id = s.org_id AND t.id = s.task_id AND t.spec_version = s.version WHERE t.id = $1', [taskId]);
+        const was = current.rows[0]?.spec;
+        if (!was) return { ok: false as const, reason: 'current spec not found' };
+        if (valid.value.deliveryScope !== was.deliveryScope || (valid.value.priorityClass ?? 'normal') !== (was.priorityClass ?? 'normal') || canonicalHash(valid.value.budget) !== canonicalHash(was.budget ?? null)) return { ok: false as const, reason: 'amendment changes scope, priority or budget' };
+        const cmd = await tx.query<{ principal_id: string }>("SELECT principal_id FROM factory.command WHERE id = $1 AND task_id = $2 AND kind = 'amend_spec'", [actorCommandId, taskId]);
+        const actor = cmd.rows[0]?.principal_id;
+        if (!actor) return { ok: false as const, reason: 'amending command not found' };
         await tx.query('INSERT INTO factory.task_spec_version (org_id, id, task_id, version, spec, spec_hash, actor_id) VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (org_id, task_id, version) DO NOTHING',
-          [orgId, randomUUID(), taskId, version, JSON.stringify(valid.value), canonicalHash(valid.value), cmd.rows[0]?.principal_id ?? t.creator_id]);
+          [orgId, randomUUID(), taskId, version, JSON.stringify(valid.value), canonicalHash(valid.value), actor]);
         return { ok: true as const, version };
       });
     },
@@ -341,6 +358,9 @@ export function createTaskActivities(deps: ActivityDeps): TaskActivities {
         const reasons: string[] = [];
         if (decision.state === 'approve' || decision.state === 'reject' || decision.state === 'request_changes') {
           const decider = decision.deciderPrincipalId ?? '';
+          // The durable timer can fire late (worker down); the stored expiry still binds.
+          const live = await tx.query<{ expired: boolean }>('SELECT expires_at <= now() AS expired FROM factory.decision_request WHERE id = $1', [decision.requestId]);
+          if (live.rows[0]?.expired !== false) reasons.push('decision_expired');
           const authority = await tx.query<{ id: string }>(`SELECT m.id FROM factory.membership m JOIN factory.principal p ON p.org_id = m.org_id AND p.id = m.principal_id JOIN factory.task t ON t.id = $2
             WHERE m.principal_id = $1 AND m.role = 'reviewer' AND m.revoked_at IS NULL AND p.disabled_at IS NULL AND (m.application_scope ? t.primary_application_id::text OR m.application_scope ? '*')`, [decider, taskId]);
           const membership = authority.rows[0]?.id;
@@ -435,6 +455,10 @@ export function createTaskActivities(deps: ActivityDeps): TaskActivities {
         const view = gateEvaluationView(row);
         if (!view || !validateContract('GateEvaluation', view).ok) return { ok: false as const, reason: `gate_without_contract_view:${row.gate_id}` };
         gateEvaluationRefs.push(await store(orgId, taskId, view, 'gate_evaluation_record'));
+      }
+      // Every passing human-mode gate must be backed by a cited human decision on its subject.
+      for (const g of facts.gates.filter((x) => x.verdict === 'passed' && x.resolved_mode === 'human')) {
+        if (!facts.decisions.some((d) => d.subject_hash === g.input_binding.subjectHash)) return { ok: false as const, reason: `human_gate_without_decision:${g.gate_id}` };
       }
       const decisionRefs: ArtifactRefLike[] = [];
       for (const r of facts.decisions) {

@@ -123,13 +123,17 @@ describe('AC-54 end-to-end audit', () => {
     expect(recorded).toMatchObject({ verdict: 'passed', evidenceRefs: [bundle.outcome.ref], reasonCodes: ['outcome_recorded'] });
   });
 
-  it('independent result: the review that gated delivery was by a different producer than the investigation', () => {
+  it('independent result: delivery was gated by a passing review bound to exactly the investigation it delivers', () => {
+    // Reviewer independence itself is decided from the recorded stage producers; its negative
+    // (a reviewer that ran as the author) is apps/worker/test/w012-gates-in-workflow.test.ts.
     const review = bundle.gates.find((g) => g.value.gateId === 'review_passed');
-    const evidence = review?.evidence[0]?.value as { reviewerProducerId: string; authorProducerIds: string[]; findings: unknown[] };
-    expect(evidence.authorProducerIds).not.toContain(evidence.reviewerProducerId);
-    expect(evidence.findings).toEqual([]);
+    expect(review?.value).toMatchObject({ verdict: 'passed', reasonCodes: ['no_blocking_findings'] });
     const investigate = bundle.stageRuns.find((r) => r.nodeId === 'investigate');
+    const evidenceReview = bundle.stageRuns.find((r) => r.nodeId === 'evidence_review');
     expect(review?.value.inputBinding.candidateRef).toEqual(investigate?.resultRef);
+    expect(review?.value.evidenceRefs).toEqual([evidenceReview?.resultRef]);
+    expect(evidenceReview?.role).toBe('reviewer');
+    expect(investigate?.role).not.toBe('reviewer');
   });
 
   it('decisions: the human plan sign-off is traceable to the decider, the exact subject and the reviewed scope', () => {
@@ -216,7 +220,7 @@ describe('AC-54 end-to-end audit', () => {
       await expectRefused('outcome_provenance_invalid', /unknown_human_reference/);
     });
 
-    it('AI fields in a human-mode outcome', async () => {
+    it('AI fields in a human-mode outcome are refused (by the OutcomeManifest schema; the provenance-level rule is in ac-54-outcome-provenance), while a legacy manifest still exports as human', async () => {
       await pointOutcomeAt(await storeDoc({ ...manifest(), aiReviewApprovalSetRefs: [] }, 'outcome_manifest'));
       await expectRefused('outcome_bundle_integrity_failure', /not a valid OutcomeManifest/); // schema already forbids it
       const legacy = manifest() as Partial<OutcomeManifest>;

@@ -130,9 +130,14 @@ export class Dispatcher {
     try { described = await this.o.temporal.describe(workflowId); } catch (e) { return this.retryOrDeadLetter(row, `describe failed before command delivery: ${String(e)}`); }
     if (!described) return this.retryOrDeadLetter(row, 'task workflow not started yet');
     if (described.status !== 'RUNNING') {
+      // Only a command that was never handed to the workflow is known not to have applied. One
+      // marked `delivered` may have applied before the reply was lost; it stays `delivered` (outcome
+      // unknown) with the reason recorded, never relabelled `rejected`.
       const ok = await this.tenant(row.org_id, async (tx) => {
-        await tx.query("UPDATE factory.command SET state = 'rejected', rejection_reason = $2, updated_at = now() WHERE id = $1 AND state IN ('queued','delivered')", [commandId, `task workflow is ${described.status.toLowerCase()}`]);
-        return this.finish(tx, row, 'delivered');
+        if (!(await this.finish(tx, row, 'delivered'))) return false;
+        await tx.query("UPDATE factory.command SET state = 'rejected', rejection_reason = $2, updated_at = now() WHERE id = $1 AND state = 'queued'", [commandId, `task workflow is ${described.status.toLowerCase()}`]);
+        await tx.query("UPDATE factory.command SET rejection_reason = $2, updated_at = now() WHERE id = $1 AND state = 'delivered'", [commandId, `outcome unknown: task workflow is ${described.status.toLowerCase()} and the delivery reply was lost`]);
+        return true;
       });
       return { outboxId: row.id, kind: row.kind, result: ok ? 'delivered' : 'lease_lost', detail: 'workflow closed' };
     }
@@ -159,9 +164,11 @@ export class Dispatcher {
       }
     }
     const ok = await this.tenant(row.org_id, async (tx) => {
+      // A lost lease means another dispatcher owns the row now: record nothing.
+      if (!(await this.finish(tx, row, 'delivered'))) return false;
       await tx.query("UPDATE factory.command SET state = $2, workflow_result = $3, rejection_reason = $4, updated_at = now() WHERE id = $1 AND state IN ('queued','delivered','accepted')",
         [commandId, result.state, JSON.stringify(result), result.state === 'rejected' ? (result.reason ?? 'rejected') : null]);
-      return this.finish(tx, row, 'delivered');
+      return true;
     });
     return { outboxId: row.id, kind: row.kind, result: ok ? 'delivered' : 'lease_lost', detail: result.state };
   }

@@ -185,6 +185,20 @@ describe('W-010 outbox dispatcher', () => {
       expect(await commandRow(late)).toEqual({ state: 'rejected', rejection_reason: 'task workflow is completed' });
     });
 
+    it('a command that may have applied before its reply was lost is not relabelled rejected when the workflow has since closed', async () => {
+      const { workflowId } = await newTask();
+      await dispatcher().runOnce();
+      const commandId = await command(workflowId.split('/')[2] ?? '', workflowId, 'pause');
+      const lossy: TemporalGateway = { start: (r) => gateway.start(r), describe: (id) => gateway.describe(id), update: async (id, u, a) => { await gateway.update(id, u, a); throw Object.assign(new Error('update timed out'), { code: 4 }); } };
+      await dispatcher({ temporal: lossy }).runOnce();
+      expect((await commandRow(commandId))?.state).toBe('delivered');
+      expect(await effects(workflowId)).toBe(1); // it did apply
+      await env.client.workflow.getHandle(workflowId).signal('finish');
+      await env.client.workflow.getHandle(workflowId).result();
+      expect((await dispatcher({ clockOffsetMs: () => 2000 }).runOnce()).find((o) => o.kind === 'task.command')?.result).toBe('delivered');
+      expect(await commandRow(commandId)).toEqual({ state: 'delivered', rejection_reason: 'outcome unknown: task workflow is completed and the delivery reply was lost' });
+    });
+
     it('a workflow rejection is recorded with its reason', async () => {
       const { workflowId } = await newTask();
       await dispatcher().runOnce();
