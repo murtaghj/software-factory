@@ -7,6 +7,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@factory/client": "workspace:*",
     "@factory/contracts": "workspace:*",
     "react": "19.3.1",
     "react-dom": "19.3.1"

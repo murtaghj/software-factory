@@ -10,6 +10,7 @@
     "factory-mcp": "./src/main.ts"
   },
   "dependencies": {
+    "@factory/client": "workspace:*",
     "@factory/contracts": "workspace:*",
     "@modelcontextprotocol/sdk": "1.32.2",
     "zod": "4.6.7"

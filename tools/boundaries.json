@@ -108,7 +108,8 @@
     },
     "@factory/dashboard": {
       "allowWorkspace": [
-        "@factory/contracts"
+        "@factory/contracts",
+        "@factory/client"
       ],
       "denyExternal": [
         "pg",
@@ -139,13 +140,38 @@
         "@factory/worker",
         "@factory/dashboard",
         "@factory/fixtures",
-        "@factory/mcp"
+        "@factory/mcp",
+        "@factory/client",
+        "@factory/cli"
       ],
       "denyExternal": []
     },
     "@factory/mcp": {
       "allowWorkspace": [
+        "@factory/contracts",
+        "@factory/client"
+      ],
+      "denyExternal": [
+        "pg",
+        "@temporalio/",
+        "fastify"
+      ]
+    },
+    "@factory/client": {
+      "allowWorkspace": [
         "@factory/contracts"
+      ],
+      "denyExternal": [
+        "pg",
+        "@temporalio/",
+        "fastify",
+        "node:"
+      ]
+    },
+    "@factory/cli": {
+      "allowWorkspace": [
+        "@factory/contracts",
+        "@factory/client"
       ],
       "denyExternal": [
         "pg",
@@ -160,7 +186,8 @@
       "@factory/dispatcher",
       "@factory/worker",
       "@factory/dashboard",
-      "@factory/mcp"
+      "@factory/mcp",
+      "@factory/cli"
     ]
   },
   "restrictedPaths": [

@@ -1,6 +1,6 @@
 // Task detail view (W-014). Text plus color for status, accessible tables, an explicit freshness
 // banner, and no untrusted HTML: every value is rendered as text by React.
-import type { InboxModel } from './inbox.ts';
+import type { InboxModel } from '@factory/client';
 import type { TaskModel } from './view-model.ts';
 
 export function FreshnessBanner({ freshness }: { freshness: TaskModel['freshness'] }) {

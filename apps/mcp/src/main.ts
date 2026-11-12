@@ -4,7 +4,7 @@
 //   FACTORY_TOKEN      the developer's bearer token (required; never logged)
 //   FACTORY_DASHBOARD_URL  optional, used to link inbox items
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { FactoryClient } from './client.ts';
+import { FactoryClient } from '@factory/client';
 import { createFactoryMcpServer } from './server.ts';
 
 const baseUrl = process.env.FACTORY_API_URL;

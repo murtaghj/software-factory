@@ -13,7 +13,7 @@ import { randomUUID } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { validateContract } from '@factory/contracts';
-import type { ApiResult, FactoryClient } from './client.ts';
+import type { ApiResult, FactoryClient } from '@factory/client';
 
 type ToolResult = { content: Array<{ type: 'text'; text: string }>; isError?: boolean };
 const UUID = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, 'must be a UUID');

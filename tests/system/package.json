@@ -9,6 +9,8 @@
   "dependencies": {
     "@factory/api": "workspace:*",
     "@factory/artifacts": "workspace:*",
+    "@factory/cli": "workspace:*",
+    "@factory/client": "workspace:*",
     "@factory/contracts": "workspace:*",
     "@factory/dashboard": "workspace:*",
     "@factory/database": "workspace:*",

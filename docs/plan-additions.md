@@ -31,7 +31,7 @@ then P-04 to P-06.
 
 | ID | Proposal | What it delivers | Size |
 | --- | --- | --- | --- |
-| P-07 | CLI | `factory submit`, `status`, `approve`, `cancel` over the existing API. Thin: no rule lives in the client. | Small |
+| P-07 | **Done (2026-11-12, `apps/cli`; shared client in `packages/client`).** CLI | `factory submit`, `status`, `approve`, `cancel` over the existing API. Thin: no rule lives in the client. | Small |
 | P-08 | Dashboard shell and sign-in | The app shell and OIDC sign-in around the already tested dashboard components (noted as not built in A-12). Hosts the P-02 inbox. | Medium |
 
 ## C. Attribution and budgets

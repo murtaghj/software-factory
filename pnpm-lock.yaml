@@ -216,8 +216,20 @@ importers:
         specifier: 8.23.1
         version: 8.23.1
 
+  apps/cli:
+    dependencies:
+      '@factory/client':
+        specifier: workspace:*
+        version: link:../../packages/client
+      '@factory/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+
   apps/dashboard:
     dependencies:
+      '@factory/client':
+        specifier: workspace:*
+        version: link:../../packages/client
       '@factory/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -271,6 +283,9 @@ importers:
 
   apps/mcp:
     dependencies:
+      '@factory/client':
+        specifier: workspace:*
+        version: link:../../packages/client
       '@factory/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -371,6 +386,12 @@ importers:
         specifier: 8.23.1
         version: 8.23.1
 
+  packages/client:
+    dependencies:
+      '@factory/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+
   packages/contracts:
     dependencies:
       ajv:
@@ -441,6 +462,12 @@ importers:
       '@factory/artifacts':
         specifier: workspace:*
         version: link:../../packages/artifacts
+      '@factory/cli':
+        specifier: workspace:*
+        version: link:../../apps/cli
+      '@factory/client':
+        specifier: workspace:*
+        version: link:../../packages/client
       '@factory/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts

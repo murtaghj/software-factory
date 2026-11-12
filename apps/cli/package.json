@@ -1,0 +1,16 @@
+{
+  "name": "@factory/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "bin": {
+    "factory": "./src/main.ts"
+  },
+  "dependencies": {
+    "@factory/client": "workspace:*",
+    "@factory/contracts": "workspace:*"
+  }
+}
