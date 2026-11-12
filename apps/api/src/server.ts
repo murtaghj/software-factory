@@ -14,13 +14,14 @@ import { listGates, listRuns } from './tasks/views.ts';
 import type { CommandService } from './tasks/commands.ts';
 import type { OutcomeBundleService } from './tasks/outcome-bundle.ts';
 import type { AllowanceService } from './budgets/service.ts';
+import type { BoardService } from './boards/service.ts';
 import { streamTaskEvents, type StreamOptions } from './events/sse.ts';
 
 declare module 'fastify' {
   interface FastifyRequest { principal?: Principal; identity?: VerifiedIdentity; requestId: string }
 }
 
-export type ApiDeps = { db: Database; verifier: OidcVerifier; artifacts: ArtifactService; tasks: TaskService; commands?: CommandService; outcomes?: OutcomeBundleService; allowances?: AllowanceService; dashboardOrigin: string; events?: StreamOptions };
+export type ApiDeps = { db: Database; verifier: OidcVerifier; artifacts: ArtifactService; tasks: TaskService; commands?: CommandService; outcomes?: OutcomeBundleService; allowances?: AllowanceService; boards?: BoardService; dashboardOrigin: string; events?: StreamOptions };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -179,6 +180,17 @@ export function buildApi(deps: ApiDeps): FastifyInstance {
   app.post<{ Params: { decisionId: string } }>('/v2/decisions/:decisionId/responses', async (req, reply) => {
     if (!UUID.test(req.params.decisionId)) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
     return reply.code(202).send(await commands().respond(principalOf(req), req.params.decisionId, header(req, 'idempotency-key'), req.body));
+  });
+
+  // Project boards and "my work": not in the rev 1.13 OpenAPI (A-18, plan-additions P-21). Read-only.
+  const boards = (): BoardService => {
+    if (!deps.boards) throw new ApiError(503, 'dependency_unavailable', 'boards are not configured');
+    return deps.boards;
+  };
+  app.get('/v2/me/work', (req) => boards().myWork(principalOf(req)));
+  app.get<{ Params: { applicationId: string } }>('/v2/applications/:applicationId/board', async (req, reply) => {
+    if (!UUID.test(req.params.applicationId)) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
+    return boards().board(principalOf(req), req.params.applicationId);
   });
 
   // Per-developer allowances: not in the rev 1.13 OpenAPI (A-17, plan-additions P-09).

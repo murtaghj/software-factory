@@ -34,6 +34,14 @@ then P-04 to P-06.
 | P-07 | **Done (2026-11-12, `apps/cli`; shared client in `packages/client`).** CLI | `factory submit`, `status`, `approve`, `cancel` over the existing API. Thin: no rule lives in the client. | Small |
 | P-08 | Dashboard shell and sign-in | The app shell and OIDC sign-in around the already tested dashboard components (noted as not built in A-12). Hosts the P-02 inbox. | Medium |
 
+## B2. Keeping developers on task
+
+| ID | Proposal | What it delivers | Size |
+| --- | --- | --- | --- |
+| P-21 | **Done (2026-11-13) for the API, CLI, MCP tool and dashboard views; reachable in a browser once P-08 exists.** Project boards and "my work" | One board per project (a project is an application): tasks grouped by state, who each waiting task waits on, this month's spend. A cross-project "my work" view for developers on several projects, ordered by what to do first: decisions others are blocked on, then your own stopped tasks, then what is waiting on others and what is running. Both are read-only; state changes only through commands and decisions. | Medium |
+| P-22 | Projects that span applications | A named group of applications and people with its own board, for work that crosses services. New record with its own membership rules; overlaps with parent tasks (P-06). | Medium |
+| P-23 | Nudges | Tell a person when something has waited on them too long, or a decision is about to expire, through the digest (P-05), not a stream of messages. | Small |
+
 ## C. Attribution and budgets
 
 | ID | Proposal | What it delivers | Size |

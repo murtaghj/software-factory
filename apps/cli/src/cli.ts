@@ -5,7 +5,7 @@
 // answers one only from an interactive terminal, after showing the decision and reading a typed
 // confirmation. Run without a terminal (a script, a pipe, an agent's shell) it refuses.
 import { parseArgs } from 'node:util';
-import { PLAN_SECTION_IDS, buildDecisionResponse, fetchInbox, inboxModel, type ApiResult, type FactoryClient } from '@factory/client';
+import { BOARD_COLUMNS, COLUMN_LABELS, MY_WORK_SECTIONS, PLAN_SECTION_IDS, buildDecisionResponse, cardLine, fetchInbox, focusOf, inboxModel, type ApiResult, type Board, type FactoryClient, type MyWork } from '@factory/client';
 import { validateContract, type DecisionView, type PlanSectionId, type TaskView } from '@factory/contracts';
 
 export type CliIo = {
@@ -45,6 +45,10 @@ Decisions waiting on you
   factory reject <decisionId> --reason <text> [--reviewed <a,b>] [--wait]
   factory request-changes <decisionId> --reason <text> [--reviewed <a,b>] [--wait]
     Decisions are answered by a person: these three need an interactive terminal.
+
+Staying on task
+  factory work                                              what needs you, across all your projects
+  factory board <applicationId>                             one project's board
 
 Budget
   factory budget                                            your allowance for this month
@@ -150,6 +154,25 @@ export async function run(argv: string[], io: CliIo): Promise<number> {
       const bundle = expect(await io.client.get(`/v2/tasks/${id(target, 'taskId')}/outcome-bundle`), [200]) as { verification: { digestVerifiedArtifacts: number }; reviewMode: string };
       const text = JSON.stringify(bundle, null, 2);
       if (opt.out) { await io.writeFile(opt.out, `${text}\n`); io.out(`wrote ${opt.out} (${String(bundle.verification.digestVerifiedArtifacts)} artifacts verified, review mode ${bundle.reviewMode})`); } else io.out(text);
+      return EXIT.ok;
+    }
+    if (verb === 'work') {
+      const work = expect(await io.client.get('/v2/me/work'), [200]) as MyWork;
+      print({ focus: focusOf(work), ...work }, () => [
+        `Next: ${focusOf(work).text}`,
+        ...(work.truncated ? ['(more work than can be shown; some tasks are not listed)'] : []),
+        ...MY_WORK_SECTIONS.flatMap(({ key, label }) => (work[key].length === 0 ? [] : ['', `${label} (${String(work[key].length)})`, ...work[key].map((c) => `  ${cardLine(c, work.people, work.applications)}`)])),
+      ]);
+      return EXIT.ok;
+    }
+    if (verb === 'board') {
+      const board = expect(await io.client.get(`/v2/applications/${id(target, 'applicationId')}/board`), [200]) as Board;
+      print(board, () => [
+        `${board.name} — spent this month $${(board.spentThisMonthMicroUsd / 1_000_000).toFixed(2)}`,
+        ...(board.truncated ? ['(board too large to show in full; some tasks are not listed)'] : []),
+        '', `Needs a person (${String(board.needsPerson.length)})`, ...board.needsPerson.map((c) => `  ${cardLine(c, board.people)}`),
+        ...BOARD_COLUMNS.flatMap((col) => ['', `${COLUMN_LABELS[col]} (${String(board.columns[col].length)})`, ...board.columns[col].map((c) => `  ${cardLine(c, board.people)}`)]),
+      ]);
       return EXIT.ok;
     }
     if (verb === 'budget') {

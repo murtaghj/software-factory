@@ -13,12 +13,12 @@ import { randomUUID } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { validateContract } from '@factory/contracts';
-import type { ApiResult, FactoryClient } from '@factory/client';
+import { focusOf, type ApiResult, type FactoryClient, type MyWork } from '@factory/client';
 
 type ToolResult = { content: Array<{ type: 'text'; text: string }>; isError?: boolean };
 const UUID = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, 'must be a UUID');
 export const AGENT_COMMANDS = ['pause', 'resume', 'cancel'] as const;
-export const TOOL_NAMES = ['factory_submit_task', 'factory_get_task', 'factory_list_tasks', 'factory_task_evidence', 'factory_inbox', 'factory_command', 'factory_command_status'] as const;
+export const TOOL_NAMES = ['factory_submit_task', 'factory_get_task', 'factory_list_tasks', 'factory_task_evidence', 'factory_inbox', 'factory_my_work', 'factory_command', 'factory_command_status'] as const;
 
 const ok = (value: unknown): ToolResult => ({ content: [{ type: 'text', text: JSON.stringify(value, null, 2) }] });
 const fail = (code: string, detail: string, extra: Record<string, unknown> = {}): ToolResult => ({ isError: true, content: [{ type: 'text', text: JSON.stringify({ error: code, detail, ...extra }, null, 2) }] });
@@ -87,6 +87,16 @@ export function createFactoryMcpServer(client: FactoryClient, options: { dashboa
       note: 'These need a human answer. An agent must not answer them.',
       items: items.map((d) => ({ ...d, answerAt: options.dashboardUrl ? `${options.dashboardUrl.replace(/\/+$/, '')}/decisions/${d.id}` : `POST /v2/decisions/${d.id}/responses (by the human)` })),
     });
+  });
+
+  server.registerTool('factory_my_work', {
+    description: 'What the signed-in developer should do next, across all their projects: decisions waiting on them, their tasks that stopped, what is waiting on other people, and what is in progress. `focus` is the single next thing. Read-only.',
+    inputSchema: {},
+  }, async () => {
+    const r = unwrap(await client.get('/v2/me/work'), [200]);
+    if ('error' in r) return r.error;
+    const work = r.value as MyWork;
+    return ok({ focus: focusOf(work), ...work });
   });
 
   server.registerTool('factory_command', {

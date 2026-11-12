@@ -1,6 +1,6 @@
 // Task detail view (W-014). Text plus color for status, accessible tables, an explicit freshness
 // banner, and no untrusted HTML: every value is rendered as text by React.
-import type { InboxModel } from '@factory/client';
+import { BOARD_COLUMNS, COLUMN_LABELS, MY_WORK_SECTIONS, focusOf, type Board, type InboxModel, type MyWork, type TaskCard } from '@factory/client';
 import type { TaskModel } from './view-model.ts';
 
 export function FreshnessBanner({ freshness }: { freshness: TaskModel['freshness'] }) {
@@ -63,5 +63,56 @@ export function DecisionInbox({ model, taskHref, decisionHref }: { model: InboxM
         </table>
       )}
     </section>
+  );
+}
+
+// Project board and "my work" (P-21). Both are read-only: a card shows state the workflow decided,
+// and offers links, never a way to move it. Truncation is stated, never hidden.
+function Card({ card, people, taskHref, project }: { card: TaskCard; people: Record<string, string>; taskHref: (taskId: string) => string; project?: string | undefined }) {
+  return (
+    <li data-status={card.status}>
+      <a href={taskHref(card.taskId)}>{card.title}</a>
+      <span> · {card.status.replace(/_/g, ' ')}</span>
+      {project ? <span> · {project}</span> : null}
+      {card.currentNodeId ? <span> · stage <code>{card.currentNodeId}</code></span> : null}
+      {card.waitingOnPrincipalId ? <span> · waiting on {people[card.waitingOnPrincipalId] ?? 'someone'}{card.decisionExpiresAt ? <> until <time dateTime={card.decisionExpiresAt}>{card.decisionExpiresAt}</time></> : null}</span> : null}
+      <span> · by {people[card.creatorId] ?? 'unknown'}</span>
+    </li>
+  );
+}
+
+export function BoardView({ board, taskHref }: { board: Board; taskHref: (taskId: string) => string }) {
+  return (
+    <main aria-labelledby="board-title">
+      <h1 id="board-title">{board.name}</h1>
+      <p>As of <time dateTime={board.generatedAt}>{board.generatedAt}</time> · spent this month ${(board.spentThisMonthMicroUsd / 1_000_000).toFixed(2)}</p>
+      {board.truncated ? <p role="status">This board is too large to show in full; some tasks are not listed.</p> : null}
+      <section aria-labelledby="board-needs"><h2 id="board-needs">Needs a person ({board.needsPerson.length})</h2>
+        {board.needsPerson.length === 0 ? <p>Nothing is waiting on anyone.</p> : <ul>{board.needsPerson.map((c) => <Card key={c.taskId} card={c} people={board.people} taskHref={taskHref} />)}</ul>}
+      </section>
+      {BOARD_COLUMNS.map((col) => (
+        <section key={col} aria-labelledby={`board-${col}`} data-column={col}>
+          <h2 id={`board-${col}`}>{COLUMN_LABELS[col]} ({board.columns[col].length})</h2>
+          {board.columns[col].length === 0 ? <p>None.</p> : <ul>{board.columns[col].map((c) => <Card key={c.taskId} card={c} people={board.people} taskHref={taskHref} />)}</ul>}
+        </section>
+      ))}
+    </main>
+  );
+}
+
+export function MyWorkView({ work, taskHref }: { work: MyWork; taskHref: (taskId: string) => string }) {
+  const focus = focusOf(work);
+  return (
+    <main aria-labelledby="work-title">
+      <h1 id="work-title">My work</h1>
+      <p role="status" aria-live="polite" data-focus={focus.kind}><strong>Next:</strong> {focus.text}</p>
+      {work.truncated ? <p role="status">You have more work than can be shown; some tasks are not listed.</p> : null}
+      {MY_WORK_SECTIONS.map(({ key, label }) => (work[key].length === 0 ? null : (
+        <section key={key} aria-labelledby={`work-${key}`} data-section={key}>
+          <h2 id={`work-${key}`}>{label} ({work[key].length})</h2>
+          <ul>{work[key].map((c) => <Card key={`${key}-${c.taskId}`} card={c} people={work.people} taskHref={taskHref} project={work.applications[c.applicationId]} />)}</ul>
+        </section>
+      )))}
+    </main>
   );
 }
