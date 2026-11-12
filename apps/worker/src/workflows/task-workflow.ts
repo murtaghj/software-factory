@@ -31,6 +31,7 @@ export const BUDGET_V1 = 'budget-v1';
 export const COMMANDS_V1 = 'commands-v1';
 export const OUTCOME_V1 = 'outcome-v1';
 export const SETTLE_V1 = 'settle-v1';
+export const RESILIENCE_V1 = 'resilience-v1';
 const PAUSABLE: readonly string[] = ['queued', 'running', 'waiting_input', 'waiting_decision'];
 const CANCELLABLE: readonly string[] = ['accepted', 'queued', 'running', 'waiting_input', 'waiting_decision', 'paused'];
 
@@ -48,6 +49,11 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
   const commandsV1 = patched(COMMANDS_V1);
   let inflight: CancellationScope | undefined;
   let projectedRevision = -1;
+  // resilience-v1: a command applied while a stage is in flight projects its revision at once (so
+  // the next command is not held until the stage ends), and a stage whose activity fails outright
+  // is recorded and its reservation settled instead of failing the workflow.
+  let resilienceV1 = false;
+  const hooks: { projectInFlight?: () => Promise<void> } = {};
   const viewOf = (st: Checkpoint): WorkflowView => ({ status: st.status, controlRevision: st.controlRevision, specVersion: st.specVersion, planVersion: st.plan.version, projectionSequence: st.projectionSequence, nodes: st.nodes, supersededResults: st.supersededResults, receiptCount: Object.keys(st.receipts).length });
   // A human decision applies only to the exact pending request and subject, from the required
   // peer, with full reviewed scope, through the response endpoint (AC-07, AC-44, INV-21).
@@ -110,6 +116,7 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
       receipt = { state: 'rejected', reason: `unsupported_command: ${cmd.kind}` };
     }
     st.receipts[cmd.commandId] = receipt;
+    if (resilienceV1 && receipt.state === 'applied' && inflight !== undefined && hooks.projectInFlight) await hooks.projectInFlight();
     return receipt;
   }, { validator: (cmd: CommandPayload) => { if (typeof cmd.commandId !== 'string' || typeof cmd.kind !== 'string' || typeof cmd.expectedRevision !== 'number') throw new Error('malformed command'); } });
 
@@ -127,8 +134,12 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
   // cancelled stage, and close a plan-review stage run that a cancel or amendment interrupted.
   const settleV1 = patched(SETTLE_V1);
   if (settleV1 && state.startedAtMs === undefined) state.startedAtMs = workflowNow();
+  resilienceV1 = patched(RESILIENCE_V1);
 
-  const project = async (requested: Checkpoint['status'], eventType: string, extra: { currentNodeId?: string | null; waitingReason?: string | null; refs?: Record<string, unknown> } = {}): Promise<void> => {
+  type ProjectExtra = { currentNodeId?: string | null; waitingReason?: string | null; refs?: Record<string, unknown> };
+  let lastPosition: { currentNodeId?: string | null; waitingReason?: string | null } = {};
+  const projectOnce = async (requested: Checkpoint['status'], eventType: string, extra: ProjectExtra = {}): Promise<void> => {
+    lastPosition = { currentNodeId: extra.currentNodeId ?? null, waitingReason: extra.waitingReason ?? null };
     // A pause applied while a stage was in flight wins over the stage's own "running" projection.
     const status = commandsV1 && state.status === 'paused' && (requested === 'running' || requested === 'waiting_decision') ? 'paused' : requested;
     state.status = status;
@@ -140,6 +151,16 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
       refs: { planHash: state.plan.planHash, ...extra.refs },
     });
   };
+  // Projections are strictly ordered. With resilience-v1 an Update handler may project while the
+  // main loop is projecting too, so they are queued: sequence numbers are assigned in queue order
+  // and each write completes before the next starts.
+  let projectionQueue: Promise<void> = Promise.resolve();
+  const project = (requested: Checkpoint['status'], eventType: string, extra: ProjectExtra = {}): Promise<void> => {
+    if (!resilienceV1) return projectOnce(requested, eventType, extra);
+    projectionQueue = projectionQueue.then(() => projectOnce(requested, eventType, extra));
+    return projectionQueue;
+  };
+  hooks.projectInFlight = () => project(state.status, 'task.revised', lastPosition);
 
   if (!checkpoint) {
     await project('queued', 'plan.resolved', { refs: { templateId: state.plan.templateRef.id, templateVersion: state.plan.templateRef.version } });
@@ -396,7 +417,18 @@ export async function TaskWorkflow(launch: LaunchPayload, checkpoint?: Checkpoin
       try {
         result = await scope.run(() => execute.executeFakeStage(stageInput));
       } catch (e) {
-        if (!isCancellation(e)) throw e;
+        if (!isCancellation(e)) {
+          if (!resilienceV1) throw e;
+          // The runner activity failed outright (retries exhausted or non-retryable). Nothing it
+          // produced is evidence: record the stage, settle its reservation and let the plan end.
+          inflight = undefined;
+          state.activeMs = (state.activeMs ?? 0) + (workflowNow() - began);
+          await persist.finishStage({ orgId: launch.orgId, logicalId, status: 'inconclusive', errorClass: 'infrastructure_error' });
+          if (budgeted) await persist.chargeStageBudget({ orgId: launch.orgId, taskId: launch.taskId, operationKey: logicalId, nodeId: node.id });
+          state.nodes[node.id] = { ...ns, status: 'failed', stageRunId, inputHash };
+          await project('running', 'stage.completed', { currentNodeId: node.id, refs: { stageRunId: logicalId, outcome: 'infrastructure_error' } });
+          continue;
+        }
         inflight = undefined;
         if (settleV1) state.activeMs = (state.activeMs ?? 0) + (workflowNow() - began);
         await CancellationScope.nonCancellable(() => persist.finishStage({ orgId: launch.orgId, logicalId, status: 'inconclusive', errorClass: 'cancelled' }));

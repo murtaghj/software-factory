@@ -225,26 +225,33 @@ describe('W-015 command and decision workflow (full stack)', () => {
     for (const id of [taskId, other]) { await command(h, owner, id, 'cancel'); await waitStatus(h, owner, id, ['cancelled']); }
   });
 
-  it('the amended spec is attributed to the principal who amended it, even when other commands apply first', async () => {
+  it('a command applied while a stage is running projects its revision at once, so the next command is not held until the stage ends; the amendment stays attributed to its author', async () => {
     const taskId = await createTask(h, owner);
     await respond(h, reviewer, taskId, await pendingDecision(h, owner, taskId));
     await pump(h, async () => ((await getTask(h, owner, taskId)).currentNodeId === 'investigate' ? true : undefined));
+    const before = await getTask(h, owner, taskId);
     const spec2 = investigation(h.applicationId, { title: 'Revised while investigating' });
     const object = await h.artifacts.putControllerObject(h.orgId, Buffer.from(canonicalJson(spec2)));
     const specRef = await h.tx((t) => h.artifacts.registerControllerArtifact(t, { orgId: h.orgId, taskId, producerId: `principal:${owner.principalId}`, object, mediaType: 'application/json', schemaVersion: '2.0', classification: 'ordinary', purpose: 'amended_spec' }));
     const amend = await command(h, owner, taskId, 'amend_spec', { specRef });
-    expect(await commandState(h, owner, amend.commandId)).toMatchObject({ state: 'applied' });
-    await pump(h, async () => ((await getTask(h, owner, taskId)).revision > 0 ? true : undefined));
-    // While the stage runs the amendment's revision is not projected, so another principal's
-    // command passes ingress on the old revision and is rejected by the workflow. Its receipt is now
-    // the latest one; the amendment must still be attributed to its own command.
+    expect(await commandState(h, owner, amend.commandId)).toMatchObject({ state: 'applied', resultingRevision: before.revision + 1 });
+    // The receipt arrives only after the projection: the task already shows the new revision while
+    // the investigation is still the running stage and plan 1 is still current.
+    const during = await getTask(h, owner, taskId);
+    expect(during).toMatchObject({ revision: before.revision + 1, currentNodeId: 'investigate', planVersion: 1 });
+    const runs = ((await h.call(owner, 'GET', `/v2/tasks/${taskId}/runs`)).body as { items: Array<{ nodeId: string; status: string }> }).items;
+    expect(runs.find((r) => r.nodeId === 'investigate')?.status).toBe('running');
+    // A second principal's command is therefore accepted and applied mid-stage.
     const operator = await h.user([{ role: 'operator', scope: [h.applicationId] }]);
     const pause = await command(h, operator, taskId, 'pause');
     expect(pause.status).toBe(202);
-    expect(await commandState(h, operator, pause.commandId)).toMatchObject({ state: 'rejected' });
+    expect(await commandState(h, operator, pause.commandId)).toMatchObject({ state: 'applied', resultingRevision: before.revision + 2 });
+    expect((await waitStatus(h, owner, taskId, ['paused'])).revision).toBe(before.revision + 2);
+    const resume = await command(h, operator, taskId, 'resume');
+    expect(await commandState(h, operator, resume.commandId)).toMatchObject({ state: 'applied' });
+    // The operator's commands are the latest receipts, yet spec v2 belongs to the amender.
     const v2 = await pump(h, async () => (await h.tx(async (t) => (await t.query<{ actor_id: string }>('SELECT actor_id FROM factory.task_spec_version WHERE task_id = $1 AND version = 2', [taskId])).rows[0])));
     expect(v2.actor_id).toBe(owner.principalId);
-    // Plan 2 now asks for its own approval.
     expect((await waitStatus(h, owner, taskId, ['waiting_decision'])).planVersion).toBe(2);
   });
 });

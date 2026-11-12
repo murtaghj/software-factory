@@ -29,6 +29,8 @@ export type FakeStageBehavior = {
   // Estimated and actual model cost of a fake stage, in micro-USD (default 1 USD each).
   estimateMicroUsd?: (nodeId: string) => number;
   actualMicroUsd?: (nodeId: string) => number;
+  // Makes the fake runner fail outright (as a crashed pod would), instead of returning a result.
+  crash?: (nodeId: string, attempt: number) => boolean;
   // Overrides the producer identity the fake runner reports (e.g. a reviewer that is the author).
   producerId?: (nodeId: string) => string;
 };
@@ -154,6 +156,7 @@ export function createTaskActivities(deps: ActivityDeps): TaskActivities {
           if (ctx.cancellationSignal.aborted) throw new CancelledFailure('stage cancelled');
         }
       }
+      if (deps.fakeStage?.crash?.(nodeId, attempt)) throw ApplicationFailure.nonRetryable('fake runner crashed', 'runner_crashed');
       const status = deps.fakeStage?.outcome?.(nodeId, attempt, planVersion) ?? 'completed';
       const criteria = await tenant(orgId, (tx) => tx.query<{ spec: { acceptanceCriteria?: string[] } }>('SELECT s.spec FROM factory.task_spec_version s JOIN factory.execution_plan p ON p.org_id = s.org_id AND p.task_id = s.task_id AND p.spec_version = s.version WHERE p.task_id = $1 AND p.version = $2', [taskId, planVersion]));
       const criteriaIds = (criteria.rows[0]?.spec.acceptanceCriteria ?? []).map((_t, i) => `C${String(i + 1)}`);

@@ -51,6 +51,20 @@ describe('AC-34 budget concurrency (workflow half: unmet work never becomes succ
     expect(view.nodes.investigate?.status).toBe('pending');
   });
 
+  it('a stage whose runner fails outright is recorded and its reservation settled; the task ends failed, not hung', async () => {
+    const { taskId, launch } = await h.newTask();
+    const view = await h.withWorker<WorkflowView>({ crash: (n) => n === 'investigate' }, async (tq) => (await start(tq, launch, launch.workflowId)).result() as Promise<WorkflowView>);
+    expect(view.status).toBe('failed');
+    expect(view.nodes.investigate?.status).toBe('failed');
+    expect(view.nodes.evidence_review?.status).toBe('pending');
+    const run = await tx(async (t) => (await t.query<{ status: string; error_class: string }>("SELECT status, error_class FROM factory.stage_run WHERE task_id = $1 AND node_id = 'investigate'", [taskId])).rows[0]);
+    expect(run).toEqual({ status: 'inconclusive', error_class: 'infrastructure_error' });
+    const account = await tx(async (t) => (await t.query<{ charged_micro_usd: string; reserved_micro_usd: string }>('SELECT charged_micro_usd, reserved_micro_usd FROM factory.budget_account WHERE task_id = $1', [taskId])).rows[0]);
+    expect(account).toEqual({ charged_micro_usd: '2000000', reserved_micro_usd: '0' }); // scope + the crashed investigation's reserved estimate
+    const task = await tx(async (t) => (await t.query<{ status: string }>('SELECT status FROM factory.task WHERE id = $1', [taskId])).rows[0]);
+    expect(task?.status).toBe('failed');
+  });
+
   it('invocation mode one admits the plan\'s single authoring stage and independent checks still run', async () => {
     const { launch } = await h.newTask({ invocationMode: 'one' });
     const view = await h.withWorker<WorkflowView>(undefined, async (tq) => (await start(tq, launch, launch.workflowId)).result() as Promise<WorkflowView>);

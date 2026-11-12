@@ -33,11 +33,12 @@ describe('AC-09 worker version replay', () => {
     // settle-v1 (review fixes: time metering, cancelled-stage settlement).
     for (const base of ['active-mid-stage', 'amended', 'completed', 'continued-as-new', 'failed']) {
       expect(names).toContain(base);
-      for (const build of ['gate-engine-v1', 'budget-v1', 'commands-v1', 'outcome-v1', 'settle-v1']) expect(names).toContain(`${base}-${build}`);
+      for (const build of ['gate-engine-v1', 'budget-v1', 'commands-v1', 'outcome-v1', 'settle-v1', 'resilience-v1']) expect(names).toContain(`${base}-${build}`);
     }
-    for (const base of ['plan-review-approved', 'paused-resumed', 'cancelled-in-flight']) for (const build of ['commands-v1', 'outcome-v1', 'settle-v1']) expect(names).toContain(`${base}-${build}`);
+    for (const base of ['plan-review-approved', 'paused-resumed', 'cancelled-in-flight']) for (const build of ['commands-v1', 'outcome-v1', 'settle-v1', 'resilience-v1']) expect(names).toContain(`${base}-${build}`);
     // Terminal branches recorded from settle-v1 on.
-    for (const base of ['budget-exhausted', 'plan-rejected', 'decision-expired', 'amend-rejected']) expect(names).toContain(`${base}-settle-v1`);
+    for (const base of ['budget-exhausted', 'plan-rejected', 'decision-expired', 'amend-rejected']) for (const build of ['settle-v1', 'resilience-v1']) expect(names).toContain(`${base}-${build}`);
+    expect(names).toContain('runner-crashed-resilience-v1');
     const results = await replay(await bundleWorkflows());
     expect(results).toEqual(fixtures.map((f) => ({ name: f.name, error: undefined })).sort((a, b) => a.name.localeCompare(b.name)));
   });

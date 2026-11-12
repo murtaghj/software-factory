@@ -109,7 +109,8 @@ async function captureWith(baseName: string, description: string, behavior: Para
   console.log(`captured ${name} (${String(history.events?.length ?? 0)} events)`);
 }
 // Command scenarios need the production template (plan review); captured for every build since commands-v1.
-if (suffix === '-commands-v1' || suffix === '-outcome-v1' || suffix === '-settle-v1') {
+const LATER_BUILDS = ['-settle-v1', '-resilience-v1'];
+if (suffix === '-commands-v1' || suffix === '-outcome-v1' || LATER_BUILDS.includes(suffix)) {
   await captureWith('plan-review-approved', 'Production template: plan review approved by an independent peer', undefined, async (tq) => {
     const { taskId, launch } = await h.newTask();
     const handle = await start(tq, launch, launch.workflowId);
@@ -144,7 +145,7 @@ if (suffix === '-commands-v1' || suffix === '-outcome-v1' || suffix === '-settle
 
 // Terminal branches that earlier builds did not record (settle-v1 onwards): budget exhaustion,
 // plan rejection, decision expiry on the durable timer, and a rejected amendment.
-if (suffix === '-settle-v1') {
+if (LATER_BUILDS.includes(suffix)) {
   const respondWith = async (handle: WorkflowHandle, workflowId: string, taskId: string, outcome: 'approve' | 'reject') => {
     if (outcome === 'approve') { await approve(handle, workflowId, taskId); return; }
     await until(async () => (await handle.query<View>('state')).status === 'waiting_decision');
@@ -184,6 +185,17 @@ if (suffix === '-settle-v1') {
     await h.db.withTenant({ orgId: h.orgId }, (t) => t.query("INSERT INTO factory.command (org_id, id, task_id, principal_id, expected_revision, kind, request_hash, payload, state) VALUES ($1,$2,$3,$4,$5,'amend_spec',$6,'{}','delivered')", [h.orgId, commandId, taskId, reviewerId, rev, 'a'.repeat(64)]));
     await handle.executeUpdate('applyCommand', { args: [{ workflowId: launch.workflowId, commandId, kind: 'amend_spec', expectedRevision: rev, specRef }] });
     await until(async () => (await handle.query<View>('state')).status === 'waiting_decision' && (await handle.query<View>('state')).controlRevision > rev);
+    await approve(handle, launch.workflowId, taskId);
+    await handle.result();
+    return `${launch.workflowId}|${handle.firstExecutionRunId}`;
+  });
+}
+
+// resilience-v1: a runner that fails outright, and a command applied (and projected) mid-stage.
+if (suffix === '-resilience-v1') {
+  await captureWith('runner-crashed', 'The investigate runner fails outright: stage recorded, reservation settled, task failed', { crash: (n) => n === 'investigate' }, async (tq) => {
+    const { taskId, launch } = await h.newTask();
+    const handle = await start(tq, launch, launch.workflowId);
     await approve(handle, launch.workflowId, taskId);
     await handle.result();
     return `${launch.workflowId}|${handle.firstExecutionRunId}`;

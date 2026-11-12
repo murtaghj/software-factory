@@ -256,5 +256,83 @@
     "workflowId": "factory/9c6881f5-d409-4170-aa63-3552feed9b9c/57ebae85-97f0-4843-91ba-592659387743",
     "capturedWithWorkflowCodeDigest": "f4c1b0932c63b345b2fc4bbc6e1203ce5df0bfb85a7296904e031694883979ca",
     "events": 203
+  },
+  "completed-resilience-v1": {
+    "description": "Investigation plan run to success through fake stages",
+    "workflowId": "factory/eaa79471-46d5-4ebe-b5d3-213765dc5813/1198a037-b0be-4915-88a5-c087f5f3a11d",
+    "capturedWithWorkflowCodeDigest": "dc77710f5db8d60f8b0abe534352d39b15ec53b26a3d02ef7622fcb04d94fa53",
+    "events": 299
+  },
+  "failed-resilience-v1": {
+    "description": "Mandatory evidence_review stage reports a product failure",
+    "workflowId": "factory/eaa79471-46d5-4ebe-b5d3-213765dc5813/62887629-0cdb-43b9-8651-3e5518f6fe56",
+    "capturedWithWorkflowCodeDigest": "dc77710f5db8d60f8b0abe534352d39b15ec53b26a3d02ef7622fcb04d94fa53",
+    "events": 189
+  },
+  "active-mid-stage-resilience-v1": {
+    "description": "Open history: the investigate stage is still executing",
+    "workflowId": "factory/eaa79471-46d5-4ebe-b5d3-213765dc5813/7f3d4e34-cb51-460e-9885-9f017b474dfb",
+    "capturedWithWorkflowCodeDigest": "dc77710f5db8d60f8b0abe534352d39b15ec53b26a3d02ef7622fcb04d94fa53",
+    "events": 114
+  },
+  "amended-resilience-v1": {
+    "description": "amend_spec races an in-flight stage; plan 2 supersedes plan 1",
+    "workflowId": "factory/eaa79471-46d5-4ebe-b5d3-213765dc5813/2f5160fd-800a-4478-b0b3-b8264174b0a9",
+    "capturedWithWorkflowCodeDigest": "dc77710f5db8d60f8b0abe534352d39b15ec53b26a3d02ef7622fcb04d94fa53",
+    "events": 424
+  },
+  "continued-as-new-resilience-v1": {
+    "description": "First run of a task that rolls over after two stages",
+    "workflowId": "factory/eaa79471-46d5-4ebe-b5d3-213765dc5813/76497a4a-66a6-40ef-b7ad-1a071713e125",
+    "capturedWithWorkflowCodeDigest": "dc77710f5db8d60f8b0abe534352d39b15ec53b26a3d02ef7622fcb04d94fa53",
+    "events": 141
+  },
+  "plan-review-approved-resilience-v1": {
+    "description": "Production template: plan review approved by an independent peer",
+    "workflowId": "factory/eaa79471-46d5-4ebe-b5d3-213765dc5813/5154bbda-5fcb-47ad-9397-39e4e3c9b5a0",
+    "capturedWithWorkflowCodeDigest": "dc77710f5db8d60f8b0abe534352d39b15ec53b26a3d02ef7622fcb04d94fa53",
+    "events": 395
+  },
+  "paused-resumed-resilience-v1": {
+    "description": "Paused during a stage, then resumed",
+    "workflowId": "factory/eaa79471-46d5-4ebe-b5d3-213765dc5813/50dabbe2-092e-4d1e-859e-3be20a633016",
+    "capturedWithWorkflowCodeDigest": "dc77710f5db8d60f8b0abe534352d39b15ec53b26a3d02ef7622fcb04d94fa53",
+    "events": 414
+  },
+  "cancelled-in-flight-resilience-v1": {
+    "description": "Cancelled while a stage was executing",
+    "workflowId": "factory/eaa79471-46d5-4ebe-b5d3-213765dc5813/f4e3377e-9b19-49b0-ba67-65ec977868c4",
+    "capturedWithWorkflowCodeDigest": "dc77710f5db8d60f8b0abe534352d39b15ec53b26a3d02ef7622fcb04d94fa53",
+    "events": 255
+  },
+  "budget-exhausted-resilience-v1": {
+    "description": "Allowance runs out before the plan review: incomplete with reasons",
+    "workflowId": "factory/eaa79471-46d5-4ebe-b5d3-213765dc5813/59889abf-1d94-4a5c-9e9c-9fad23b15cd7",
+    "capturedWithWorkflowCodeDigest": "dc77710f5db8d60f8b0abe534352d39b15ec53b26a3d02ef7622fcb04d94fa53",
+    "events": 153
+  },
+  "plan-rejected-resilience-v1": {
+    "description": "The required peer rejects the plan: incomplete, never approved",
+    "workflowId": "factory/eaa79471-46d5-4ebe-b5d3-213765dc5813/ed58c349-5f4e-4183-9336-5e8d49e712f2",
+    "capturedWithWorkflowCodeDigest": "dc77710f5db8d60f8b0abe534352d39b15ec53b26a3d02ef7622fcb04d94fa53",
+    "events": 194
+  },
+  "decision-expired-resilience-v1": {
+    "description": "Nobody answers the plan review: the durable timer expires it",
+    "workflowId": "factory/eaa79471-46d5-4ebe-b5d3-213765dc5813/e74f7658-f96e-40d8-80c3-530ba73ee59a",
+    "capturedWithWorkflowCodeDigest": "dc77710f5db8d60f8b0abe534352d39b15ec53b26a3d02ef7622fcb04d94fa53",
+    "events": 196
+  },
+  "amend-rejected-resilience-v1": {
+    "description": "An amendment naming an invalid spec is rejected; the task then completes on plan 1",
+    "workflowId": "factory/eaa79471-46d5-4ebe-b5d3-213765dc5813/b4891cc5-2188-432e-aa63-af3e1b7cd2c5",
+    "capturedWithWorkflowCodeDigest": "dc77710f5db8d60f8b0abe534352d39b15ec53b26a3d02ef7622fcb04d94fa53",
+    "events": 208
+  },
+  "runner-crashed-resilience-v1": {
+    "description": "The investigate runner fails outright: stage recorded, reservation settled, task failed",
+    "workflowId": "factory/eaa79471-46d5-4ebe-b5d3-213765dc5813/3a775614-1acd-4042-9ef4-ac9858bb5dcd",
+    "capturedWithWorkflowCodeDigest": "dc77710f5db8d60f8b0abe534352d39b15ec53b26a3d02ef7622fcb04d94fa53",
+    "events": 242
   }
 }
