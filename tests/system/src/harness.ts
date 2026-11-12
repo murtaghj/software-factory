@@ -9,8 +9,8 @@ import { tmpdir } from 'node:os';
 type FastifyInstance = ReturnType<typeof buildApi>;
 import { Database, createMigratedDatabase, provisionOrganization, type MigratedDatabase, type Tx } from '@factory/database';
 import { ArtifactService, FileObjectStore, startDownloadOrigin, type DownloadOrigin } from '@factory/artifacts';
-import { startTestIssuer, type TestIssuer } from '@factory/test-support';
-import { CommandService, OidcVerifier, OutcomeBundleService, RBAC_ARTIFACT_READS, TaskService, buildApi } from '@factory/api';
+import { startTestIssuer, type TestIssuer, retryStart } from '@factory/test-support';
+import { AllowanceService, CommandService, OidcVerifier, OutcomeBundleService, RBAC_ARTIFACT_READS, TaskService, buildApi } from '@factory/api';
 import { TestWorkflowEnvironment } from '@temporalio/testing';
 import type { Worker } from '@temporalio/worker';
 import { bundleWorkflows, createWorker, type FakeStageBehavior } from '@factory/worker';
@@ -49,7 +49,7 @@ export async function createSystemHarness(prefix: string, options: SystemOptions
   const issuer = await startTestIssuer('system');
   const tasks = new TaskService({ db, artifacts });
   const commands = new CommandService({ db, artifacts });
-  const api = buildApi({ db, verifier: new OidcVerifier([{ issuer: issuer.issuer, audience: AUDIENCE, jwksUrl: issuer.jwksUrl, orgId }]), artifacts, tasks, commands, outcomes: new OutcomeBundleService({ db, artifacts }), dashboardOrigin: 'http://localhost:4173', ...(options.events ? { events: options.events } : {}) });
+  const api = buildApi({ db, verifier: new OidcVerifier([{ issuer: issuer.issuer, audience: AUDIENCE, jwksUrl: issuer.jwksUrl, orgId }]), artifacts, tasks, commands, outcomes: new OutcomeBundleService({ db, artifacts }), allowances: new AllowanceService({ db }), dashboardOrigin: 'http://localhost:4173', ...(options.events ? { events: options.events } : {}) });
   const apiUrl = await api.listen({ port: 0, host: '127.0.0.1' });
   const tx = <T>(fn: (t: Tx) => Promise<T>) => db.withTenant({ orgId }, fn);
   let temporal: SystemHarness['temporal'];
@@ -57,7 +57,7 @@ export async function createSystemHarness(prefix: string, options: SystemOptions
   let workerRun: Promise<void> | undefined;
   let env: TestWorkflowEnvironment | undefined;
   if (options.temporal) {
-    env = await TestWorkflowEnvironment.createLocal();
+    env = await retryStart(() => TestWorkflowEnvironment.createLocal());
     const namespace = env.namespace ?? 'default';
     const taskQueue = `factory-tasks-${randomUUID()}`;
     worker = await createWorker({ connection: env.nativeConnection, namespace, taskQueue, workflowBundle: await bundleWorkflows(), db, artifacts, ...(options.temporal.fakeStage ? { fakeStage: options.temporal.fakeStage } : {}), ...(options.temporal.decisionTtlMs === undefined ? {} : { decisionTtlMs: options.temporal.decisionTtlMs }) });

@@ -11,3 +11,4 @@ export * from './tasks/service.ts';
 export type { StreamOptions } from './events/sse.ts';
 export * from './tasks/commands.ts';
 export * from './tasks/outcome-bundle.ts';
+export * from './budgets/service.ts';

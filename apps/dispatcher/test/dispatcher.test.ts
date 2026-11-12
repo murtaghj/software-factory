@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { TestWorkflowEnvironment } from '@temporalio/testing';
+import { retryStart } from '@factory/test-support';
 import { Worker } from '@temporalio/worker';
 import { Database, createMigratedDatabase, provisionOrganization, type MigratedDatabase } from '@factory/database';
 import { ClientGateway, Dispatcher, type TemporalGateway } from '../src/index.ts';
@@ -19,7 +20,7 @@ describe('W-010 outbox dispatcher', () => {
   const appId = randomUUID();
 
   beforeAll(async () => {
-    env = await TestWorkflowEnvironment.createLocal();
+    env = await retryStart(() => TestWorkflowEnvironment.createLocal());
     const namespace = env.namespace ?? 'default';
     worker = await Worker.create({ connection: env.nativeConnection, namespace, taskQueue: TASK_QUEUE, workflowsPath: new URL('./fixture-workflows.ts', import.meta.url).pathname });
     running = worker.run();

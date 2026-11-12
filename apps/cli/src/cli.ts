@@ -46,6 +46,10 @@ Decisions waiting on you
   factory request-changes <decisionId> --reason <text> [--reviewed <a,b>] [--wait]
     Decisions are answered by a person: these three need an interactive terminal.
 
+Budget
+  factory budget                                            your allowance for this month
+  factory budget set <principalId> --limit-usd <amount>     set a monthly allowance (organization admins)
+
 Options
   --json    print the API's JSON instead of text
   --help    show this help
@@ -72,7 +76,7 @@ export async function run(argv: string[], io: CliIo): Promise<number> {
   try {
     parsed = parseArgs({ args: argv, allowPositionals: true, strict: true, options: {
       json: { type: 'boolean' }, help: { type: 'boolean' }, wait: { type: 'boolean' }, 'reviewed-all': { type: 'boolean' },
-      reason: { type: 'string' }, reviewed: { type: 'string' }, status: { type: 'string' }, limit: { type: 'string' }, key: { type: 'string' }, out: { type: 'string' },
+      reason: { type: 'string' }, reviewed: { type: 'string' }, status: { type: 'string' }, limit: { type: 'string' }, key: { type: 'string' }, out: { type: 'string' }, 'limit-usd': { type: 'string' },
     } });
   } catch (e) {
     io.err(`factory: ${e instanceof Error ? e.message : 'invalid arguments'}`);
@@ -146,6 +150,25 @@ export async function run(argv: string[], io: CliIo): Promise<number> {
       const bundle = expect(await io.client.get(`/v2/tasks/${id(target, 'taskId')}/outcome-bundle`), [200]) as { verification: { digestVerifiedArtifacts: number }; reviewMode: string };
       const text = JSON.stringify(bundle, null, 2);
       if (opt.out) { await io.writeFile(opt.out, `${text}\n`); io.out(`wrote ${opt.out} (${String(bundle.verification.digestVerifiedArtifacts)} artifacts verified, review mode ${bundle.reviewMode})`); } else io.out(text);
+      return EXIT.ok;
+    }
+    if (verb === 'budget') {
+      type View = { enrolled: boolean; principalId: string; periodEnd?: string; limitMicroUsd?: number; reservedMicroUsd?: number; chargedMicroUsd?: number; remainingMicroUsd?: number };
+      const usd = (micro: number | undefined): string => `$${((micro ?? 0) / 1_000_000).toFixed(2)}`;
+      const show = (v: View): string[] => (v.enrolled
+        ? [`${usd(v.remainingMicroUsd)} left of ${usd(v.limitMicroUsd)} until ${v.periodEnd ?? ''}`, `  spent ${usd(v.chargedMicroUsd)} · reserved by running work ${usd(v.reservedMicroUsd)}`]
+        : ['No allowance is set for you; only each task\'s own budget applies.']);
+      if (target === undefined) {
+        const v = expect(await io.client.get('/v2/me/allowance'), [200]) as View;
+        print(v, () => show(v));
+        return EXIT.ok;
+      }
+      if (target !== 'set') throw new Usage('usage: factory budget [set <principalId> --limit-usd <amount>]');
+      const principalId = id(positionals[2], 'principalId');
+      const amount = Number(opt['limit-usd']);
+      if (opt['limit-usd'] === undefined || !Number.isFinite(amount) || amount < 0 || !/^\d+(\.\d{1,2})?$/.test(opt['limit-usd'])) throw new Usage('--limit-usd must be an amount such as 250 or 99.50');
+      const v = expect(await io.client.post(`/v2/principals/${principalId}/allowance`, { monthlyLimitMicroUsd: Math.round(amount * 1_000_000) }), [200]) as View;
+      print(v, () => [`allowance for ${principalId}:`, ...show(v)]);
       return EXIT.ok;
     }
     if (verb === 'inbox') {

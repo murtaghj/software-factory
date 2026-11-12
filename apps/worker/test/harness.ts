@@ -5,6 +5,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { TestWorkflowEnvironment } from '@temporalio/testing';
+import { retryStart } from '@factory/test-support';
 import type { Worker, WorkflowBundleWithSourceMap } from '@temporalio/worker';
 import { Database, createMigratedDatabase, provisionOrganization, type MigratedDatabase } from '@factory/database';
 import { ArtifactService, FileObjectStore } from '@factory/artifacts';
@@ -26,7 +27,7 @@ export const investigationSpec = (applicationId: string, title = 'Why do orders 
 });
 
 export async function createWorkerHarness(prefix: string): Promise<WorkerHarness> {
-  const env = await TestWorkflowEnvironment.createLocal();
+  const env = await retryStart(() => TestWorkflowEnvironment.createLocal());
   const m = await createMigratedDatabase(prefix);
   const orgId = randomUUID();
   const principalId = randomUUID();

@@ -38,7 +38,7 @@ then P-04 to P-06.
 
 | ID | Proposal | What it delivers | Size |
 | --- | --- | --- | --- |
-| P-09 | Per-developer (or per-team) budget accounts | A budget account per principal with a period limit. Each new task opens its account as a child, so reservations and charges roll up and a task is refused or stopped when the allowance runs out. Open choices: creator pays when ownership changes; one level first (developer or application), not both. | Small (the parent chain and ledger exist, W-013) |
+| P-09 | **Done (2026-11-13) for developers: creator pays, monthly, one level. Per-team and per-application levels are not built.** Per-developer (or per-team) budget accounts | A budget account per principal with a period limit. Each new task opens its account as a child, so reservations and charges roll up and a task is refused or stopped when the allowance runs out. Open choices: creator pays when ownership changes; one level first (developer or application), not both. | Small (the parent chain and ledger exist, W-013) |
 | P-10 | Git attribution | When the Git integration arrives, the factory's bot opens the PR and names the requesting developer as co-author or in the description. | With the Git provider package |
 
 ## D. Scale

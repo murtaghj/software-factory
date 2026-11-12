@@ -7,7 +7,7 @@
 import { randomUUID } from 'node:crypto';
 import { validateContract, type TaskAccepted, type TaskPage, type TaskRequest, type TaskView } from '@factory/contracts';
 import { canonicalHash, canonicalJson } from '@factory/domain';
-import type { Database, Tx } from '@factory/database';
+import { currentAllowance, type Database, type Tx } from '@factory/database';
 import type { ArtifactService } from '@factory/artifacts';
 import { authorize, effectiveRoles, type Principal } from '../auth/rbac.ts';
 
@@ -108,6 +108,10 @@ export class TaskService {
     const prior = await this.tenant(p, (tx) => this.replay(tx, p, idempotencyKey, requestHash));
     if (prior) return prior;
     await this.tenant(p, (tx) => admitTaskRequest(tx, p, req));
+    // An enrolled developer whose allowance for the period is used up cannot start more work
+    // (chapter 03: 429 for admission quota). The period end is the earliest it can change by itself.
+    const personal = await this.tenant(p, (tx) => currentAllowance(tx, { orgId: p.orgId, principalId: p.principalId }));
+    if (personal && personal.remainingMicroUsd === 0) throw new ApiError(429, 'allowance_exhausted', `your allowance for the period ending ${personal.periodEnd} is used up`);
 
     const taskId = randomUUID();
     const operationId = randomUUID();

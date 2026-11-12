@@ -13,13 +13,14 @@ import { ApiError, type TaskService } from './tasks/service.ts';
 import { listGates, listRuns } from './tasks/views.ts';
 import type { CommandService } from './tasks/commands.ts';
 import type { OutcomeBundleService } from './tasks/outcome-bundle.ts';
+import type { AllowanceService } from './budgets/service.ts';
 import { streamTaskEvents, type StreamOptions } from './events/sse.ts';
 
 declare module 'fastify' {
   interface FastifyRequest { principal?: Principal; identity?: VerifiedIdentity; requestId: string }
 }
 
-export type ApiDeps = { db: Database; verifier: OidcVerifier; artifacts: ArtifactService; tasks: TaskService; commands?: CommandService; outcomes?: OutcomeBundleService; dashboardOrigin: string; events?: StreamOptions };
+export type ApiDeps = { db: Database; verifier: OidcVerifier; artifacts: ArtifactService; tasks: TaskService; commands?: CommandService; outcomes?: OutcomeBundleService; allowances?: AllowanceService; dashboardOrigin: string; events?: StreamOptions };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -178,6 +179,21 @@ export function buildApi(deps: ApiDeps): FastifyInstance {
   app.post<{ Params: { decisionId: string } }>('/v2/decisions/:decisionId/responses', async (req, reply) => {
     if (!UUID.test(req.params.decisionId)) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
     return reply.code(202).send(await commands().respond(principalOf(req), req.params.decisionId, header(req, 'idempotency-key'), req.body));
+  });
+
+  // Per-developer allowances: not in the rev 1.13 OpenAPI (A-17, plan-additions P-09).
+  const allowances = (): AllowanceService => {
+    if (!deps.allowances) throw new ApiError(503, 'dependency_unavailable', 'allowances are not configured');
+    return deps.allowances;
+  };
+  app.get('/v2/me/allowance', (req) => allowances().mine(principalOf(req)));
+  app.get<{ Params: { principalId: string } }>('/v2/principals/:principalId/allowance', async (req, reply) => {
+    if (!UUID.test(req.params.principalId)) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
+    return allowances().get(principalOf(req), req.params.principalId);
+  });
+  app.post<{ Params: { principalId: string } }>('/v2/principals/:principalId/allowance', async (req, reply) => {
+    if (!UUID.test(req.params.principalId)) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
+    return allowances().set(principalOf(req), req.params.principalId, req.body, req.id);
   });
 
   app.get<{ Querystring: Record<string, string | undefined> }>('/v2/tasks', async (req) => {

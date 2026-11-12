@@ -51,6 +51,7 @@ describe('P-07 factory CLI', () => {
     expect((JSON.parse((await factory(developer, ['submit', file, '--key', 'cli-submit-0001', '--json'])).out.join('\n')) as { taskId: string }).taskId).toBe(taskId);
     const d = await pendingDecision(h, developer, taskId);
 
+    await waitStatus(h, developer, taskId, ['waiting_decision']); // the decision row precedes the status projection
     const status = await factory(developer, ['status', taskId]);
     expect(status.out[0]).toContain('waiting_decision');
     expect(status.out.join('\n')).toContain('waiting: plan_review');

@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { ApplicationFailure, CancelledFailure, Context } from '@temporalio/activity';
 import { validateContract } from '@factory/contracts';
 import { canonicalHash, canonicalJson, checkOutcomeProvenance, evaluateOutcomeRecorded, evaluateReviewPassed, evaluateScopeAccepted, gateBinding, gateEvaluationView, gateInputHash, resolveAuthorities, type AuthorityIo, type ContractCheck, type GateDecision, type GateId, type GateRow } from '@factory/domain';
-import { budgetUsage, chargeBudget, openBudgetAccount, projectTransition, reserveBudget, type Database, type Tx } from '@factory/database';
+import { budgetUsage, chargeBudget, currentAllowance, openBudgetAccount, projectTransition, reserveBudget, type Database, type Tx } from '@factory/database';
 import type { ArtifactService } from '@factory/artifacts';
 import type { ArtifactRefLike, FakeStageResult, GateResult, PlanSnapshot, TaskActivities } from '../workflows/types.ts';
 
@@ -266,8 +266,11 @@ export function createTaskActivities(deps: ActivityDeps): TaskActivities {
 
     async openBudget({ orgId, taskId, limitMicroUsd }) {
       return tenant(orgId, async (tx) => {
-        const scope = await tx.query<{ delivery_scope: string }>('SELECT delivery_scope FROM factory.task WHERE id = $1', [taskId]);
-        return { accountId: await openBudgetAccount(tx, { orgId, taskId, limitMicroUsd, deliveryScope: scope.rows[0]?.delivery_scope ?? 'report' }) };
+        const scope = await tx.query<{ delivery_scope: string; creator_id: string }>('SELECT delivery_scope, creator_id FROM factory.task WHERE id = $1', [taskId]);
+        const task = scope.rows[0];
+        // The creator pays: the task draws on the creator's allowance for the period it starts in.
+        const personal = task ? await currentAllowance(tx, { orgId, principalId: task.creator_id }) : undefined;
+        return { accountId: await openBudgetAccount(tx, { orgId, taskId, limitMicroUsd, deliveryScope: task?.delivery_scope ?? 'report', ...(personal ? { allowanceId: personal.allowanceId } : {}) }) };
       });
     },
 
