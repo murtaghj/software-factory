@@ -1,5 +1,6 @@
 // Task detail view (W-014). Text plus color for status, accessible tables, an explicit freshness
 // banner, and no untrusted HTML: every value is rendered as text by React.
+import type { InboxModel } from './inbox.ts';
 import type { TaskModel } from './view-model.ts';
 
 export function FreshnessBanner({ freshness }: { freshness: TaskModel['freshness'] }) {
@@ -35,5 +36,32 @@ export function TaskDetail({ model }: { model: TaskModel }) {
         </tbody>
       </table>
     </main>
+  );
+}
+
+// Decision inbox (P-02). One row per item waiting on the signed-in person, soonest expiry first.
+// Urgency is given as text as well as an attribute, and an expired item offers no way to answer.
+export function DecisionInbox({ model, taskHref, decisionHref }: { model: InboxModel; taskHref: (taskId: string) => string; decisionHref: (decisionId: string) => string }) {
+  return (
+    <section aria-labelledby="inbox-title">
+      <h2 id="inbox-title">Waiting on you</h2>
+      <p role="status" aria-live="polite">{model.summary}</p>
+      {model.items.length === 0 ? null : (
+        <table aria-label="Decisions waiting on you">
+          <thead><tr><th scope="col">Decision</th><th scope="col">Why</th><th scope="col">Task</th><th scope="col">Expires</th><th scope="col">Answer</th></tr></thead>
+          <tbody>
+            {model.items.map((i) => (
+              <tr key={i.id} data-urgency={i.urgency}>
+                <td>{i.label}</td>
+                <td>{i.reason}</td>
+                <td><a href={taskHref(i.taskId)}>Open task</a></td>
+                <td><time dateTime={i.expiresAt}>{i.expiresAt}</time>{i.urgency === 'soon' ? ' — expires within a day' : i.urgency === 'expired' ? ' — expired' : ''}</td>
+                <td>{i.urgency === 'expired' ? 'Expired' : <a href={decisionHref(i.id)}>Review and answer</a>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
   );
 }

@@ -154,14 +154,14 @@ export class CommandService {
     });
   }
 
-  async listDecisions(p: Principal, q: { taskId?: string; state?: string }): Promise<DecisionPage> {
+  async listDecisions(p: Principal, q: { taskId?: string; state?: string; assignedToMe?: boolean }): Promise<DecisionPage> {
     return this.tenant(p, async (tx) => {
       // Newest first; rows the caller may not read are skipped before the page limit, so they
       // never hide readable decisions.
       const items: DecisionView[] = [];
       let offset = 0;
       for (;;) {
-        const r = await tx.query<Parameters<CommandService['toDecisionView']>[0]>(`${this.decisionSql} WHERE ($1::uuid IS NULL OR r.task_id = $1) AND ($2::text IS NULL OR r.state = $2) ORDER BY r.created_at DESC, r.id DESC LIMIT 200 OFFSET $3`, [q.taskId ?? null, q.state ?? null, offset]);
+        const r = await tx.query<Parameters<CommandService['toDecisionView']>[0]>(`${this.decisionSql} WHERE ($1::uuid IS NULL OR r.task_id = $1) AND ($2::text IS NULL OR r.state = $2) AND ($4::uuid IS NULL OR r.required_principal_id = $4) ORDER BY r.created_at DESC, r.id DESC LIMIT 200 OFFSET $3`, [q.taskId ?? null, q.state ?? null, offset, q.assignedToMe ? p.principalId : null]);
         for (const row of r.rows) {
           try { await this.loadTask(tx, p, row.task_id); items.push(this.toDecisionView(row)); } catch (e) { if (!(e instanceof ApiError)) throw e; }
           if (items.length === 100) return { items };

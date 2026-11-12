@@ -138,9 +138,20 @@
         "@factory/dispatcher",
         "@factory/worker",
         "@factory/dashboard",
-        "@factory/fixtures"
+        "@factory/fixtures",
+        "@factory/mcp"
       ],
       "denyExternal": []
+    },
+    "@factory/mcp": {
+      "allowWorkspace": [
+        "@factory/contracts"
+      ],
+      "denyExternal": [
+        "pg",
+        "@temporalio/",
+        "fastify"
+      ]
     }
   },
   "importableApps": {
@@ -148,7 +159,8 @@
       "@factory/api",
       "@factory/dispatcher",
       "@factory/worker",
-      "@factory/dashboard"
+      "@factory/dashboard",
+      "@factory/mcp"
     ]
   },
   "restrictedPaths": [

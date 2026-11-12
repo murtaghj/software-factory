@@ -17,8 +17,8 @@ owner, an exact subject and a stored answer. Chat tools receive links and digest
 
 | ID | Proposal | What it delivers | Builds on | Size |
 | --- | --- | --- | --- | --- |
-| P-01 | Agent-facing interface (MCP server) | A developer's own agent (Claude Code, IDE) can submit a task, read status, runs, gates and evidence, and answer the factory's questions through the existing API. The server holds no authority of its own: it acts as the signed-in developer and every rule stays server-side. | Task, command, decision and event APIs (W-009, W-014, W-015) | Small |
-| P-02 | Decision inbox | One place listing only what waits on the signed-in person: plan approvals, questions, budget raises. A chat notification is a single link on assignment, nothing else. | `GET /v2/decisions`, dashboard components (W-014, W-015) | Small |
+| P-01 | **Done (2026-11-12, `apps/mcp`).** Agent-facing interface (MCP server) | A developer's own agent (Claude Code, IDE) can submit a task, read status, runs, gates and evidence, and answer the factory's questions through the existing API. The server holds no authority of its own: it acts as the signed-in developer and every rule stays server-side. | Task, command, decision and event APIs (W-009, W-014, W-015) | Small |
+| P-02 | **Done (2026-11-12): API filter, MCP inbox tool, dashboard model and component; it still needs the dashboard shell of P-08 to be reachable.** Decision inbox | One place listing only what waits on the signed-in person: plan approvals, questions, budget raises. A chat notification is a single link on assignment, nothing else. | `GET /v2/decisions`, dashboard components (W-014, W-015) | Small |
 | P-03 | Cross-team typed requests | An agent or person working on application A files a typed request against application B: question, interface change or dependency. It is routed to B's owner or B's agent, answered once, stored and reusable. Replaces "quick question" threads. Needs a new record type, routing rules, authority checks and an expiry. | Decision requests (W-015), application ownership (W-008) | Medium, own package |
 | P-04 | Shared knowledge read first | Answers, decisions and gotchas per application. An agent consults it before asking anyone; answered P-03 requests feed it. | The spec's knowledge records (schema exists, unused) | Medium |
 | P-05 | Digests, not streams | A per-task or daily summary to a channel: what shipped, what is blocked, what needs a person. Detail stays in the factory. | Task events (W-014) | Small |
@@ -63,6 +63,13 @@ runners are attached.
 | P-18 | Re-check authority when pause, resume, cancel and amend are applied, not only at ingress (A-13). |
 | P-19 | Add dedicated tests for the five review fixes that have none: event-stream hang on disconnect, task-list paging precision, newest-first decision listing, expiry at decision application, human gate requires a cited decision. |
 | P-20 | Split the two large worker files (workflow and activities) before M2 adds to them. |
+
+## Decision recorded while building P-01
+
+An agent acting through the MCP server cannot answer a decision. Plan approvals and other
+decisions are human authority (INV-21, INV-29), so the server has an inbox tool that shows what is
+waiting and where a person answers it, and no tool that responds. It also cannot amend a spec,
+change a budget or reassign ownership; it can only submit, read, pause, resume and cancel.
 
 ## Not decided yet
 

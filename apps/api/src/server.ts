@@ -165,9 +165,11 @@ export function buildApi(deps: ApiDeps): FastifyInstance {
     if (!UUID.test(req.params.commandId)) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
     return commands().get(principalOf(req), req.params.commandId);
   });
-  app.get<{ Querystring: { taskId?: string; state?: string } }>('/v2/decisions', async (req) => {
+  // `assignedTo=me` is not in the rev 1.13 OpenAPI (A-15): the decision inbox of plan-additions P-02.
+  app.get<{ Querystring: { taskId?: string; state?: string; assignedTo?: string } }>('/v2/decisions', async (req) => {
     if (req.query.taskId !== undefined && !UUID.test(req.query.taskId)) throw new ApiError(422, 'invalid_filter', 'taskId must be a UUID');
-    return commands().listDecisions(principalOf(req), { ...(req.query.taskId ? { taskId: req.query.taskId } : {}), ...(req.query.state ? { state: req.query.state } : {}) });
+    if (req.query.assignedTo !== undefined && req.query.assignedTo !== 'me') throw new ApiError(422, 'invalid_filter', 'assignedTo accepts only "me"');
+    return commands().listDecisions(principalOf(req), { ...(req.query.taskId ? { taskId: req.query.taskId } : {}), ...(req.query.state ? { state: req.query.state } : {}), ...(req.query.assignedTo === 'me' ? { assignedToMe: true } : {}) });
   });
   app.get<{ Params: { decisionId: string } }>('/v2/decisions/:decisionId', async (req, reply) => {
     if (!UUID.test(req.params.decisionId)) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
