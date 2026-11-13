@@ -32,7 +32,7 @@ then P-04 to P-06.
 | ID | Proposal | What it delivers | Size |
 | --- | --- | --- | --- |
 | P-07 | **Done (2026-11-12, `apps/cli`; shared client in `packages/client`).** CLI | `factory submit`, `status`, `approve`, `cancel` over the existing API. Thin: no rule lives in the client. | Small |
-| P-08 | Dashboard shell and sign-in | The app shell and OIDC sign-in around the already tested dashboard components (noted as not built in A-12). Hosts the P-02 inbox. | Medium |
+| P-08 | **Done (2026-11-13), provider-neutral: the single pane. Runs locally with `pnpm dev`. A real login provider and hosting are still to choose.** Dashboard shell and sign-in | The app shell and OIDC sign-in around the already tested dashboard components (noted as not built in A-12). Hosts the P-02 inbox. | Medium |
 
 ## B2. Keeping developers on task
 
@@ -78,6 +78,14 @@ An agent acting through the MCP server cannot answer a decision. Plan approvals 
 decisions are human authority (INV-21, INV-29), so the server has an inbox tool that shows what is
 waiting and where a person answers it, and no tool that responds. It also cannot amend a spec,
 change a budget or reassign ownership; it can only submit, read, pause, resume and cancel.
+
+## Principle recorded 2026-11-13: single pane of glass
+
+The dashboard is the one place a person works with the factory: my work, inbox and approvals,
+project boards, task detail and actions, and budget. Nothing a person needs for factory state
+should require another tool. The CLI and the MCP server are other doors to the same API, not
+separate sources of truth. New features (cross-team requests, digests, admission queues) get a
+place in this pane when they are built.
 
 ## Not decided yet
 

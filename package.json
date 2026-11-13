@@ -15,7 +15,9 @@
     "services:down": "sh scripts/services.sh down",
     "contracts:generate": "node packages/contracts/scripts/generate.ts",
     "contracts:check": "sh scripts/check-generated.sh",
-    "check": "sh scripts/ci.sh"
+    "check": "sh scripts/ci.sh",
+    "dev": "node tests/system/scripts/dev.ts",
+    "dashboard:build": "node apps/dashboard/scripts/build.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

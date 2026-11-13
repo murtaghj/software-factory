@@ -13,6 +13,7 @@ export type TaskCard = {
 export type Board = { applicationId: string; name: string; generatedAt: string; columns: Record<BoardColumn, TaskCard[]>; needsPerson: TaskCard[]; spentThisMonthMicroUsd: number; people: Record<string, string>; truncated: boolean };
 export type MyWork = { principalId: string; generatedAt: string; needsYou: TaskCard[]; stopped: TaskCard[]; waitingOnOthers: TaskCard[]; inProgress: TaskCard[]; recentlyDone: TaskCard[]; applications: Record<string, string>; people: Record<string, string>; truncated: boolean };
 
+export type Me = { principalId: string; displayName: string; roles: string[]; projects: Array<{ applicationId: string; name: string }> };
 export type Focus = { kind: 'answer' | 'look' | 'running' | 'waiting' | 'clear'; text: string; taskId?: string; decisionId?: string };
 const plural = (n: number, one: string, many: string): string => `${String(n)} ${n === 1 ? one : many}`;
 const who = (work: MyWork, id: string | undefined): string => (id === undefined ? 'someone' : work.people[id] ?? 'someone');

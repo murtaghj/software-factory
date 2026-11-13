@@ -13,7 +13,8 @@
     "vitest.config.ts",
     "eslint.config.ts",
     "apps/*/src/**/*.tsx",
-    "apps/*/test/**/*.tsx"
+    "apps/*/test/**/*.tsx",
+    "tests/**/*.tsx"
   ],
   "exclude": [
     "**/node_modules/**",

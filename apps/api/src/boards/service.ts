@@ -30,6 +30,7 @@ export type Board = {
   // True when a cap cut the list; the board then says so instead of looking complete.
   truncated: boolean;
 };
+export type Me = { principalId: string; displayName: string; roles: string[]; projects: Array<{ applicationId: string; name: string }> };
 export type MyWork = {
   principalId: string; generatedAt: string;
   // Ordered by what to do first. Others are blocked until you answer `needsYou`.
@@ -83,6 +84,16 @@ export class BoardService {
       if (authorize(p, 'task.read', { applicationId: a.id, applicationOwnerIds: owners }).allowed) out.set(a.id, a.name);
     }
     return out;
+  }
+
+  // Who the caller is and which projects they can open: what a client needs to draw its navigation.
+  async me(p: Principal): Promise<Me> {
+    return this.tenant(p, async (tx) => {
+      const who = await tx.query<{ display_name: string }>('SELECT display_name FROM factory.principal WHERE id = $1', [p.principalId]);
+      const apps = await this.readableApplications(tx, p);
+      const roles = [...new Set(p.grants.map((g) => g.role))].sort();
+      return { principalId: p.principalId, displayName: who.rows[0]?.display_name ?? '', roles, projects: [...apps.entries()].map(([applicationId, name]) => ({ applicationId, name })).sort((a, b) => a.name.localeCompare(b.name) || a.applicationId.localeCompare(b.applicationId)) };
+    });
   }
 
   async board(p: Principal, applicationId: string): Promise<Board> {

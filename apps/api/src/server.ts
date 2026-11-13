@@ -187,6 +187,7 @@ export function buildApi(deps: ApiDeps): FastifyInstance {
     if (!deps.boards) throw new ApiError(503, 'dependency_unavailable', 'boards are not configured');
     return deps.boards;
   };
+  app.get('/v2/me', (req) => boards().me(principalOf(req)));
   app.get('/v2/me/work', (req) => boards().myWork(principalOf(req)));
   app.get<{ Params: { applicationId: string } }>('/v2/applications/:applicationId/board', async (req, reply) => {
     if (!UUID.test(req.params.applicationId)) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
