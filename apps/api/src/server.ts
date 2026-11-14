@@ -128,6 +128,18 @@ export function buildApi(deps: ApiDeps): FastifyInstance {
     return deps.db.withTenant({ orgId: ok.principal.orgId, principalId: ok.principal.principalId }, (tx) => listGates(tx, req.params.taskId, { limit, includeHistorical: req.query.includeHistorical === 'true', ...(req.query.inputHash ? { inputHash: req.query.inputHash } : {}) }));
   });
 
+  // The current plan's stages, including ones not started yet, so a client can show progress. Not
+  // in the rev 1.13 OpenAPI (A-20). The plan artifact is digest-verified before it is used.
+  app.get<{ Params: { taskId: string } }>('/v2/tasks/:taskId/plan', async (req, reply) => {
+    const ok = await readableTask(req);
+    if (!ok) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
+    const row = await deps.db.withTenant({ orgId: ok.principal.orgId, principalId: ok.principal.principalId }, async (tx) => (await tx.query<{ version: number; plan_ref: Parameters<ArtifactService['readVerified']>[1] }>(
+      'SELECT p.version, p.plan_ref FROM factory.execution_plan p JOIN factory.task t ON t.org_id = p.org_id AND t.id = p.task_id AND t.plan_version = p.version WHERE t.id = $1', [req.params.taskId])).rows[0]);
+    if (!row) return { planVersion: 0, nodes: [] }; // accepted, not planned yet
+    const plan = JSON.parse((await deps.artifacts.readVerified(authContext(req, req.params.taskId), row.plan_ref)).toString('utf8')) as { nodes: Array<{ id: string; stageKind: string; role: string; dependsOn: string[]; mandatory: boolean }> };
+    return { planVersion: row.version, nodes: plan.nodes.map((n) => ({ id: n.id, stageKind: n.stageKind, role: n.role, dependsOn: n.dependsOn, mandatory: n.mandatory })) };
+  });
+
   // Not in the rev 1.13 OpenAPI (A-14): the operator outcome-bundle export of chapter 12 / AC-54.
   app.get<{ Params: { taskId: string } }>('/v2/tasks/:taskId/outcome-bundle', async (req, reply) => {
     const principal = req.principal;

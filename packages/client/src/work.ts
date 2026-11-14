@@ -1,6 +1,8 @@
 // "My work" and project boards (plan-additions P-21): client-side shapes and the one-line answer to
 // "what should I do next?". The order is fixed: answer what others are blocked on, then look at
 // your own stopped work, and only then is there nothing for you to do but let work run.
+import { label, relativeTime } from './wording.ts';
+
 export const BOARD_COLUMNS = ['queued', 'running', 'waiting', 'paused', 'done', 'stopped'] as const;
 export type BoardColumn = (typeof BOARD_COLUMNS)[number];
 export const COLUMN_LABELS: Record<BoardColumn, string> = { queued: 'Queued', running: 'Running', waiting: 'Waiting on a person', paused: 'Paused', done: 'Done', stopped: 'Stopped' };
@@ -19,11 +21,11 @@ const plural = (n: number, one: string, many: string): string => `${String(n)} $
 const who = (work: MyWork, id: string | undefined): string => (id === undefined ? 'someone' : work.people[id] ?? 'someone');
 
 // The single next thing for the signed-in developer.
-export function focusOf(work: MyWork): Focus {
+export function focusOf(work: MyWork, nowMs: number = Date.parse(work.generatedAt)): Focus {
   const ask = work.needsYou[0];
-  if (ask) return { kind: 'answer', taskId: ask.taskId, ...(ask.decisionId ? { decisionId: ask.decisionId } : {}), text: `${plural(work.needsYou.length, 'decision is', 'decisions are')} waiting on you. Start with "${ask.title}"${ask.decisionExpiresAt ? ` (expires ${ask.decisionExpiresAt})` : ''}.` };
+  if (ask) return { kind: 'answer', taskId: ask.taskId, ...(ask.decisionId ? { decisionId: ask.decisionId } : {}), text: `${plural(work.needsYou.length, 'decision is', 'decisions are')} waiting on you. Start with "${ask.title}"${ask.decisionExpiresAt ? ` — the request expires ${relativeTime(ask.decisionExpiresAt, nowMs)}` : ''}.` };
   const stopped = work.stopped[0];
-  if (stopped) return { kind: 'look', taskId: stopped.taskId, text: `${plural(work.stopped.length, 'of your tasks', 'of your tasks')} stopped without finishing. Look at "${stopped.title}" (${stopped.status}${stopped.waitingReason ? `: ${stopped.waitingReason}` : ''}).` };
+  if (stopped) return { kind: 'look', taskId: stopped.taskId, text: `${plural(work.stopped.length, 'of your tasks', 'of your tasks')} stopped without finishing. Look at "${stopped.title}"${stopped.waitingReason ? ` — ${label(stopped.waitingReason).toLowerCase()}` : ''}.` };
   if (work.inProgress.length > 0) return { kind: 'running', text: `Nothing needs you. ${plural(work.inProgress.length, 'task is', 'tasks are')} in progress.` };
   const waiting = work.waitingOnOthers[0];
   if (waiting) return { kind: 'waiting', taskId: waiting.taskId, text: `Nothing needs you. "${waiting.title}" is waiting on ${who(work, waiting.waitingOnPrincipalId)}.` };

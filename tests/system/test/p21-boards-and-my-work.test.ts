@@ -66,7 +66,7 @@ describe('P-21 project boards and my work', () => {
     expect(w.people[riley.principalId]).toBe('Riley');
     // Her own stopped task comes before anything that is merely waiting on someone else.
     expect(focusOf(w)).toMatchObject({ kind: 'look', taskId: billingStopped });
-    expect(focusOf(w).text).toBe('1 of your tasks stopped without finishing. Look at "Billing: ran out of budget" (incomplete: budget_exhausted).');
+    expect(focusOf(w).text).toBe('1 of your tasks stopped without finishing. Look at "Billing: ran out of budget" — ran out of budget.');
   }, 120_000);
 
   it('the reviewer is told first about what others are blocked on, soonest expiry first, even with work of their own', async () => {
@@ -80,7 +80,7 @@ describe('P-21 project boards and my work', () => {
     const f = focusOf(w);
     const first = w.needsYou[0];
     expect(f).toMatchObject({ kind: 'answer', taskId: first?.taskId, decisionId: first?.decisionId });
-    expect(f.text).toBe(`2 decisions are waiting on you. Start with "${first?.title ?? ''}" (expires ${first?.decisionExpiresAt ?? ''}).`);
+    expect(f.text).toBe(`2 decisions are waiting on you. Start with "${first?.title ?? ''}" — the request expires in 2 days.`);
     // Answering one moves it out of "needs you" for Riley and out of "waiting" for Dana.
     await respond(h, riley, ordersWaiting, await pendingDecision(h, dana, ordersWaiting));
     await waitStatus(h, dana, ordersWaiting, ['succeeded']);
@@ -127,7 +127,7 @@ describe('P-21 project boards and my work', () => {
     const out: string[] = [];
     const io: CliIo = { client: new FactoryClient({ baseUrl: h.apiUrl, token: () => dana.token() }), out: (l) => { out.push(l); }, err: (l) => { out.push(`ERR ${l}`); }, isTTY: false, ask: () => Promise.resolve(''), readFile: () => Promise.reject(new Error('unused')), writeFile: () => Promise.reject(new Error('unused')), now: () => Date.now(), uuid: () => randomUUID(), sleep: () => Promise.resolve() };
     expect(await run(['work'], io)).toBe(EXIT.ok);
-    expect(out[0]).toBe('Next: 1 of your tasks stopped without finishing. Look at "Billing: ran out of budget" (incomplete: budget_exhausted).');
+    expect(out[0]).toBe('Next: 1 of your tasks stopped without finishing. Look at "Billing: ran out of budget" — ran out of budget.');
     expect(out.join('\n')).toContain('Stopped — needs a look (1)');
     expect(out.join('\n')).toContain('[Billing API] Billing: ran out of budget');
     out.length = 0;

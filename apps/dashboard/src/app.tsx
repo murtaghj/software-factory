@@ -7,7 +7,7 @@ import { beginSignIn, completeSignIn, currentSession, discover, signOut, type Au
 import { BoardView, DecisionInbox, MyWorkView, TaskDetail } from './components.tsx';
 import { href, parseRoute, type Route } from './routes.ts';
 import { BudgetView, DecisionReview, Notice, ProjectsView, Shell, SignedOut, TaskActions, type AllowanceData, type ReviewState } from './shell.tsx';
-import { taskModel } from './view-model.ts';
+import { pipelineOf, taskModel, type PlanNode } from './view-model.ts';
 
 export type AppConfig = { apiUrl: string; auth: AuthConfig };
 export type AppDeps = { config: AppConfig; storage: KeyValue; location: { href: string; hash: string; assign: (url: string) => void; replaceHash: (hash: string) => void; onHashChange: (listener: () => void) => () => void }; fetchImpl?: typeof fetch; now?: () => number; pollMs?: number };
@@ -114,7 +114,7 @@ function pending<T>(l: Loaded<T>, what: string): React.ReactElement | undefined 
 function Page(p: PageProps) {
   switch (p.route.page) {
     case 'work': return <WorkPage {...p} />;
-    case 'inbox': return p.inbox.data ? <DecisionInbox model={p.inbox.data} taskHref={href.task} decisionHref={href.decision} /> : pending(p.inbox, 'inbox') ?? null;
+    case 'inbox': return <InboxPage {...p} />;
     case 'projects': return <ProjectsView me={p.me} />;
     case 'project': return <ProjectPage {...p} applicationId={p.route.applicationId} />;
     case 'task': return <TaskPage {...p} taskId={p.route.taskId} />;
@@ -124,22 +124,39 @@ function Page(p: PageProps) {
   }
 }
 
-function WorkPage({ get, pollMs, onUnauthorized }: PageProps) {
+// The inbox lists decisions; "my work" knows which task each belongs to, its project and who asked.
+function InboxPage({ inbox, get, pollMs, now, onUnauthorized }: PageProps) {
+  const work = usePolled<MyWork>(() => get<MyWork>('/v2/me/work'), 'inbox-context', pollMs, onUnauthorized);
+  if (!inbox.data) return pending(inbox, 'inbox') ?? null;
+  const w = work.data;
+  const context = Object.fromEntries((w?.needsYou ?? []).map((c) => [c.taskId, { title: c.title, project: w?.applications[c.applicationId], askedBy: w?.people[c.creatorId] }]));
+  return <DecisionInbox model={inbox.data} taskHref={href.task} decisionHref={href.decision} context={context} now={now()} />;
+}
+function WorkPage({ get, pollMs, now, onUnauthorized }: PageProps) {
   const work = usePolled<MyWork>(() => get<MyWork>('/v2/me/work'), 'work', pollMs, onUnauthorized);
-  return work.data ? <MyWorkView work={work.data} taskHref={href.task} /> : pending(work, 'page') ?? null;
+  return work.data ? <MyWorkView work={work.data} taskHref={href.task} decisionHref={href.decision} now={now()} /> : pending(work, 'page') ?? null;
 }
-function ProjectPage({ get, pollMs, onUnauthorized, applicationId }: PageProps & { applicationId: string }) {
+function ProjectPage({ get, pollMs, now, onUnauthorized, applicationId }: PageProps & { applicationId: string }) {
   const board = usePolled<Board>(() => get<Board>(`/v2/applications/${applicationId}/board`), `board:${applicationId}`, pollMs, onUnauthorized);
-  return board.data ? <BoardView board={board.data} taskHref={href.task} /> : pending(board, 'project') ?? null;
+  return board.data ? <BoardView board={board.data} taskHref={href.task} now={now()} /> : pending(board, 'project') ?? null;
 }
-function BudgetPage({ get, pollMs, onUnauthorized }: PageProps) {
+function BudgetPage({ get, pollMs, now, onUnauthorized }: PageProps) {
   const a = usePolled<AllowanceData>(() => get<AllowanceData>('/v2/me/allowance'), 'allowance', pollMs * 3, onUnauthorized);
-  return a.data ? <BudgetView allowance={a.data} /> : pending(a, 'page') ?? null;
+  return a.data ? <BudgetView allowance={a.data} now={now()} /> : pending(a, 'page') ?? null;
 }
 
-type TaskData = { task: TaskView; runs: RunView[]; gates: GateEvaluation[] };
-function TaskPage({ get, client, pollMs, now, onUnauthorized, taskId }: PageProps & { taskId: string }) {
-  const t = usePolled<TaskData>(async () => ({ task: await get<TaskView>(`/v2/tasks/${taskId}`), runs: (await get<{ items: RunView[] }>(`/v2/tasks/${taskId}/runs`)).items, gates: (await get<{ items: GateEvaluation[] }>(`/v2/tasks/${taskId}/gates`)).items }), `task:${taskId}`, Math.min(pollMs, 2000), onUnauthorized);
+type TaskData = { task: TaskView; runs: RunView[]; gates: GateEvaluation[]; plan: { planVersion: number; nodes: PlanNode[] }; board?: Board | undefined };
+function TaskPage({ get, client, me, pollMs, now, onUnauthorized, taskId }: PageProps & { taskId: string }) {
+  const t = usePolled<TaskData>(async () => {
+    const task = await get<TaskView>(`/v2/tasks/${taskId}`);
+    const applicationId = task.spec.targetContext.kind === 'existing_application' ? task.spec.targetContext.applicationId : undefined;
+    return {
+      task, runs: (await get<{ items: RunView[] }>(`/v2/tasks/${taskId}/runs`)).items, gates: (await get<{ items: GateEvaluation[] }>(`/v2/tasks/${taskId}/gates`)).items,
+      plan: await get<{ planVersion: number; nodes: PlanNode[] }>(`/v2/tasks/${taskId}/plan`),
+      // The board supplies names and who the task is waiting on; the page still works without it.
+      board: applicationId ? await get<Board>(`/v2/applications/${applicationId}/board`).catch(() => undefined) : undefined,
+    };
+  }, `task:${taskId}`, Math.min(pollMs, 2000), onUnauthorized);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | undefined>();
   const [reason, setReason] = useState('');
@@ -151,19 +168,27 @@ function TaskPage({ get, client, pollMs, now, onUnauthorized, taskId }: PageProp
     void (async () => {
       const rev = data.task.revision;
       const r = await client.post(`/v2/tasks/${taskId}/commands`, { commandId: globalThis.crypto.randomUUID(), expectedRevision: rev, kind, reason: reason.trim() }, undefined, { 'if-match': String(rev) });
-      setNote(r.status === 202 ? `${kind} requested.` : new ApiProblem(r).message);
+      setNote(r.status === 202 ? `${kind.charAt(0).toUpperCase()}${kind.slice(1)} requested.` : new ApiProblem(r).message);
       if (r.status === 202) setReason('');
       setBusy(false);
       t.reload();
     })();
   };
   if (!data) return pending(t, 'task') ?? null;
+  const { task, board } = data;
+  const terminal = ['succeeded', 'incomplete', 'failed', 'cancelled'].includes(task.status);
+  const card = board ? Object.values(board.columns).flat().find((c) => c.taskId === taskId) : undefined;
+  const people = board?.people ?? {};
+  const waitingOn = card?.waitingOnPrincipalId ? { name: people[card.waitingOnPrincipalId] ?? 'someone', expiresAt: card.decisionExpiresAt, decisionHref: card.waitingOnPrincipalId === me.principalId && card.decisionId ? href.decision(card.decisionId) : undefined } : undefined;
   return (
-    <>
-      <TaskDetail model={taskModel(data.task, data.runs, data.gates, t.error ? 'disconnected' : 'live', now())} />
-      <TaskActions task={data.task} busy={busy} reason={reason} onReason={setReason} onCommand={send} />
-      {note ? <Notice kind="empty">{note}</Notice> : null}
-    </>
+    <TaskDetail
+      model={taskModel(task, data.runs, data.gates, t.error ? 'disconnected' : 'live', now())}
+      extras={{
+        now: now(), steps: pipelineOf(data.plan.nodes, data.runs, data.plan.planVersion, task.currentNodeId, terminal), project: board?.name, creator: people[task.creatorId], waitingOn,
+        reason: task.status === 'incomplete' || task.status === 'failed' ? task.waitingReason ?? (task.status === 'failed' ? 'A required stage did not pass' : undefined) : undefined,
+        actions: <TaskActions task={task} busy={busy} reason={reason} note={note} onReason={setReason} onCommand={send} />,
+      }}
+    />
   );
 }
 
@@ -171,6 +196,16 @@ function DecisionPage({ get, client, pollMs, now, onUnauthorized, inbox, decisio
   const d = usePolled<{ decision: DecisionView; task: TaskView }>(async () => { const decision = await get<DecisionView>(`/v2/decisions/${decisionId}`); return { decision, task: await get<TaskView>(`/v2/tasks/${decision.taskId}`) }; }, `decision:${decisionId}`, pollMs, onUnauthorized);
   const [state, setState] = useState<ReviewState>({ reviewed: [], reason: '', problems: [], sending: false });
   useEffect(() => { setState({ reviewed: [], reason: '', problems: [], sending: false }); }, [decisionId]);
+  // A short-lived link to the plan on the isolated download origin, fetched once per decision.
+  const [packetUrl, setPacketUrl] = useState<string | undefined>();
+  const subject = d.data?.decision.subjectRef.artifactId;
+  useEffect(() => {
+    setPacketUrl(undefined);
+    if (!subject) return;
+    let live = true;
+    void client.post(`/v2/artifacts/${subject}/access`, { purpose: 'plan review' }).then((r) => { if (live && r.status === 200) setPacketUrl((r.body as { url: string }).url); });
+    return () => { live = false; };
+  }, [client, subject]);
   const data = d.data;
   if (!data) return pending(d, 'decision') ?? null;
   const item = inboxModel([data.decision], now()).items[0];
@@ -187,5 +222,5 @@ function DecisionPage({ get, client, pollMs, now, onUnauthorized, inbox, decisio
     })();
   };
   const toggle = (section: PlanSectionId): void => { setState((s) => ({ ...s, reviewed: s.reviewed.includes(section) ? s.reviewed.filter((x) => x !== section) : [...s.reviewed, section] })); };
-  return <DecisionReview decision={data.decision} item={item} taskTitle={data.task.spec.title} state={state} onToggle={toggle} onReason={(reason) => { setState((s) => ({ ...s, reason })); }} onAnswer={answer} />;
+  return <DecisionReview decision={data.decision} item={item} taskTitle={data.task.spec.title} packetUrl={packetUrl} now={now()} state={state} onToggle={toggle} onReason={(reason) => { setState((s) => ({ ...s, reason })); }} onAnswer={answer} />;
 }

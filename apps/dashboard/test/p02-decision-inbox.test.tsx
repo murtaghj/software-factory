@@ -51,15 +51,19 @@ describe('P-02 decision inbox', () => {
 
   it('renders text, not markup; says when nothing is waiting; and gives an expired item no answer link', () => {
     const href = { taskHref: (id: string) => `/tasks/${id}`, decisionHref: (id: string) => `/decisions/${id}` };
-    const html = renderToStaticMarkup(<DecisionInbox model={inboxModel([decision('1'), decision('4', { expiresAt: '2026-11-12T11:00:00Z' })], NOW)} {...href} />);
+    const html = renderToStaticMarkup(<DecisionInbox model={inboxModel([decision('1'), decision('4', { expiresAt: '2026-11-12T11:00:00Z' })], NOW)} {...href} now={NOW} context={{ '00000000-0000-4000-8000-0000000000aa': { title: 'Why is checkout slow?', project: 'Orders API', askedBy: 'Dana (developer)' } }} />);
     expect(html).toContain('&lt;b&gt;packet&lt;/b&gt;');
     expect(html).not.toContain('<b>packet</b>');
+    expect(html).toContain('Why is checkout slow?'); // which task, which project, who is asking
+    expect(html).toContain('Orders API');
+    expect(html).toContain('asked by Dana');
     expect(html).toContain('href="/decisions/00000000-0000-4000-8000-000000000001"');
     expect(html).not.toContain('href="/decisions/00000000-0000-4000-8000-000000000004"');
     expect(html).toContain('data-urgency="expired"');
-    expect(html).toContain('— expired');
+    expect(html).toContain('No longer answerable');
+    expect(html).toContain('in 3 days');
     const empty = renderToStaticMarkup(<DecisionInbox model={inboxModel([], NOW)} {...href} />);
     expect(empty).toContain('Nothing is waiting on you.');
-    expect(empty).not.toContain('<table');
+    expect(empty).not.toContain('class="inbox"');
   });
 });

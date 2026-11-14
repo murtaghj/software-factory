@@ -48,7 +48,9 @@ await submit(dana, task(billing, 'Trace the slow month-end report', 1.5)); // st
 await submit(riley, task(billing, 'Why does proration round differently in March?'));
 
 log('Building the dashboard…');
-const dist = mkdtempSync(join(tmpdir(), 'factory-dashboard-'));
+// FACTORY_DASHBOARD_DIST keeps the build in a known directory, so it can be rebuilt while this runs.
+const keepDist = process.env.FACTORY_DASHBOARD_DIST;
+const dist = keepDist ? resolve(keepDist) : mkdtempSync(join(tmpdir(), 'factory-dashboard-'));
 execFileSync(process.execPath, [resolve(import.meta.dirname, '..', '..', '..', 'apps', 'dashboard', 'scripts', 'build.ts'), dist], { stdio: 'inherit' });
 
 const config = JSON.stringify({ apiUrl: h.apiUrl, auth: { issuer: h.issuer.issuer, clientId: DASHBOARD_CLIENT_ID, redirectUri: `${origin}/` } });
@@ -80,7 +82,7 @@ const stop = async (): Promise<void> => {
   server.close();
   await dispatching;
   await h.close();
-  rmSync(dist, { recursive: true, force: true });
+  if (!keepDist) rmSync(dist, { recursive: true, force: true });
   process.exit(0);
 };
 process.on('SIGINT', () => { void stop(); });

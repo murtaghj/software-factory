@@ -41,9 +41,13 @@ describe('W-014 dashboard views', () => {
 
   it('staleness is honest: disconnected or silent beyond the threshold is labelled, terminal state is not', () => {
     const t = Date.parse('2026-11-01T12:00:00Z');
-    expect(taskModel(view(), [], [], 'live', t + 1000).freshness).toMatchObject({ stale: false, message: 'Live — state as of 2026-11-01T12:00:00.000Z' });
+    expect(taskModel(view(), [], [], 'live', t + 1000).freshness).toMatchObject({ stale: false, message: 'Live — last updated just now' });
     expect(taskModel(view(), [], [], 'live', t + STALE_AFTER_MS + 5000).freshness).toMatchObject({ stale: true });
-    expect(taskModel(view(), [], [], 'disconnected', t + 1000).freshness.message).toBe('Disconnected — showing the last known state as of 2026-11-01T12:00:00.000Z');
+    expect(taskModel(view(), [], [], 'disconnected', t + 1000).freshness.message).toBe('Disconnected — showing the last known state, last updated just now');
+    expect(taskModel(view(), [], [], 'live', t + 5 * 60_000).freshness.message).toBe('No update since 5 minutes ago — this may be out of date');
+    // Waiting on a person or paused is quiet by nature: only a lost connection makes it doubtful.
+    expect(taskModel(view({ status: 'waiting_decision' }), [], [], 'live', t + 24 * 3_600_000).freshness).toMatchObject({ stale: false, message: 'Live — last updated 1 day ago' });
+    expect(taskModel(view({ status: 'paused' }), [], [], 'disconnected', t + 1000).freshness.stale).toBe(true);
     expect(taskModel(view({ status: 'succeeded' }), [], [], 'live', t + 10 * STALE_AFTER_MS).freshness.stale).toBe(false);
   });
 
@@ -55,8 +59,10 @@ describe('W-014 dashboard views', () => {
       { id: 'g1', taskId: 't', gateId: 'scope_accepted', inputBinding: {} as never, inputHash: 'c'.repeat(64), verdict: 'passed', evidenceRefs: [], evaluatorId: 'e', reasonCodes: ['criteria_mapped'], evaluatedAt: '2026-11-01T12:00:00Z', supersededBy: 'g2' },
     ], 'disconnected', Date.parse('2026-11-01T12:00:01Z'));
     const html = renderToStaticMarkup(<TaskDetail model={model} />);
-    expect(html).toContain('passed (superseded)');
-    expect(html).toContain('no — superseded');
+    expect(html).toContain('Passed (superseded)'); // the superseded stage run stays on record, in History
+    expect(html).toContain('superseded, no longer applies'); // and so does the superseded check
+    expect(html).toContain('No checks have run yet.'); // it is not shown as a current check
+    expect(html).toContain('Status: running'); // status in words for assistive technology, not colour alone
     expect(html).toContain('data-stale="true"');
     expect(html).toContain('Disconnected — showing the last known state');
     expect(html).not.toContain('<script>');
