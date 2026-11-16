@@ -181,3 +181,15 @@ fieldset { border: 0; padding: 0; margin: 0; display: flex; flex-direction: colu
   .pipeline li { flex-direction: row; text-align: left; gap: 10px; } .pipeline li::before { display: none; } .step-state { margin-left: auto; }
   .inbox-item { flex-direction: column; align-items: stretch; }
 }
+
+/* The ranked "what needs you next" list (P-24). */
+.queue { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.queue-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.queue-item[data-tier="1"] { border-left: 3px solid var(--warn); } .queue-item[data-tier="2"] { border-left: 3px solid var(--warn); } .queue-item[data-tier="3"] { border-left: 3px solid var(--danger); } .queue-item[data-tier="4"] { border-left: 3px solid var(--ok); }
+.queue-rank { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--sunken); color: var(--muted); font-weight: 700; font-size: 0.85rem; }
+.queue-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.queue-reason { color: var(--muted); font-size: 0.92rem; overflow-wrap: anywhere; }
+.queue-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.queue-rules, .queue-other { margin-top: 18px; } .queue-rules summary, .queue-other summary { cursor: pointer; font-weight: 600; color: var(--muted); }
+.queue-rules ol { margin: 8px 0 6px 20px; padding: 0; } .queue-other .cards { margin-top: 12px; }
+@media (max-width: 640px) { .queue-item { grid-template-columns: auto minmax(0, 1fr); } .queue-actions { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; } }

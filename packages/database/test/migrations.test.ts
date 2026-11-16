@@ -94,7 +94,7 @@ describe('W-006 role split and migration integrity', () => {
       const owners = await c.query<{ owner: string; n: string }>("SELECT pg_get_userbyid(relowner) AS owner, count(*) AS n FROM pg_class WHERE relnamespace = 'factory'::regnamespace GROUP BY 1");
       expect(owners.rows.map((r) => r.owner)).toEqual(['factory_migrator']);
       const tables = await c.query<{ relname: string; relrowsecurity: boolean; relforcerowsecurity: boolean }>("SELECT relname, relrowsecurity, relforcerowsecurity FROM pg_class WHERE relnamespace = 'factory'::regnamespace AND relkind = 'r' AND relname <> 'organization'");
-      expect(tables.rows).toHaveLength(60); // 58 reference tables + principal_allowance and budget_account_allowance (0014)
+      expect(tables.rows).toHaveLength(61); // 58 reference tables + principal_allowance and budget_account_allowance (0014) + queue_ack (0015)
       expect(tables.rows.filter((t) => !t.relrowsecurity || !t.relforcerowsecurity)).toEqual([]);
     } finally { await c.end(); }
   });
@@ -123,7 +123,7 @@ describe('W-006 role split and migration integrity', () => {
   });
 
   it('every migration declares a phase and contract migrations must declare what they retire', () => {
-    expect(loadMigrations().map((m) => m.phase)).toEqual(Array(14).fill('expand'));
+    expect(loadMigrations().map((m) => m.phase)).toEqual(Array(15).fill('expand'));
     const dir = mkdtempSync(join(tmpdir(), 'bad-migrations-'));
     try {
       writeFileSync(join(dir, '0001_drop_things.sql'), '-- phase: contract\nDROP TABLE x;\n');

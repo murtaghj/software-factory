@@ -1,7 +1,7 @@
 // The pane's views. Pure: given data and "now", they render. No untrusted HTML — every value is
 // rendered as text by React. Nothing here speaks in codes or raw timestamps: wording comes from
 // format.ts, and exact times are available as tooltips and <time> values.
-import { BOARD_COLUMNS, COLUMN_LABELS, MY_WORK_SECTIONS, focusOf, type Board, type InboxModel, type MyWork, type TaskCard } from '@factory/client';
+import { BOARD_COLUMNS, COLUMN_LABELS, DISMISS_LABEL, TRUNCATED_NOTE, actionOf, degradedNote, needLabel, queueHeadline, reasonOf, rulesText, type Board, type InboxModel, type MyWork, type Queue, type QueueItem, type TaskCard } from '@factory/client';
 import type { ReactNode } from 'react';
 import { fullTime, hueOf, initials, label, relativeTime, shortName, statusOf, usd, type Tone } from './format.ts';
 import type { PipelineStep, TaskModel } from './view-model.ts';
@@ -50,34 +50,65 @@ export function TaskCardView({ card, people, taskHref, now, project, showStatus 
   );
 }
 
-const STAT_TONE: Record<string, Tone> = { needsYou: 'warning', stopped: 'danger', waitingOnOthers: 'waiting', inProgress: 'active', recentlyDone: 'success' };
-const SHORT_SECTION: Record<string, string> = { needsYou: 'Need you', stopped: 'Stopped', waitingOnOthers: 'Waiting on others', inProgress: 'In progress', recentlyDone: 'Done recently' };
+const NEED_TONE: Record<string, Tone> = { blocked_on_you: 'warning', running_out: 'warning', stopped: 'danger', finished: 'success' };
+const NEED_FOCUS: Record<string, string> = { blocked_on_you: 'answer', running_out: 'answer', stopped: 'look', finished: 'clear' };
+export type QueueLinks = { taskHref: (taskId: string) => string; decisionHref: (decisionId: string) => string; budgetHref: string };
+const itemHref = (i: QueueItem, l: QueueLinks): string => (i.action.kind === 'answer_decision' ? l.decisionHref(i.action.decisionId) : i.action.kind === 'open_task' ? l.taskHref(i.action.taskId) : l.budgetHref);
 
-export function MyWorkView({ work, taskHref, decisionHref, now = Date.now() }: { work: MyWork; taskHref: (taskId: string) => string; decisionHref?: (decisionId: string) => string; now?: number }) {
-  const focus = focusOf(work, now);
-  const action = focus.kind === 'answer' && focus.decisionId && decisionHref ? { href: decisionHref(focus.decisionId), text: 'Review now' }
-    : focus.taskId ? { href: taskHref(focus.taskId), text: 'Open task' } : undefined;
-  const me = work.people[work.principalId];
+// The ranked "what needs you next" list (P-24). It renders the order the server sent; it never sorts.
+// The first item gets the focus treatment. No group headings: the chip says why each item is here.
+export function QueueView({ queue, work, links, onDismiss, now = Date.now() }: { queue: Queue; work?: MyWork | undefined; links: QueueLinks; onDismiss?: (key: string) => void; now?: number }) {
+  const people = Object.fromEntries(Object.entries(queue.people).map(([id, name]) => [id, shortName(name)]));
+  const me = queue.people[queue.principalId];
+  const note = degradedNote(queue);
+  const other = work ? [...work.inProgress, ...work.waitingOnOthers] : [];
+  const rules = rulesText(queue);
   return (
     <main aria-labelledby="work-title">
-      <header className="page-head"><h1 id="work-title">{me ? `Hello, ${shortName(me)}` : 'My work'}</h1><p className="muted">Everything of yours, across all your projects.</p></header>
-      <section className="focus" role="status" aria-live="polite" data-focus={focus.kind}>
-        <div><p className="eyebrow">Next</p><p className="focus-text"><strong className="visually-hidden">Next:</strong> {focus.text}</p></div>
-        {action ? <a className="button primary" href={action.href}>{action.text}</a> : null}
-      </section>
-      <ul className="stats" aria-label="Summary">
-        {MY_WORK_SECTIONS.map(({ key }) => (
-          <li key={key} data-tone={work[key].length > 0 ? STAT_TONE[key] : 'neutral'}><a href={`#work-${key}`}><span className="stat-n">{work[key].length}</span><span className="stat-l">{SHORT_SECTION[key]}</span></a></li>
-        ))}
-      </ul>
-      {work.truncated ? <p className="note" role="status">You have more work than can be shown; some tasks are not listed.</p> : null}
-      {MY_WORK_SECTIONS.map(({ key, label: heading }) => (work[key].length === 0 ? null : (
-        <section key={key} className="group" aria-labelledby={`work-${key}`} data-section={key}>
-          <h2 id={`work-${key}`}>{heading} <span className="count-pill">{work[key].length}</span></h2>
-          <div className="cards">{work[key].map((c) => <TaskCardView key={`${key}-${c.taskId}`} card={c} people={work.people} taskHref={taskHref} now={now} project={work.applications[c.applicationId]} />)}</div>
-        </section>
-      )))}
-      {MY_WORK_SECTIONS.every(({ key }) => work[key].length === 0) ? <p className="empty">You have no tasks yet. Submit one from the CLI with <code>factory submit</code>, or ask your agent.</p> : null}
+      <header className="page-head"><h1 id="work-title">{me ? `Hello, ${shortName(me)}` : 'My work'}</h1><p className="muted">What needs you next, across all your projects.</p></header>
+      {queue.items.length === 0 ? (
+        <section className="focus" role="status" aria-live="polite" data-focus="clear"><div><p className="eyebrow">Next</p><p className="focus-text">{queueHeadline(queue, now)}</p></div></section>
+      ) : (
+        <>
+          {note ? <p className="note" role="status">{note}</p> : null}
+          {queue.truncated ? <p className="note" role="status">{TRUNCATED_NOTE}</p> : null}
+          <ol className="queue" aria-label="What needs you, most urgent first">
+            {queue.items.map((item, i) => {
+              const { lead, when } = reasonOf(item, { people });
+              const project = item.subject.applicationId ? queue.applications[item.subject.applicationId] : undefined;
+              return (
+                <li key={item.key} className={i === 0 ? 'queue-item focus' : 'queue-item'} data-key={item.key} data-tier={item.tier} {...(i === 0 ? { 'data-focus': NEED_FOCUS[item.need] ?? 'clear' } : {})}>
+                  <span className="queue-rank" aria-hidden="true">{item.rank}</span>
+                  <div className="queue-body">
+                    <div className="card-meta">
+                      <span className="chip" data-tone={NEED_TONE[item.need] ?? 'neutral'}><span className="dot" aria-hidden="true" />{needLabel(item.need)}</span>
+                      {project ? <span className="tag">{project}</span> : null}
+                      {item.priority === 'incident' ? <span className="chip" data-tone="danger">Incident</span> : null}
+                    </div>
+                    <a className="card-title" href={itemHref(item, links)}>{item.subject.title || 'Untitled task'}</a>
+                    <p className="queue-reason">{lead}{when ? <>, {when.kind === 'expires' ? 'expires ' : ''}<When iso={when.iso} now={now} /></> : null}</p>
+                  </div>
+                  <div className="queue-actions">
+                    <a className="button primary" href={itemHref(item, links)}>{actionOf(item).label}</a>
+                    {item.dismissible ? <button type="button" className="quiet" data-dismiss onClick={() => { onDismiss?.(item.key); }}>{DISMISS_LABEL}</button> : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </>
+      )}
+      <details className="queue-rules">
+        <summary>How this list is ordered</summary>
+        <ol>{rules.slice(0, -1).map((r) => <li key={r}>{r}</li>)}</ol>
+        <p className="muted">{rules.at(-1)}</p>
+      </details>
+      {other.length > 0 && work ? (
+        <details className="queue-other">
+          <summary>Your other work ({other.length})</summary>
+          <div className="cards">{other.map((c) => <TaskCardView key={c.taskId} card={c} people={work.people} taskHref={links.taskHref} now={now} project={work.applications[c.applicationId]} />)}</div>
+        </details>
+      ) : null}
     </main>
   );
 }

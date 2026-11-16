@@ -5,7 +5,7 @@
 // answers one only from an interactive terminal, after showing the decision and reading a typed
 // confirmation. Run without a terminal (a script, a pipe, an agent's shell) it refuses.
 import { parseArgs } from 'node:util';
-import { BOARD_COLUMNS, COLUMN_LABELS, MY_WORK_SECTIONS, PLAN_SECTION_IDS, buildDecisionResponse, cardLine, fetchInbox, focusOf, inboxModel, type ApiResult, type Board, type FactoryClient, type MyWork } from '@factory/client';
+import { BOARD_COLUMNS, COLUMN_LABELS, MY_WORK_SECTIONS, PLAN_SECTION_IDS, QUEUE_ACK_PATH, QUEUE_PATH, TRUNCATED_NOTE, buildDecisionResponse, cardLine, degradedNote, fetchInbox, inboxModel, needLabel, parseQueue, queueHeadline, reasonText, rulesText, type ApiResult, type Board, type FactoryClient, type MyWork, type Queue, type QueueItem } from '@factory/client';
 import { validateContract, type DecisionView, type PlanSectionId, type TaskView } from '@factory/contracts';
 
 export type CliIo = {
@@ -47,7 +47,8 @@ Decisions waiting on you
     Decisions are answered by a person: these three need an interactive terminal.
 
 Staying on task
-  factory work                                              what needs you, across all your projects
+  factory work [--all]                                      what needs you next, most urgent first, across all your projects
+  factory work seen <key>                                   mark a stopped or finished item as seen (needs an interactive terminal)
   factory board <applicationId>                             one project's board
 
 Budget
@@ -79,7 +80,7 @@ export async function run(argv: string[], io: CliIo): Promise<number> {
   let parsed;
   try {
     parsed = parseArgs({ args: argv, allowPositionals: true, strict: true, options: {
-      json: { type: 'boolean' }, help: { type: 'boolean' }, wait: { type: 'boolean' }, 'reviewed-all': { type: 'boolean' },
+      json: { type: 'boolean' }, help: { type: 'boolean' }, wait: { type: 'boolean' }, 'reviewed-all': { type: 'boolean' }, all: { type: 'boolean' },
       reason: { type: 'string' }, reviewed: { type: 'string' }, status: { type: 'string' }, limit: { type: 'string' }, key: { type: 'string' }, out: { type: 'string' }, 'limit-usd': { type: 'string' },
     } });
   } catch (e) {
@@ -157,11 +158,41 @@ export async function run(argv: string[], io: CliIo): Promise<number> {
       return EXIT.ok;
     }
     if (verb === 'work') {
-      const work = expect(await io.client.get('/v2/me/work'), [200]) as MyWork;
-      print({ focus: focusOf(work), ...work }, () => [
-        `Next: ${focusOf(work).text}`,
-        ...(work.truncated ? ['(more work than can be shown; some tasks are not listed)'] : []),
-        ...MY_WORK_SECTIONS.flatMap(({ key, label }) => (work[key].length === 0 ? [] : ['', `${label} (${String(work[key].length)})`, ...work[key].map((c) => `  ${cardLine(c, work.people, work.applications)}`)])),
+      if (target === 'seen') {
+        const key = positionals[2];
+        if (key === undefined) throw new Usage('usage: factory work seen <key>');
+        // Like a decision, this is the person's own act: no terminal, no typed confirmation, no ack.
+        if (!io.isTTY) { io.err('factory: marking an item as seen is for a person and needs an interactive terminal. It cannot be run from a script, a pipe or an agent.'); return EXIT.usage; }
+        let current: Queue;
+        try { current = parseQueue(expect(await io.client.get(QUEUE_PATH), [200])); } catch (e) { if (e instanceof Refused) throw e; throw new Usage(e instanceof Error ? e.message : 'unreadable queue'); }
+        const item = current.items.find((i) => i.key === key);
+        if (!item) { io.err(`factory: there is no such item in your list${current.degraded || current.truncated ? ' (the list may be incomplete)' : ''}.`); return EXIT.refused; }
+        if (!item.dismissible) { io.err('factory: this item goes away when it is dealt with; it cannot be marked as seen.'); return EXIT.refused; }
+        io.out(`${needLabel(item.need)}: ${item.subject.title}`);
+        io.out(`  ${reasonText(item, current, io.now())}`);
+        const typed = (await io.ask('Type "seen" to mark this as seen: ')).trim();
+        if (typed !== 'seen') { io.err('factory: not confirmed; nothing was sent.'); return EXIT.refused; }
+        expect(await io.client.post(QUEUE_ACK_PATH, { key }), [204]);
+        print({ seen: key }, () => ['Marked as seen.']);
+        return EXIT.ok;
+      }
+      if (target !== undefined) throw new Usage('usage: factory work [--all] | factory work seen <key>');
+      let queue: Queue;
+      try { queue = parseQueue(expect(await io.client.get(QUEUE_PATH), [200])); } catch (e) { if (e instanceof Refused) throw e; throw new Usage(e instanceof Error ? e.message : 'unreadable queue'); }
+      const work = opt.all === true ? expect(await io.client.get('/v2/me/work'), [200]) as MyWork : undefined;
+      const now = io.now();
+      const command = (i: QueueItem): string => (i.action.kind === 'answer_decision' ? `factory show ${i.action.decisionId}` : i.action.kind === 'open_task' ? `factory status ${i.action.taskId}` : 'factory budget');
+      const note = degradedNote(queue);
+      print(work ? { ...queue, work } : queue, () => [
+        queueHeadline(queue, now),
+        ...(note && queue.items.length > 0 ? [note] : []),
+        ...(queue.truncated && queue.items.length > 0 ? [`(${TRUNCATED_NOTE.charAt(0).toLowerCase()}${TRUNCATED_NOTE.slice(1).replace(/\.$/, '')})`] : []),
+        ...queue.items.map((i) => {
+          const project = i.subject.applicationId ? queue.applications[i.subject.applicationId] : undefined;
+          return `${String(i.rank)}. [${needLabel(i.need)}] ${i.subject.title}${project ? ` [${project}]` : ''} — ${reasonText(i, queue, now)}  ->  ${command(i)}`;
+        }),
+        ...(work ? MY_WORK_SECTIONS.filter(({ key }) => key === 'inProgress' || key === 'waitingOnOthers').flatMap(({ key, label }) => (work[key].length === 0 ? [] : ['', `${label} (${String(work[key].length)})`, ...work[key].map((c) => `  ${cardLine(c, work.people, work.applications)}`)])) : []),
+        '', rulesText(queue).at(-1) ?? '',
       ]);
       return EXIT.ok;
     }

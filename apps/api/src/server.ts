@@ -15,13 +15,14 @@ import type { CommandService } from './tasks/commands.ts';
 import type { OutcomeBundleService } from './tasks/outcome-bundle.ts';
 import type { AllowanceService } from './budgets/service.ts';
 import type { BoardService } from './boards/service.ts';
+import type { QueueService } from './queue/service.ts';
 import { streamTaskEvents, type StreamOptions } from './events/sse.ts';
 
 declare module 'fastify' {
   interface FastifyRequest { principal?: Principal; identity?: VerifiedIdentity; requestId: string }
 }
 
-export type ApiDeps = { db: Database; verifier: OidcVerifier; artifacts: ArtifactService; tasks: TaskService; commands?: CommandService; outcomes?: OutcomeBundleService; allowances?: AllowanceService; boards?: BoardService; dashboardOrigin: string; events?: StreamOptions };
+export type ApiDeps = { db: Database; verifier: OidcVerifier; artifacts: ArtifactService; tasks: TaskService; commands?: CommandService; outcomes?: OutcomeBundleService; allowances?: AllowanceService; boards?: BoardService; queue?: QueueService; dashboardOrigin: string; events?: StreamOptions };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -201,6 +202,17 @@ export function buildApi(deps: ApiDeps): FastifyInstance {
   };
   app.get('/v2/me', (req) => boards().me(principalOf(req)));
   app.get('/v2/me/work', (req) => boards().myWork(principalOf(req)));
+  // The ranked "what needs you next" queue and its "Mark as seen": not in the rev 1.13 OpenAPI (A-21,
+  // plan-additions P-24). The server ranks; clients render the order they get.
+  const queue = (): QueueService => {
+    if (!deps.queue) throw new ApiError(503, 'dependency_unavailable', 'the queue is not configured');
+    return deps.queue;
+  };
+  app.get('/v2/me/queue', (req) => queue().get(principalOf(req), req.id));
+  app.post<{ Body: { key?: unknown } | null | undefined }>('/v2/me/queue/acks', async (req, reply) => {
+    await queue().ack(principalOf(req), req.body?.key, req.id);
+    return reply.code(204).send();
+  });
   app.get<{ Params: { applicationId: string } }>('/v2/applications/:applicationId/board', async (req, reply) => {
     if (!UUID.test(req.params.applicationId)) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
     return boards().board(principalOf(req), req.params.applicationId);

@@ -13,3 +13,7 @@ export * from './tasks/commands.ts';
 export * from './tasks/outcome-bundle.ts';
 export * from './budgets/service.ts';
 export * from './boards/service.ts';
+export * from './queue/service.ts';
+export * from './queue/types.ts';
+export { QUEUE_CAP, QUEUE_RULES, rankQueue, keyOf } from './queue/rank.ts';
+export { factoryAdapters } from './queue/adapters/index.ts';

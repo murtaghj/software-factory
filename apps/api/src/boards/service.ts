@@ -63,6 +63,17 @@ const oldestFirst = (a: TaskCard, b: TaskCard): number => a.updatedAt.localeComp
 const newestFirst = (a: TaskCard, b: TaskCard): number => -oldestFirst(a, b);
 const soonestExpiry = (a: TaskCard, b: TaskCard): number => (a.decisionExpiresAt ?? '').localeCompare(b.decisionExpiresAt ?? '') || oldestFirst(a, b);
 
+// Applications the caller may read, with their owners (for the RBAC decision). Shared with the queue.
+export async function readableApplications(tx: Tx, p: Principal, only?: string): Promise<Map<string, string>> {
+  const r = await tx.query<{ id: string; name: string; owner_ids: unknown }>('SELECT id, name, owner_ids FROM factory.application WHERE ($1::uuid IS NULL OR id = $1)', [only ?? null]);
+  const out = new Map<string, string>();
+  for (const a of r.rows) {
+    const owners = Array.isArray(a.owner_ids) ? a.owner_ids.filter((x): x is string => typeof x === 'string') : [];
+    if (authorize(p, 'task.read', { applicationId: a.id, applicationOwnerIds: owners }).allowed) out.set(a.id, a.name);
+  }
+  return out;
+}
+
 export class BoardService {
   private readonly db: Database;
   constructor(o: { db: Database }) { this.db = o.db; }
@@ -75,22 +86,11 @@ export class BoardService {
     return Object.fromEntries(r.rows.map((x) => [x.id, x.display_name]));
   }
 
-  // Applications the caller may read, with their owners (for the RBAC decision).
-  private async readableApplications(tx: Tx, p: Principal, only?: string): Promise<Map<string, string>> {
-    const r = await tx.query<{ id: string; name: string; owner_ids: unknown }>('SELECT id, name, owner_ids FROM factory.application WHERE ($1::uuid IS NULL OR id = $1)', [only ?? null]);
-    const out = new Map<string, string>();
-    for (const a of r.rows) {
-      const owners = Array.isArray(a.owner_ids) ? a.owner_ids.filter((x): x is string => typeof x === 'string') : [];
-      if (authorize(p, 'task.read', { applicationId: a.id, applicationOwnerIds: owners }).allowed) out.set(a.id, a.name);
-    }
-    return out;
-  }
-
   // Who the caller is and which projects they can open: what a client needs to draw its navigation.
   async me(p: Principal): Promise<Me> {
     return this.tenant(p, async (tx) => {
       const who = await tx.query<{ display_name: string }>('SELECT display_name FROM factory.principal WHERE id = $1', [p.principalId]);
-      const apps = await this.readableApplications(tx, p);
+      const apps = await readableApplications(tx, p);
       const roles = [...new Set(p.grants.map((g) => g.role))].sort();
       return { principalId: p.principalId, displayName: who.rows[0]?.display_name ?? '', roles, projects: [...apps.entries()].map(([applicationId, name]) => ({ applicationId, name })).sort((a, b) => a.name.localeCompare(b.name) || a.applicationId.localeCompare(b.applicationId)) };
     });
@@ -98,7 +98,7 @@ export class BoardService {
 
   async board(p: Principal, applicationId: string): Promise<Board> {
     return this.tenant(p, async (tx) => {
-      const name = (await this.readableApplications(tx, p, applicationId)).get(applicationId);
+      const name = (await readableApplications(tx, p, applicationId)).get(applicationId);
       if (name === undefined) throw new ApiError(404, 'not_found', 'unknown or inaccessible resource');
       const active = await tx.query<Row>(`${SELECT} WHERE t.primary_application_id = $1 AND NOT ${FINISHED} ORDER BY t.updated_at, t.id LIMIT ${String(ACTIVE_CAP + 1)}`, [applicationId]);
       const finished = await tx.query<Row>(`${SELECT} WHERE t.primary_application_id = $1 AND ${FINISHED} AND t.updated_at > now() - make_interval(days => ${String(FINISHED_WINDOW_DAYS)}) ORDER BY t.updated_at DESC, t.id LIMIT ${String(FINISHED_CAP + 1)}`, [applicationId]);
@@ -121,7 +121,7 @@ export class BoardService {
 
   async myWork(p: Principal): Promise<MyWork> {
     return this.tenant(p, async (tx) => {
-      const apps = await this.readableApplications(tx, p);
+      const apps = await readableApplications(tx, p);
       const readable = [...apps.keys()];
       const mine = await tx.query<Row>(`${SELECT} WHERE t.primary_application_id = ANY($2::uuid[]) AND (t.creator_id = $1 OR t.owner_principal_id = $1) AND (NOT ${FINISHED} OR t.updated_at > now() - make_interval(days => ${String(FINISHED_WINDOW_DAYS)})) ORDER BY t.updated_at DESC, t.id LIMIT ${String(ACTIVE_CAP + 1)}`, [p.principalId, readable]);
       // Decisions assigned to me, on any task I can read (usually someone else's task).

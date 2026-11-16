@@ -6,7 +6,7 @@ import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { EXIT, run, type CliIo } from '@factory/cli';
-import { FactoryClient, focusOf, type Board, type MyWork } from '@factory/client';
+import { FactoryClient, type Board, type MyWork } from '@factory/client';
 import { createFactoryMcpServer } from '@factory/mcp';
 import { createSystemHarness, type SystemHarness, type SystemUser } from '../src/index.ts';
 import { command, createTask, investigation, pendingDecision, respond, waitStatus } from './support.ts';
@@ -39,7 +39,6 @@ describe('P-21 project boards and my work', () => {
   it('a developer with nothing going on is told so', async () => {
     const w = await work(dana);
     expect(w).toMatchObject({ principalId: dana.principalId, needsYou: [], stopped: [], inProgress: [], waitingOnOthers: [], recentlyDone: [], truncated: false });
-    expect(focusOf(w)).toEqual({ kind: 'clear', text: 'Nothing needs you and nothing is running.' });
   });
 
   it('my work spans projects and is ordered by what to do first', async () => {
@@ -64,9 +63,6 @@ describe('P-21 project boards and my work', () => {
     expect(ids(w.recentlyDone)).toEqual([ordersDone]);
     expect(w.applications).toEqual({ [h.applicationId]: 'Orders API', [billing]: 'Billing API' });
     expect(w.people[riley.principalId]).toBe('Riley');
-    // Her own stopped task comes before anything that is merely waiting on someone else.
-    expect(focusOf(w)).toMatchObject({ kind: 'look', taskId: billingStopped });
-    expect(focusOf(w).text).toBe('1 of your tasks stopped without finishing. Look at "Billing: ran out of budget" — ran out of budget.');
   }, 120_000);
 
   it('the reviewer is told first about what others are blocked on, soonest expiry first, even with work of their own', async () => {
@@ -77,10 +73,6 @@ describe('P-21 project boards and my work', () => {
     const expiries = w.needsYou.map((c) => c.decisionExpiresAt ?? '');
     expect(expiries).toEqual([...expiries].sort()); // soonest expiry first
     expect(ids(w.stopped)).toEqual([rileysTask]);
-    const f = focusOf(w);
-    const first = w.needsYou[0];
-    expect(f).toMatchObject({ kind: 'answer', taskId: first?.taskId, decisionId: first?.decisionId });
-    expect(f.text).toBe(`2 decisions are waiting on you. Start with "${first?.title ?? ''}" — the request expires in 2 days.`);
     // Answering one moves it out of "needs you" for Riley and out of "waiting" for Dana.
     await respond(h, riley, ordersWaiting, await pendingDecision(h, dana, ordersWaiting));
     await waitStatus(h, dana, ordersWaiting, ['succeeded']);
@@ -127,9 +119,10 @@ describe('P-21 project boards and my work', () => {
     const out: string[] = [];
     const io: CliIo = { client: new FactoryClient({ baseUrl: h.apiUrl, token: () => dana.token() }), out: (l) => { out.push(l); }, err: (l) => { out.push(`ERR ${l}`); }, isTTY: false, ask: () => Promise.resolve(''), readFile: () => Promise.reject(new Error('unused')), writeFile: () => Promise.reject(new Error('unused')), now: () => Date.now(), uuid: () => randomUUID(), sleep: () => Promise.resolve() };
     expect(await run(['work'], io)).toBe(EXIT.ok);
-    expect(out[0]).toBe('Next: 1 of your tasks stopped without finishing. Look at "Billing: ran out of budget" — ran out of budget.');
-    expect(out.join('\n')).toContain('Stopped — needs a look (1)');
-    expect(out.join('\n')).toContain('[Billing API] Billing: ran out of budget');
+    // The ranked queue: her stopped task first, then what finished. Ranking is the server's; the CLI prints it in order.
+    expect(out[0]).toMatch(/^Next: "Billing: ran out of budget" — Stopped — ran out of budget, /);
+    expect(out.filter((l) => /^\d+\. /.test(l)).map((l) => l.replace(/ — .*/, ''))).toEqual(['1. [Stopped] Billing: ran out of budget [Billing API]', '2. [Finished] Orders: finished investigation [Orders API]', '3. [Finished] Orders: awaiting plan review [Orders API]']);
+    expect(out.join('\n')).toContain(`factory status ${billingStopped}`);
     out.length = 0;
     expect(await run(['board', billing], io)).toBe(EXIT.ok);
     expect(out[0]).toBe('Billing API — spent this month $5.00');
@@ -140,7 +133,9 @@ describe('P-21 project boards and my work', () => {
     const agent = new Client({ name: 'test-agent', version: '0.0.0' });
     await Promise.all([server.connect(a), agent.connect(c)]);
     const result = await agent.callTool({ name: 'factory_my_work', arguments: {} }) as { content: Array<{ text: string }> };
-    expect((JSON.parse(result.content[0]?.text ?? '{}') as { focus: { kind: string; taskId: string } }).focus).toMatchObject({ kind: 'look', taskId: billingStopped });
+    const seen = JSON.parse(result.content[0]?.text ?? '{}') as { next: string; items: Array<{ subject: { taskId: string }; reasonText: string }> };
+    expect(seen.items[0]?.subject.taskId).toBe(billingStopped);
+    expect(seen.next).toMatch(/^Next: "Billing: ran out of budget" — /);
     await agent.close();
 
   });

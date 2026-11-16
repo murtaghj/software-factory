@@ -117,8 +117,8 @@ describe('P-08 single pane of glass', () => {
 
     // My work says the same thing first.
     await tab.go('#/work');
-    await until(() => tab.text().includes('1 decision is waiting on you. Start with "Why do refunds double-post?"'), 'my work');
-    expect([...dom.window.document.querySelectorAll('.focus a')].map((a) => [a.textContent, a.getAttribute('href')])).toEqual([['Review now', `#/decisions/${decision.id}`]]);
+    await until(() => tab.text().includes('Dana is blocked on you'), 'my work');
+    expect([...dom.window.document.querySelectorAll('.focus a.primary')].map((a) => [a.textContent, a.getAttribute('href')])).toEqual([['Review now', `#/decisions/${decision.id}`]]);
 
     // Review and answer: approval without every section is refused in place.
     await tab.go(`#/decisions/${decision.id}`);

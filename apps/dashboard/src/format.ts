@@ -10,16 +10,13 @@ export const STATUS: Record<string, { label: string; tone: Tone }> = {
   cancelling: { label: 'Cancelling', tone: 'warning' }, succeeded: { label: 'Done', tone: 'success' }, incomplete: { label: 'Stopped early', tone: 'warning' },
   failed: { label: 'Failed', tone: 'danger' }, cancelled: { label: 'Cancelled', tone: 'neutral' },
 };
-export { label, relativeTime } from '@factory/client';
+export { label, relativeTime, usd } from '@factory/client';
 export const statusOf = (status: string): { label: string; tone: Tone } => STATUS[status] ?? { label: label(status), tone: 'neutral' };
 
 // A full, unambiguous time for tooltips and <time> titles.
 export function fullTime(iso: string): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-}
-export function usd(micro: number | undefined): string {
-  return `$${((micro ?? 0) / 1_000_000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 // "Dana (developer)" -> "Dana": the short name used on cards.
 export function shortName(name: string): string {

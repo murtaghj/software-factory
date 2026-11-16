@@ -39,6 +39,7 @@ then P-04 to P-06.
 | ID | Proposal | What it delivers | Size |
 | --- | --- | --- | --- |
 | P-21 | **Done (2026-11-13) for the API, CLI, MCP tool and dashboard views; reachable in a browser once P-08 exists.** Project boards and "my work" | One board per project (a project is an application): tasks grouped by state, who each waiting task waits on, this month's spend. A cross-project "my work" view for developers on several projects, ordered by what to do first: decisions others are blocked on, then your own stopped tasks, then what is waiting on others and what is running. Both are read-only; state changes only through commands and decisions. | Medium |
+| P-24 | **Done (2026-11-16) for the API, CLI, MCP tool and dashboard home; sources are the factory's own only. No Git provider source yet.** One ranked "what needs you next" queue | One list, ranked by the server and shown in the same order by the dashboard, `factory work` and `factory_my_work`. Tiers: someone is blocked on you; something of yours is about to run out (a review request within 24 hours of expiring, or an allowance within 10 percent of its limit); something of yours stopped; something of yours finished. Inside a tier: incident-priority first, then the soonest deadline, then the longest waiting. Running, queued, paused, cancelled and waiting-on-others work is never listed (it stays on boards and in "Your other work"). Each source is an adapter that reads inside the caller's tenant transaction in its own SAVEPOINT; one that fails is reported as not checked and never shown as "Nothing needs you". "Mark as seen" (one new table, A-21) is the only way out of the stopped and finished tiers before 14 days; it needs a person at a terminal or the dashboard, never an agent. Open owner questions are under "Not decided yet". | Medium |
 | P-22 | Projects that span applications | A named group of applications and people with its own board, for work that crosses services. New record with its own membership rules; overlaps with parent tasks (P-06). | Medium |
 | P-23 | Nudges | Tell a person when something has waited on them too long, or a decision is about to expire, through the digest (P-05), not a stream of messages. | Small |
 
@@ -93,3 +94,14 @@ place in this pane when they are built.
   three to the organization). No client is useful to developers until this is chosen.
 - Whether P-01 to P-06 run before M2 (real runners) or alongside it.
 - Sending SI-01 to SI-09 (`docs/spec-issues.md`) into a spec revision together with this file.
+- P-24 queue, open owner questions (the build used the default shown):
+  - Q1. Which outside source comes first (likely Git pull requests), which Git provider, and how a person's Git account is proven to be theirs (OAuth link, or a claim from the login provider). Nothing built depends on the answer.
+  - Q2. "Mark as seen" needs one new table (`queue_ack`, built). The alternative is time windows only: stopped items for 14 days, finished items for 3.
+  - Q3. Incident-priority tasks sort first inside a tier (built). Say no and that one comparator line is removed.
+  - Q4. Thresholds: 24 hours for "about to expire", 10 percent for "allowance nearly used up", 14 days before a stopped or finished item drops off by itself (built as proposed).
+  - Q5. Paused and cancelled tasks are not in the queue, even when someone else paused or cancelled your task. "Paused too long" belongs with P-23.
+  - Q6. The Inbox page and its count stay as they are; tier 1 duplicates the inbox list by design. Folding the inbox into the queue is a later choice.
+  - Q7. The author's "about to run out" item has no remedy inside the factory (no remind or reassign; P-12 and P-23 are not built). Is a "remind the reviewer" action the next step?
+  - Q8. Budget raises are not a request record, so an organization admin never sees "Sam is blocked on you" for an allowance. That needs a typed request (the P-03 shape).
+  - Q9. Decisions with no required principal (role pools such as `authorize_release`) are in nobody's queue. None is created today; they need a rule before the release flow arrives.
+  - Open item (A-22): a separate agent token that the API refuses on `POST /v2/me/queue/acks` and `POST /v2/decisions/{id}/responses`. Until then "only a person marks seen" and "only a person answers" are client conventions, since the CLI and the MCP server share `FACTORY_TOKEN`.

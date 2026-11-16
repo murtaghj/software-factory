@@ -3,5 +3,6 @@
 // the workflow decide.
 export * from './http.ts';
 export * from './inbox.ts';
+export * from './queue.ts';
 export * from './work.ts';
 export * from './wording.ts';

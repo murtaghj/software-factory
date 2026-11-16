@@ -2,9 +2,9 @@
 // the views it renders are pure. It holds no rules: every action is an API call the server decides.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DecisionView, GateEvaluation, PlanSectionId, RunView, TaskView } from '@factory/contracts';
-import { FactoryClient, buildDecisionResponse, inboxModel, type ApiResult, type Board, type InboxModel, type Me, type MyWork } from '@factory/client';
+import { FactoryClient, QUEUE_ACK_PATH, QUEUE_PATH, buildDecisionResponse, inboxModel, parseQueue, type ApiResult, type Board, type InboxModel, type Me, type MyWork, type Queue } from '@factory/client';
 import { beginSignIn, completeSignIn, currentSession, discover, signOut, type AuthConfig, type Discovery, type KeyValue, type Session } from './auth.ts';
-import { BoardView, DecisionInbox, MyWorkView, TaskDetail } from './components.tsx';
+import { BoardView, DecisionInbox, QueueView, TaskDetail } from './components.tsx';
 import { href, parseRoute, type Route } from './routes.ts';
 import { BudgetView, DecisionReview, Notice, ProjectsView, Shell, SignedOut, TaskActions, type AllowanceData, type ReviewState } from './shell.tsx';
 import { pipelineOf, taskModel, type PlanNode } from './view-model.ts';
@@ -132,9 +132,25 @@ function InboxPage({ inbox, get, pollMs, now, onUnauthorized }: PageProps) {
   const context = Object.fromEntries((w?.needsYou ?? []).map((c) => [c.taskId, { title: c.title, project: w?.applications[c.applicationId], askedBy: w?.people[c.creatorId] }]));
   return <DecisionInbox model={inbox.data} taskHref={href.task} decisionHref={href.decision} context={context} now={now()} />;
 }
-function WorkPage({ get, pollMs, now, onUnauthorized }: PageProps) {
-  const work = usePolled<MyWork>(() => get<MyWork>('/v2/me/work'), 'work', pollMs, onUnauthorized);
-  return work.data ? <MyWorkView work={work.data} taskHref={href.task} decisionHref={href.decision} now={now()} /> : pending(work, 'page') ?? null;
+function WorkPage({ get, client, pollMs, now, onUnauthorized }: PageProps) {
+  const queue = usePolled<Queue>(() => get<unknown>(QUEUE_PATH).then(parseQueue), 'queue', pollMs, onUnauthorized);
+  const work = usePolled<MyWork>(() => get<MyWork>('/v2/me/work'), 'work', pollMs * 3, onUnauthorized);
+  const [note, setNote] = useState<string | undefined>();
+  // "Mark as seen" is the person's own click; the server decides whether the item may be dismissed.
+  const dismiss = (key: string): void => {
+    void (async () => {
+      const r = await client.post(QUEUE_ACK_PATH, { key });
+      setNote(r.status === 204 ? undefined : new ApiProblem(r).message);
+      queue.reload();
+    })();
+  };
+  if (!queue.data) return pending(queue, 'page') ?? null;
+  return (
+    <>
+      {note ? <Notice kind="error">{note}</Notice> : null}
+      <QueueView queue={queue.data} work={work.data} links={{ taskHref: href.task, decisionHref: href.decision, budgetHref: href.budget }} onDismiss={dismiss} now={now()} />
+    </>
+  );
 }
 function ProjectPage({ get, pollMs, now, onUnauthorized, applicationId }: PageProps & { applicationId: string }) {
   const board = usePolled<Board>(() => get<Board>(`/v2/applications/${applicationId}/board`), `board:${applicationId}`, pollMs, onUnauthorized);

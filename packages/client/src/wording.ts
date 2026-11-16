@@ -40,3 +40,8 @@ export function relativeTime(iso: string, nowMs: number): string {
   const text = `${String(whole)} ${unit}${whole === 1 ? '' : 's'}`;
   return then >= nowMs ? `in ${text}` : `${text} ago`;
 }
+
+// "$12.34", from micro-dollars. Whole thousands are grouped.
+export function usd(micro: number | undefined): string {
+  return `$${((micro ?? 0) / 1_000_000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}

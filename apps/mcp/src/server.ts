@@ -13,7 +13,7 @@ import { randomUUID } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { validateContract } from '@factory/contracts';
-import { focusOf, type ApiResult, type FactoryClient, type MyWork } from '@factory/client';
+import { QUEUE_PATH, parseQueue, queueHeadline, reasonText, type ApiResult, type FactoryClient } from '@factory/client';
 
 type ToolResult = { content: Array<{ type: 'text'; text: string }>; isError?: boolean };
 const UUID = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, 'must be a UUID');
@@ -90,13 +90,20 @@ export function createFactoryMcpServer(client: FactoryClient, options: { dashboa
   });
 
   server.registerTool('factory_my_work', {
-    description: 'What the signed-in developer should do next, across all their projects: decisions waiting on them, their tasks that stopped, what is waiting on other people, and what is in progress. `focus` is the single next thing. Read-only.',
+    description: 'The ranked list of what needs the signed-in developer, most urgent first. The factory decides the order; do not reorder it. Items whose action is answer_decision need the human. Read-only: there is no tool to mark an item as seen.',
     inputSchema: {},
   }, async () => {
-    const r = unwrap(await client.get('/v2/me/work'), [200]);
+    const r = unwrap(await client.get(QUEUE_PATH), [200]);
     if ('error' in r) return r.error;
-    const work = r.value as MyWork;
-    return ok({ focus: focusOf(work), ...work });
+    let queue;
+    try { queue = parseQueue(r.value); } catch (e) { return fail('unreadable_queue', e instanceof Error ? e.message : 'the queue response could not be read'); }
+    const now = Date.now();
+    const base = options.dashboardUrl?.replace(/\/+$/, '');
+    return ok({
+      next: queueHeadline(queue, now),
+      items: queue.items.map((i) => ({ ...i, reasonText: reasonText(i, queue, now), ...(i.action.kind === 'answer_decision' ? { answerAt: base ? `${base}/decisions/${i.action.decisionId}` : `POST /v2/decisions/${i.action.decisionId}/responses (by the human)` } : {}) })),
+      sources: queue.sources, degraded: queue.degraded, truncated: queue.truncated, rules: queue.rules,
+    });
   });
 
   server.registerTool('factory_command', {

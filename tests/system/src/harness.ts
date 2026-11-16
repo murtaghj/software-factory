@@ -10,7 +10,7 @@ type FastifyInstance = ReturnType<typeof buildApi>;
 import { Database, createMigratedDatabase, provisionOrganization, type MigratedDatabase, type Tx } from '@factory/database';
 import { ArtifactService, FileObjectStore, startDownloadOrigin, type DownloadOrigin } from '@factory/artifacts';
 import { startTestIssuer, type TestIssuer, retryStart } from '@factory/test-support';
-import { AllowanceService, BoardService, CommandService, OidcVerifier, OutcomeBundleService, RBAC_ARTIFACT_READS, TaskService, buildApi } from '@factory/api';
+import { AllowanceService, BoardService, CommandService, OidcVerifier, OutcomeBundleService, QueueService, RBAC_ARTIFACT_READS, TaskService, buildApi } from '@factory/api';
 import { TestWorkflowEnvironment } from '@temporalio/testing';
 import type { Worker } from '@temporalio/worker';
 import { bundleWorkflows, createWorker, type FakeStageBehavior } from '@factory/worker';
@@ -32,7 +32,7 @@ export type SystemHarness = {
 };
 
 // `dashboardOrigin` also turns on the issuer's browser sign-in flow for that origin (local dev).
-export type SystemOptions = { events?: StreamOptions; dashboardOrigin?: string; temporal?: { fakeStage?: FakeStageBehavior; decisionTtlMs?: number } };
+export type SystemOptions = { events?: StreamOptions; dashboardOrigin?: string; temporal?: { fakeStage?: FakeStageBehavior; decisionTtlMs?: number }; queue?: { now?: () => Date } };
 
 export async function createSystemHarness(prefix: string, options: SystemOptions = {}): Promise<SystemHarness> {
   const m = await createMigratedDatabase(prefix);
@@ -53,7 +53,7 @@ export async function createSystemHarness(prefix: string, options: SystemOptions
   const issuer = await startTestIssuer('system', options.dashboardOrigin ? { clientId: DASHBOARD_CLIENT_ID, redirectUris: [`${dashboardOrigin}/`], audience: AUDIENCE, allowedOrigin: dashboardOrigin, accounts: () => accounts } : undefined);
   const tasks = new TaskService({ db, artifacts });
   const commands = new CommandService({ db, artifacts });
-  const api = buildApi({ db, verifier: new OidcVerifier([{ issuer: issuer.issuer, audience: AUDIENCE, jwksUrl: issuer.jwksUrl, orgId }]), artifacts, tasks, commands, outcomes: new OutcomeBundleService({ db, artifacts }), allowances: new AllowanceService({ db }), boards: new BoardService({ db }), dashboardOrigin, ...(options.events ? { events: options.events } : {}) });
+  const api = buildApi({ db, verifier: new OidcVerifier([{ issuer: issuer.issuer, audience: AUDIENCE, jwksUrl: issuer.jwksUrl, orgId }]), artifacts, tasks, commands, outcomes: new OutcomeBundleService({ db, artifacts }), allowances: new AllowanceService({ db }), boards: new BoardService({ db }), queue: new QueueService({ db, ...(options.queue?.now ? { now: options.queue.now } : {}) }), dashboardOrigin, ...(options.events ? { events: options.events } : {}) });
   const apiUrl = await api.listen({ port: 0, host: '127.0.0.1' });
   const tx = <T>(fn: (t: Tx) => Promise<T>) => db.withTenant({ orgId }, fn);
   let temporal: SystemHarness['temporal'];

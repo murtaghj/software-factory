@@ -68,6 +68,21 @@ export async function currentAllowance(tx: Tx, input: { orgId: string; principal
   return allowance(opened.rows[0]);
 }
 
+// Read-only view of the principal's allowance for the period containing `at` (UTC month). Unlike
+// currentAllowance it never inserts: a period that has not been opened yet is shown as what opening
+// it would create, the latest limit with no usage. Not enrolled: undefined.
+export type AllowancePeek = Pick<Allowance, 'principalId' | 'periodStart' | 'limitMicroUsd' | 'reservedMicroUsd' | 'chargedMicroUsd' | 'remainingMicroUsd'>;
+export async function peekAllowance(tx: Tx, input: { principalId: string; at: Date }): Promise<AllowancePeek | undefined> {
+  const period = "date_trunc('month', $2::timestamptz AT TIME ZONE 'UTC')::date";
+  const current = await tx.query<AllowanceRow>(`SELECT ${ALLOWANCE_COLUMNS} FROM factory.principal_allowance WHERE principal_id = $1 AND period_start = ${period}`, [input.principalId, input.at]);
+  if (current.rows[0]) { const a = allowance(current.rows[0]); return { principalId: a.principalId, periodStart: a.periodStart, limitMicroUsd: a.limitMicroUsd, reservedMicroUsd: a.reservedMicroUsd, chargedMicroUsd: a.chargedMicroUsd, remainingMicroUsd: a.remainingMicroUsd }; }
+  const last = await tx.query<{ limit_micro_usd: string; peek_period: string }>(`SELECT limit_micro_usd, ${period}::text AS peek_period FROM factory.principal_allowance WHERE principal_id = $1 ORDER BY principal_allowance.period_start DESC LIMIT 1`, [input.principalId, input.at]);
+  const prior = last.rows[0];
+  if (!prior) return undefined;
+  const limit = Number(prior.limit_micro_usd);
+  return { principalId: input.principalId, periodStart: prior.peek_period, limitMicroUsd: limit, reservedMicroUsd: 0, chargedMicroUsd: 0, remainingMicroUsd: limit };
+}
+
 // Locks the allowance a task account draws on, if any. Always taken before the account chain, so
 // every reservation and charge locks in the same order.
 async function lockAllowance(tx: Tx, accountId: string): Promise<AllowanceRow | undefined> {
