@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Drawing office: direction C specimen</title>
+<style>
+/*@font:sofia*/
+/*@font:sofiasc*/
+:root {
+  /* The drawing office: a whiteprint by day, a blueprint by night, and the checker's red pencil. */
+  --vellum: #ECF1F7; --sheet: #FBFCFE; --well: #E3EAF3;
+  --ink: #17335A; --pencil: #4A5E7E; --faint: #5F7290;
+  --line: rgba(23, 51, 90, 0.15); --frame: rgba(23, 51, 90, 0.5);
+  --redline: #C8322B; --on-ink: #FBFCFE;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --vellum: #0F2644; --sheet: #15335C; --well: #0F2644;
+  --ink: #E6EEF9; --pencil: #B6C7DF; --faint: #93A9C8;
+  --line: rgba(230, 238, 249, 0.16); --frame: rgba(230, 238, 249, 0.55);
+  --redline: #FF9383; --on-ink: #15335C;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --vellum: #0F2644; --sheet: #15335C; --well: #0F2644;
+    --ink: #E6EEF9; --pencil: #B6C7DF; --faint: #93A9C8;
+    --line: rgba(230, 238, 249, 0.16); --frame: rgba(230, 238, 249, 0.55);
+    --redline: #FF9383; --on-ink: #15335C;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body { margin: 0; background: var(--vellum); color: var(--ink); font: 400 16px/1.45 "Sofia Sans", "Trebuchet MS", sans-serif; font-variant-numeric: tabular-nums lining-nums; }
+h1, h2, h3, h4, p, ul, ol, dl, dd { margin: 0; } ul, ol { padding: 0; list-style: none; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.narrow { font-family: "Sofia Sans Semi Condensed", "Sofia Sans", sans-serif; }
+
+/* Specimen chrome */
+.page { max-width: 1280px; margin: 0 auto; padding: 48px 40px 96px; }
+.spec-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: start; margin-bottom: 48px; }
+.spec-head h1 { font-size: 48px; line-height: 1.02; font-weight: 800; letter-spacing: -0.02em; }
+.spec-head p { margin-top: 12px; max-width: 64ch; color: var(--pencil); font-size: 19px; line-height: 1.45; text-wrap: pretty; }
+.part { margin-top: 64px; }
+.part > h2 { font-size: 20px; font-weight: 800; letter-spacing: -0.005em; }
+.part > p { color: var(--pencil); max-width: 78ch; margin: 4px 0 20px; text-wrap: pretty; }
+.app { border: 1px solid var(--frame); overflow: hidden; background: var(--vellum); }
+
+/* Controls */
+.btn { font: inherit; font-size: 15px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; height: 38px; padding: 0 16px; border-radius: 2px; border: 1px solid var(--frame); background: transparent; color: var(--ink); cursor: pointer; white-space: nowrap; text-decoration: none; transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1), background-color 120ms linear; }
+.btn:hover { background: var(--line); }
+.btn:active { transform: scale(0.97); }
+.btn.solid { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+.btn.solid:hover { background: color-mix(in srgb, var(--ink) 88%, var(--sheet)); }
+.btn.tall { height: 44px; }
+.btn.red { color: var(--redline); border-color: color-mix(in srgb, var(--redline) 55%, transparent); }
+.plain { font: inherit; font-size: 14px; color: var(--faint); background: none; border: 0; padding: 4px 0; cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+.plain:hover { color: var(--ink); text-decoration-color: currentColor; }
+@media (prefers-reduced-motion: reduce) { .btn, .tick { transition: none !important; } }
+
+/* App frame */
+.bar { display: flex; align-items: stretch; gap: 28px; height: 50px; padding: 0 24px; border-bottom: 1px solid var(--frame); }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; }
+.mark { position: relative; width: 18px; height: 14px; border: 1.5px solid var(--ink); flex: none; }
+.mark::after { content: ""; position: absolute; right: 0; bottom: 0; width: 8px; height: 5px; border-left: 1.5px solid var(--ink); border-top: 1.5px solid var(--ink); }
+.bar nav { display: flex; }
+.bar nav a { display: flex; align-items: center; gap: 6px; padding: 0 12px; color: var(--pencil); text-decoration: none; font-weight: 500; }
+.bar nav a:hover { color: var(--ink); }
+.bar nav a[aria-current="page"] { color: var(--ink); font-weight: 800; box-shadow: inset 0 -2px 0 var(--ink); }
+.bar nav b { color: var(--redline); font-weight: 800; }
+.bar .right { margin-left: auto; display: flex; align-items: center; gap: 24px; color: var(--pencil); font-size: 15px; }
+.bar .right strong { color: var(--ink); font-weight: 700; }
+
+/* Split: the index on the left, the sheet on the right */
+.split { display: grid; grid-template-columns: 404px minmax(0, 1fr); }
+.index { border-right: 1px solid var(--frame); padding-bottom: 20px; }
+.index h3 { font-size: 14px; font-weight: 600; color: var(--faint); padding: 18px 24px 8px; }
+.item { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; align-items: start; padding: 13px 20px 14px 24px; border-top: 1px solid var(--line); text-decoration: none; }
+.item[data-kind-start] { border-top-color: var(--frame); }
+.item::before { content: ""; position: absolute; left: 0; top: -1px; bottom: 0; width: 3px; background: transparent; }
+.item.act::before { background: var(--redline); }
+.item .t { font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+.item .why { font-size: 15px; color: var(--pencil); line-height: 1.35; margin-top: 3px; }
+.item .when { font-size: 15px; font-weight: 600; color: var(--pencil); white-space: nowrap; padding-top: 1px; }
+.item .when.due { color: var(--redline); }
+.item a.t { text-decoration: none; } .item a.t:hover, a.item:hover .t { text-decoration: underline; text-underline-offset: 3px; }
+.item .plain { grid-column: 1 / -1; justify-self: start; margin-top: 2px; }
+.item[aria-current="true"] { background: var(--sheet); margin-right: -1px; border-top-color: var(--frame); box-shadow: 0 1px 0 var(--frame); }
+.item[aria-current="true"] + .item { border-top-color: transparent; }
+.index .rules { padding: 10px 24px 0; }
+.index .other { margin-top: 12px; }
+.index .other .t { font-weight: 500; }
+
+.desk { padding: 20px; min-width: 0; }
+.drawing { background: var(--sheet); border: 1.5px solid var(--frame); }
+/* The title block: the signature */
+.tb { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+.tb > div { padding: 9px 16px 11px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); min-width: 0; }
+.tb > div.end { border-right: 0; }
+.tb.close > div { border-bottom-color: var(--frame); }
+.tb dt { font-family: "Sofia Sans Semi Condensed", "Sofia Sans", sans-serif; font-size: 13.5px; font-weight: 500; color: var(--faint); line-height: 1.3; }
+.tb dd { font-weight: 700; line-height: 1.3; margin-top: 1px; overflow-wrap: anywhere; }
+.tb dd.big { font-size: 25px; line-height: 1.15; font-weight: 800; letter-spacing: -0.012em; margin-top: 3px; text-wrap: balance; }
+.tb dd.pending { color: var(--redline); }
+.tb .w8 { grid-column: span 8; } .tb .w6 { grid-column: span 6; } .tb .w4 { grid-column: span 4; } .tb .w3 { grid-column: span 3; } .tb .w2 { grid-column: span 2; }
+.ask { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 18px 24px; border-bottom: 1px solid var(--line); }
+.ask p { max-width: 52ch; }
+.ask p span { color: var(--pencil); }
+.secs-head { display: flex; align-items: baseline; justify-content: space-between; padding: 16px 24px 6px; }
+.secs-head h4 { font-size: 16px; font-weight: 800; }
+.secs-head p { font-size: 15px; color: var(--pencil); }
+.secs-head p strong { color: var(--ink); font-weight: 700; }
+.secs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(6, auto); grid-auto-flow: column; column-gap: 32px; padding: 0 24px 20px; }
+.sec { display: grid; grid-template-columns: 30px minmax(0, 1fr) 22px; align-items: center; min-height: 44px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.sec .n { font-family: "Sofia Sans Semi Condensed", "Sofia Sans", sans-serif; font-size: 15px; color: var(--faint); }
+.sec .name { font-weight: 600; }
+.tick { width: 22px; height: 22px; border: 1.5px solid var(--redline); display: grid; place-items: center; font-size: 15px; font-weight: 800; line-height: 1; color: transparent; transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1); }
+.sec:has(input:checked) .tick { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.sec:has(input:checked) .name { color: var(--pencil); font-weight: 400; }
+.sec:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 1px; }
+.sec:active .tick { transform: scale(0.9); }
+.approval { display: grid; grid-template-columns: minmax(0, 1fr) 292px; border-top: 1.5px solid var(--frame); }
+.approval > div { padding: 12px 24px 20px; }
+.approval > div + div { border-left: 1px solid var(--line); }
+.approval label, .approval .lbl { display: block; font-family: "Sofia Sans Semi Condensed", "Sofia Sans", sans-serif; font-size: 13.5px; font-weight: 500; color: var(--faint); }
+.approval textarea { display: block; width: 100%; margin-top: 8px; font: inherit; padding: 9px 12px; min-height: 132px; resize: vertical; color: var(--ink); background: var(--well); border: 1px solid var(--line); border-radius: 2px; }
+.approval textarea:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.approval .acts { display: grid; gap: 8px; margin-top: 8px; }
+
+/* Reference panels */
+.where { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start; }
+.where figure { margin: 0; }
+.where figcaption { margin-top: 10px; font-size: 15px; color: var(--pencil); text-wrap: pretty; }
+.where figcaption strong { color: var(--ink); font-weight: 700; }
+.where .drawing { border-width: 1px; }
+.where .tb dd { font-size: 15px; }
+.where .tb dd.title { font-size: 17px; font-weight: 800; line-height: 1.2; }
+.where .tb .last { border-bottom: 0; }
+.ref { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 56px; align-items: start; }
+.swatches { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 12px; }
+.swatches i { display: block; height: 60px; box-shadow: inset 0 0 0 1px var(--frame); }
+.swatches strong { display: block; margin-top: 8px; font-weight: 700; }
+.swatches span { display: block; font-size: 14px; color: var(--pencil); }
+.type li { display: grid; grid-template-columns: 172px minmax(0, 1fr); align-items: baseline; padding: 10px 0; border-top: 1px solid var(--line); }
+.type li > span:first-child { font-size: 14px; color: var(--pencil); }
+.type .t1 { font-size: 31px; line-height: 1.1; font-weight: 800; letter-spacing: -0.015em; }
+.type .t2 { font-size: 25px; line-height: 1.15; font-weight: 800; letter-spacing: -0.012em; }
+.type .t3 { font-size: 20px; font-weight: 800; }
+.type .t4 { font-size: 16px; }
+.type .t5 { font-size: 13.5px; font-weight: 500; color: var(--faint); }
+.foot { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 14px; color: var(--faint); max-width: 100ch; }
+
+@media (max-width: 900px) {
+  .page { padding: 24px 16px 64px; } .spec-head { grid-template-columns: minmax(0, 1fr); } .spec-head h1 { font-size: 36px; }
+  .bar { flex-wrap: wrap; height: auto; gap: 0 16px; padding: 0 16px; } .brand, .bar .right { height: 46px; } .bar .right .left { display: none; }
+  .bar nav { order: 3; flex: 1 1 100%; height: 42px; margin: 0 -12px; overflow-x: auto; }
+  .split { grid-template-columns: minmax(0, 1fr); } .index { border-right: 0; border-bottom: 1px solid var(--frame); } .item[aria-current="true"] { margin-right: 0; }
+  .desk { padding: 12px; } .tb .w8, .tb .w6, .tb .w4 { grid-column: span 12; border-right: 0; } .tb .w3, .tb .w2 { grid-column: span 6; }
+  .ask { flex-direction: column; align-items: flex-start; } .secs { grid-template-columns: minmax(0, 1fr); grid-auto-flow: row; grid-template-rows: none; }
+  .approval { grid-template-columns: minmax(0, 1fr); } .approval > div + div { border-left: 0; border-top: 1px solid var(--line); }
+  .where { grid-template-columns: minmax(0, 1fr); } .ref { grid-template-columns: minmax(0, 1fr); gap: 40px; } .swatches { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="spec-head">
+    <div>
+      <h1>Drawing office</h1>
+      <p>A plan is a drawing: one person writes it, another checks it, and nothing gets built until the title block is signed. This direction keeps the queue and the sheet side by side, so a review never leaves the page. Red is the checker&rsquo;s pencil; it marks what is waiting for you.</p>
+    </div>
+    <button type="button" class="btn" id="theme">Switch to dark</button>
+  </header>
+
+  <section class="part" aria-labelledby="p-work">
+    <h2 id="p-work">My work and decision review, on one screen</h2>
+    <p>The ranked list stays on the left. Choosing an item opens its sheet on the right, with the title block on top and the approval row at the bottom, where a drawing carries its signatures. Tick a few sections to try it.</p>
+    <div class="app">
+      <div class="bar">
+        <span class="brand"><span class="mark" aria-hidden="true"></span>Software factory</span>
+        <nav aria-label="Main">
+          <a href="#" aria-current="page">My work</a>
+          <a href="#">Inbox <b aria-label="2 waiting on you">2</b></a>
+          <a href="#">Projects</a>
+          <a href="#">Budget</a>
+        </nav>
+        <div class="right"><span class="left"><strong>$7.00</strong> left this month</span><strong>Riley</strong></div>
+      </div>
+      <div class="split">
+        <div class="index">
+          <h3 class="narrow" id="idx-h">Needs you, most urgent first</h3>
+          <ol aria-labelledby="idx-h">
+            <li><a class="item act" href="#" aria-current="true"><span><span class="t">Why do some orders fail after a retry?</span><span class="why" style="display:block">Dana is blocked on you. Orders API.</span></span><span class="when due">2 days left</span></a></li>
+            <li><a class="item act" href="#"><span><span class="t">Are duplicate invoices caused by the webhook retry?</span><span class="why" style="display:block">Dana is blocked on you. Billing API.</span></span><span class="when due">4 days left</span></a></li>
+            <li><a class="item act" href="#" data-kind-start><span><span class="t">Your allowance is about to run out</span><span class="why" style="display:block">$7.00 left of $60.00. Resets in 2 weeks.</span></span><span class="when due">$7.00 left</span></a></li>
+            <li><div class="item act" data-kind-start><span><a class="t" href="#">Can we drop the legacy orders export?</a><span class="why" style="display:block">Stopped. The review request expired. Orders API.</span></span><span class="when">3 hours ago</span><button type="button" class="plain">Mark as seen</button></div></li>
+            <li><div class="item" data-kind-start><span><a class="t" href="#">Add an idempotency key to order retries</a><span class="why" style="display:block">Finished. Take a look at the result. Orders API.</span></span><span class="when">1 hour ago</span><button type="button" class="plain">Mark as seen</button></div></li>
+          </ol>
+          <p class="rules"><button type="button" class="plain">How this list is ordered</button></p>
+          <div class="other">
+            <h3 class="narrow" id="oth-h">Your other work (2)</h3>
+            <ul aria-labelledby="oth-h">
+              <li><a class="item" href="#"><span><span class="t">Why does proration round differently in March?</span><span class="why" style="display:block">Waiting on Sam to check the plan. Billing API.</span></span><span class="when">6 hours left</span></a></li>
+              <li><a class="item" href="#"><span><span class="t">Trace the slow month-end report</span><span class="why" style="display:block">An agent is running Investigate. Billing API.</span></span><span class="when">12 minutes in</span></a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="desk">
+          <article class="drawing" aria-labelledby="sheet-title">
+            <dl class="tb close">
+              <div class="w8"><dt>Task</dt><dd class="big" id="sheet-title">Why do some orders fail after a retry?</dd></div>
+              <div class="w2"><dt>Project</dt><dd>Orders API</dd></div>
+              <div class="w2 end"><dt>Plan</dt><dd>Version 2</dd></div>
+              <div class="w3"><dt>Written by</dt><dd>Dana</dd></div>
+              <div class="w3"><dt>Checked by</dt><dd class="pending">Riley, not yet</dd></div>
+              <div class="w3"><dt>Stage</dt><dd>Plan review, 3 of 7</dd></div>
+              <div class="w3 end"><dt>Request expires</dt><dd>in 2 days</dd></div>
+            </dl>
+            <div class="ask">
+              <p>Dana asked you to approve this plan before implementation starts. <span>Read it, then check off each section here.</span></p>
+              <a class="btn" href="#">Open the plan in a new tab</a>
+            </div>
+            <form aria-label="Sections you have reviewed" onsubmit="return false">
+              <div class="secs-head"><h4>Sections of the plan</h4><p role="status" aria-live="polite"><strong id="count">5 of 12</strong> checked</p></div>
+              <div class="secs">
+                <label class="sec"><span class="n">1</span><span class="name">Intent and scope</span><input type="checkbox" class="visually-hidden" checked><span class="tick" aria-hidden="true">&#10003;</span></label>
+                <label class="sec"><span class="n">2</span><span class="name">Current state</span><input type="checkbox" class="visually-hidden" checked><span class="tick" aria-hidden="true">&#10003;</span></label>
+                <label class="sec"><span class="n">3</span><span class="name">Design</span><input type="checkbox" class="visually-hidden" checked><span class="tick" aria-hidden="true">&#10003;</span></label>
+                <label class="sec"><span class="n">4</span><span class="name">Interfaces and data</span><input type="checkbox" class="visually-hidden" checked><span class="tick" aria-hidden="true">&#10003;</span></label>
+                <label class="sec"><span class="n">5</span><span class="name">Implementation</span><input type="checkbox" class="visually-hidden" checked><span class="tick" aria-hidden="true">&#10003;</span></label>
+                <label class="sec"><span class="n">6</span><span class="name">Acceptance tests</span><input type="checkbox" class="visually-hidden"><span class="tick" aria-hidden="true">&#10003;</span></label>
+                <label class="sec"><span class="n">7</span><span class="name">Quality and security</span><input type="checkbox" class="visually-hidden"><span class="tick" aria-hidden="true">&#10003;</span></label>
+                <label class="sec"><span class="n">8</span><span class="name">Delivery and recovery</span><input type="checkbox" class="visually-hidden"><span class="tick" aria-hidden="true">&#10003;</span></label>
+                <label class="sec"><span class="n">9</span><span class="name">Operations</span><input type="checkbox" class="visually-hidden"><span class="tick" aria-hidden="true">&#10003;</span></label>
+                <label class="sec"><span class="n">10</span><span class="name">Risks and decisions</span><input type="checkbox" class="visually-hidden"><span class="tick" aria-hidden="true">&#10003;</span></label>
+                <label class="sec"><span class="n">11</span><span class="name">Definition of done</span><input type="checkbox" class="visually-hidden"><span class="tick" aria-hidden="true">&#10003;</span></label>
+                <label class="sec"><span class="n">12</span><span class="name">Review and ownership</span><input type="checkbox" class="visually-hidden"><span class="tick" aria-hidden="true">&#10003;</span></label>
+              </div>
+              <div class="approval">
+                <div><label for="reason">Your reason, recorded with your decision</label><textarea id="reason" name="reason" autocomplete="off" placeholder="What did you check, or what has to change?"></textarea></div>
+                <div>
+                  <span class="lbl">Your decision</span>
+                  <div class="acts">
+                    <button type="button" class="btn solid tall">Approve plan</button>
+                    <button type="button" class="btn">Request changes</button>
+                    <button type="button" class="btn red">Reject plan</button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="part" aria-labelledby="p-sig">
+    <h2 id="p-sig">The title block</h2>
+    <p>The signature element. Every object in the product gets the same small grid of who wrote it, who checked it, where it is and when it runs out, so the eye learns one place to look.</p>
+    <div class="where">
+      <figure>
+        <div class="drawing">
+          <dl class="tb">
+            <div class="w8 end" style="grid-column: span 12"><dt>Task</dt><dd class="title">Why does proration round differently in March?</dd></div>
+            <div class="w6 last"><dt>Written by</dt><dd>Riley</dd></div>
+            <div class="w6 end last"><dt>Checked by</dt><dd>Sam, not yet</dd></div>
+          </dl>
+        </div>
+        <figcaption><strong>A board card.</strong> Waiting on someone else, so nothing is red.</figcaption>
+      </figure>
+      <figure>
+        <div class="drawing">
+          <dl class="tb">
+            <div class="w8 end" style="grid-column: span 12"><dt>Task</dt><dd class="title">Can we drop the legacy orders export?</dd></div>
+            <div class="w6 last"><dt>Stage</dt><dd class="pending">Stopped at plan review</dd></div>
+            <div class="w6 end last"><dt>Reason</dt><dd>The review request expired</dd></div>
+          </dl>
+        </div>
+        <figcaption><strong>A stopped task.</strong> Red marks the cell that needs your attention.</figcaption>
+      </figure>
+      <figure>
+        <div class="drawing">
+          <dl class="tb">
+            <div class="w8 end" style="grid-column: span 12"><dt>Monthly allowance</dt><dd class="title">$7.00 left of $60.00</dd></div>
+            <div class="w6 last"><dt>Spent</dt><dd>$51.00</dd></div>
+            <div class="w6 end last"><dt>Reserved by running work</dt><dd>$2.00</dd></div>
+          </dl>
+        </div>
+        <figcaption><strong>The budget.</strong> The same grid, holding money instead of people.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="part" aria-labelledby="p-ref">
+    <h2 id="p-ref">Palette and type</h2>
+    <p>One hue. Prussian blue is the ink on white paper by day and the paper itself by night, and red pencil is the only other colour. Sofia Sans is drawn in the DIN tradition of technical lettering; its semi-condensed width labels the cells.</p>
+    <div class="ref">
+      <ul class="swatches">
+        <li><i style="background: var(--vellum)"></i><strong>Vellum</strong><span data-token="--vellum"></span></li>
+        <li><i style="background: var(--sheet)"></i><strong>Sheet</strong><span data-token="--sheet"></span></li>
+        <li><i style="background: var(--ink)"></i><strong>Ink</strong><span data-token="--ink"></span></li>
+        <li><i style="background: var(--pencil)"></i><strong>Pencil</strong><span data-token="--pencil"></span></li>
+        <li><i style="background: var(--faint)"></i><strong>Faint</strong><span data-token="--faint"></span></li>
+        <li><i style="background: var(--redline)"></i><strong>Redline</strong><span data-token="--redline"></span></li>
+      </ul>
+      <ul class="type">
+        <li><span>Page title, 31 / 800</span><span class="t1">Drawing office</span></li>
+        <li><span>Sheet title, 25 / 800</span><span class="t2">Why do some orders fail after a retry?</span></li>
+        <li><span>Heading, 20 / 800</span><span class="t3">Sections of the plan</span></li>
+        <li><span>Body, 16 / 400</span><span class="t4">Dana asked you to approve this plan.</span></li>
+        <li><span>Cell label, 13.5 narrow</span><span class="t5 narrow">Written by &nbsp; Checked by &nbsp; Request expires</span></li>
+      </ul>
+    </div>
+    <p class="foot">Sofia Sans and Sofia Sans Semi Condensed, both variable, SIL Open Font License 1.1, from the npm packages @fontsource-variable/sofia-sans and @fontsource-variable/sofia-sans-semi-condensed 5.3.0, embedded in this file. This page makes no network requests.</p>
+  </section>
+</div>
+<script>
+(function () {
+  var root = document.documentElement, button = document.getElementById('theme');
+  var asked = new URLSearchParams(location.search).get('theme');
+  var dark = asked ? asked === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  function paint() {
+    root.setAttribute('data-theme', dark ? 'dark' : 'light');
+    button.textContent = dark ? 'Switch to light' : 'Switch to dark';
+    var cs = getComputedStyle(root);
+    document.querySelectorAll('[data-token]').forEach(function (el) { el.textContent = cs.getPropertyValue(el.getAttribute('data-token')).trim().toUpperCase(); });
+  }
+  button.addEventListener('click', function () { dark = !dark; paint(); });
+  paint();
+  var boxes = document.querySelectorAll('.sec input');
+  function tally() { var n = 0; boxes.forEach(function (b) { if (b.checked) n++; }); document.getElementById('count').textContent = n + ' of 12'; }
+  boxes.forEach(function (b) { b.addEventListener('change', tally); });
+  tally();
+})();
+</script>
+</body>
+</html>

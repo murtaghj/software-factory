@@ -124,7 +124,7 @@ describe('P-24 what needs you next', () => {
     try {
       const q = await queue(dana);
       expect(q.items.map((i) => [i.rank, i.tier, i.reason.code])).toEqual([[1, 2, 'review_expiring'], [2, 3, 'task_stopped'], [3, 4, 'task_finished']]);
-      expect(queueHeadline(q, Date.now() + skew)).toBe('Next: "Billing: awaiting plan review" — Riley has not answered your review request; the task stops if it expires, expires in 4 hours');
+      expect(queueHeadline(q, Date.now() + skew)).toBe('Next: "Billing: awaiting plan review" — Riley has not answered your review request. 4 hours left, and the task stops if it expires.');
     } finally { skew = 0; }
   });
 

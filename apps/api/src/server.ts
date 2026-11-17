@@ -11,6 +11,7 @@ import type { Principal } from './auth/rbac.ts';
 import { problem, sendProblem } from './http/problem.ts';
 import { ApiError, type TaskService } from './tasks/service.ts';
 import { listGates, listRuns } from './tasks/views.ts';
+import { isGate, stageLabel, type PlanReader } from './tasks/stations.ts';
 import type { CommandService } from './tasks/commands.ts';
 import type { OutcomeBundleService } from './tasks/outcome-bundle.ts';
 import type { AllowanceService } from './budgets/service.ts';
@@ -138,7 +139,7 @@ export function buildApi(deps: ApiDeps): FastifyInstance {
       'SELECT p.version, p.plan_ref FROM factory.execution_plan p JOIN factory.task t ON t.org_id = p.org_id AND t.id = p.task_id AND t.plan_version = p.version WHERE t.id = $1', [req.params.taskId])).rows[0]);
     if (!row) return { planVersion: 0, nodes: [] }; // accepted, not planned yet
     const plan = JSON.parse((await deps.artifacts.readVerified(authContext(req, req.params.taskId), row.plan_ref)).toString('utf8')) as { nodes: Array<{ id: string; stageKind: string; role: string; dependsOn: string[]; mandatory: boolean }> };
-    return { planVersion: row.version, nodes: plan.nodes.map((n) => ({ id: n.id, stageKind: n.stageKind, role: n.role, dependsOn: n.dependsOn, mandatory: n.mandatory })) };
+    return { planVersion: row.version, nodes: plan.nodes.map((n) => ({ id: n.id, label: stageLabel(n.id), gate: isGate(n.stageKind), stageKind: n.stageKind, role: n.role, dependsOn: n.dependsOn, mandatory: n.mandatory })) };
   });
 
   // Not in the rev 1.13 OpenAPI (A-14): the operator outcome-bundle export of chapter 12 / AC-54.
@@ -195,27 +196,29 @@ export function buildApi(deps: ApiDeps): FastifyInstance {
     return reply.code(202).send(await commands().respond(principalOf(req), req.params.decisionId, header(req, 'idempotency-key'), req.body));
   });
 
+  // Reads a task's plan artifact as the caller (digest-verified), for the stage positions (A-23).
+  const planReader = (req: FastifyRequest): PlanReader => (taskId, ref) => deps.artifacts.readVerified(authContext(req, taskId), ref);
   // Project boards and "my work": not in the rev 1.13 OpenAPI (A-18, plan-additions P-21). Read-only.
   const boards = (): BoardService => {
     if (!deps.boards) throw new ApiError(503, 'dependency_unavailable', 'boards are not configured');
     return deps.boards;
   };
   app.get('/v2/me', (req) => boards().me(principalOf(req)));
-  app.get('/v2/me/work', (req) => boards().myWork(principalOf(req)));
+  app.get('/v2/me/work', (req) => boards().myWork(principalOf(req), planReader(req)));
   // The ranked "what needs you next" queue and its "Mark as seen": not in the rev 1.13 OpenAPI (A-21,
   // plan-additions P-24). The server ranks; clients render the order they get.
   const queue = (): QueueService => {
     if (!deps.queue) throw new ApiError(503, 'dependency_unavailable', 'the queue is not configured');
     return deps.queue;
   };
-  app.get('/v2/me/queue', (req) => queue().get(principalOf(req), req.id));
+  app.get('/v2/me/queue', (req) => queue().get(principalOf(req), req.id, planReader(req)));
   app.post<{ Body: { key?: unknown } | null | undefined }>('/v2/me/queue/acks', async (req, reply) => {
     await queue().ack(principalOf(req), req.body?.key, req.id);
     return reply.code(204).send();
   });
   app.get<{ Params: { applicationId: string } }>('/v2/applications/:applicationId/board', async (req, reply) => {
     if (!UUID.test(req.params.applicationId)) return sendProblem(reply, problem(404, 'not_found', 'unknown or inaccessible resource', req.id));
-    return boards().board(principalOf(req), req.params.applicationId);
+    return boards().board(principalOf(req), req.params.applicationId, planReader(req));
   });
 
   // Per-developer allowances: not in the rev 1.13 OpenAPI (A-17, plan-additions P-09).

@@ -2,7 +2,8 @@
 // from the API (`apps/api/src/queue/types.ts`, like MyWork; A-21) and the words for them. The server
 // ranks; this file never sorts, filters or decides. Every switch falls back to words for a code it
 // does not know, so a later source's new codes still render.
-import { label, relativeTime, usd } from './wording.ts';
+import { label, relativeTime, timeLeft, usd } from './wording.ts';
+import type { StageDescriptor, Station } from './work.ts';
 
 export const QUEUE_PATH = '/v2/me/queue';
 export const QUEUE_ACK_PATH = '/v2/me/queue/acks';
@@ -14,20 +15,20 @@ export type QueueReason = { code: QueueReasonCode; actorPrincipalId?: string; de
 export type QueueAction = { kind: 'answer_decision'; decisionId: string } | { kind: 'open_task'; taskId: string } | { kind: 'open_budget' };
 export type QueueItem = {
   key: string; rank: number; tier: 1 | 2 | 3 | 4; sourceId: string; need: QueueNeed; subject: QueueSubject; reason: QueueReason; action: QueueAction;
-  dismissible: boolean; priority: 'incident' | 'normal' | 'background'; since: string; expiresAt?: string;
+  dismissible: boolean; priority: 'incident' | 'normal' | 'background'; since: string; expiresAt?: string; stage?: StageDescriptor;
 };
 export type QueueSourceStatus = { id: string; kind: 'factory' | 'external'; status: 'ok' | 'degraded'; problem?: 'failed' | 'timed_out' | 'invalid_items' | 'stale'; items: number; truncated: boolean };
 export type QueueRules = { tiers: readonly QueueNeed[]; expiringWithinSeconds: number; allowanceLowPercent: number; windowDays: number };
 export type Queue = {
   schema: typeof QUEUE_SCHEMA; principalId: string; generatedAt: string; items: QueueItem[]; sources: QueueSourceStatus[]; degraded: boolean; truncated: boolean;
-  rules: QueueRules; applications: Record<string, string>; people: Record<string, string>;
+  rules: QueueRules; stations: Station[]; applications: Record<string, string>; people: Record<string, string>;
 };
 
 // Refuses a body that is not this version of the queue, so a drifted server is noticed, not guessed at.
 export function parseQueue(body: unknown): Queue {
   const q = body as Partial<Queue> | null;
   if (typeof q !== 'object' || q === null || q.schema !== QUEUE_SCHEMA || !Array.isArray(q.items) || !Array.isArray(q.sources)) throw new Error('the queue response is not in a format this client understands');
-  return q as Queue;
+  return { ...q, stations: q.stations ?? [] } as Queue; // an older server sends no stations
 }
 
 const NEED_LABELS: Record<string, string> = { blocked_on_you: 'Blocked on you', running_out: 'About to run out', stopped: 'Stopped', finished: 'Finished' };
@@ -41,26 +42,40 @@ export const sourceLabel = (id: string): string => SOURCE_LABELS[id] ?? label(id
 
 const nameOf = (queue: Pick<Queue, 'people'>, id: string | undefined): string => (id === undefined ? undefined : queue.people[id]) ?? 'Someone';
 
-// The sentence, and when it applies (so a view can keep the exact time in <time> markup).
+// The short reason, for a table cell, and when it applies (so a view can keep the exact time in
+// <time> markup). "expires" is a deadline ("2 days left"); "since" is when it started ("3 hours ago").
 export function reasonOf(item: QueueItem, queue: Pick<Queue, 'people'>): { lead: string; when?: { kind: 'expires' | 'since'; iso: string } } {
   const r = item.reason;
   const expires = item.expiresAt === undefined ? {} : { when: { kind: 'expires' as const, iso: item.expiresAt } };
   switch (r.code) {
     case 'answer_needed': return { lead: r.actorPrincipalId ? `${nameOf(queue, r.actorPrincipalId)} is blocked on you` : 'Your task is waiting for your answer', ...expires };
-    case 'review_expiring': return { lead: `${nameOf(queue, r.actorPrincipalId)} has not answered your review request; the task stops if it expires`, ...expires };
-    case 'allowance_low': return { lead: `You have ${usd(r.remainingMicroUsd)} left of your ${usd(r.limitMicroUsd)} allowance this month` };
-    case 'allowance_used_up': return { lead: 'Your allowance for this month is used up; new tasks are refused until it is raised' };
+    case 'review_expiring': return { lead: `${nameOf(queue, r.actorPrincipalId)} has not answered your review request`, ...expires };
+    case 'allowance_low': return { lead: `${usd(r.remainingMicroUsd)} left of ${usd(r.limitMicroUsd)}` };
+    case 'allowance_used_up': return { lead: 'Your allowance for this month is used up' };
     case 'task_needs_input': return { lead: 'Your task is waiting for input from you' };
-    case 'task_stopped': return { lead: `Stopped${r.detailCode ? ` — ${label(r.detailCode).toLowerCase()}` : ''}`, when: { kind: 'since', iso: item.since } };
-    case 'task_finished': return { lead: 'Finished — take a look at the result', when: { kind: 'since', iso: item.since } };
+    case 'task_stopped': return { lead: r.detailCode ? label(r.detailCode) : 'It stopped before finishing', when: { kind: 'since', iso: item.since } };
+    case 'task_finished': return { lead: 'Take a look at the result', when: { kind: 'since', iso: item.since } };
     default: return { lead: label(String(r.code)) };
   }
 }
-export function reasonText(item: QueueItem, queue: Pick<Queue, 'people'>, nowMs: number): string {
-  const { lead, when } = reasonOf(item, queue);
-  if (!when) return lead;
-  const t = relativeTime(when.iso, nowMs);
-  return t === '' ? lead : `${lead}, ${when.kind === 'expires' ? `expires ${t}` : t}`;
+// The same reason as plain sentences, for text clients (CLI, agents): "Stopped in Orders API 3 hours
+// ago. The review request expired."
+export function reasonText(item: QueueItem, queue: Pick<Queue, 'people'> & Partial<Pick<Queue, 'applications'>>, nowMs: number): string {
+  const r = item.reason;
+  const { lead } = reasonOf(item, queue);
+  const left = item.expiresAt === undefined ? '' : timeLeft(item.expiresAt, nowMs);
+  const where = item.subject.applicationId ? queue.applications?.[item.subject.applicationId] : undefined;
+  const ago = relativeTime(item.since, nowMs);
+  const started = (verb: string): string => [verb, where ? `in ${where}` : '', ago].filter((x) => x !== '').join(' ');
+  switch (r.code) {
+    case 'answer_needed': return left ? `${lead}. ${left}.` : `${lead}.`;
+    case 'review_expiring': return left ? `${lead}. ${left}, and the task stops if it expires.` : `${lead}. The task stops if it expires.`;
+    case 'allowance_low': return `You have ${usd(r.remainingMicroUsd)} left of your ${usd(r.limitMicroUsd)} allowance this month.`;
+    case 'allowance_used_up': return `${lead}. New tasks are refused until it is raised.`;
+    case 'task_stopped': return r.detailCode ? `${started('Stopped')}. ${lead}.` : `${started('Stopped')}.`;
+    case 'task_finished': return `${started('Finished')}. ${lead}.`;
+    default: return `${lead}.`;
+  }
 }
 export function actionOf(item: QueueItem): { label: string } {
   switch (item.action.kind) {

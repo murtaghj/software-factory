@@ -8,6 +8,7 @@ const NOW = Date.parse('2026-11-16T12:00:00Z');
 const EXPIRES = '2026-11-16T16:00:00Z';
 const SINCE = '2026-11-16T09:00:00Z';
 const links = { taskHref: (id: string) => `#/tasks/${id}`, decisionHref: (id: string) => `#/decisions/${id}`, budgetHref: '#/budget' };
+const LINE = [{ nodeId: 'scope', label: 'Scope', gate: false }, { nodeId: 'plan_review', label: 'Plan review', gate: true }, { nodeId: 'close', label: 'Close', gate: false }];
 const people = { me: 'Sam', dana: 'Dana (developer)', riley: 'Riley' };
 
 const item = (rank: number, over: Partial<QueueItem> = {}): QueueItem => ({
@@ -23,25 +24,26 @@ const ask = (rank: number, over: Partial<QueueItem> = {}): QueueItem => item(ran
 const queue = (items: QueueItem[], over: Partial<Queue> = {}): Queue => ({
   schema: 'factory-queue/1', principalId: 'me', generatedAt: '2026-11-16T12:00:00Z', items, degraded: false, truncated: false, applications: { 'app-1': 'Orders API' }, people,
   sources: [{ id: 'factory.decisions', kind: 'factory', status: 'ok', items: 0, truncated: false }, { id: 'factory.tasks', kind: 'factory', status: 'ok', items: 0, truncated: false }, { id: 'factory.budget', kind: 'factory', status: 'ok', items: 0, truncated: false }],
-  rules: { tiers: ['blocked_on_you', 'running_out', 'stopped', 'finished'], expiringWithinSeconds: 86_400, allowanceLowPercent: 10, windowDays: 14 }, ...over,
+  rules: { tiers: ['blocked_on_you', 'running_out', 'stopped', 'finished'], expiringWithinSeconds: 86_400, allowanceLowPercent: 10, windowDays: 14 }, stations: LINE, ...over,
 });
 const render = (q: Queue, extra: Partial<Parameters<typeof QueueView>[0]> = {}) => renderToStaticMarkup(<QueueView queue={q} links={links} now={NOW} {...extra} />);
 const keysIn = (html: string) => [...html.matchAll(/data-key="([^"]+)"/g)].map((m) => m[1]);
+const rowsOf = (html: string) => html.split('<tr ').slice(1).filter((r) => r.includes('data-key='));
 
 describe('P-24 the queue view', () => {
   it('renders the items in the order given, even when that order contradicts the tiers: the client does not rank', () => {
     const html = render(queue([item(1), ask(2), item(3)]));
     expect(keysIn(html)).toEqual(['task:t1:task_finished', 'decision:d2:answer_needed', 'task:t3:task_finished']);
-    expect(html.match(/class="queue-item focus"/g)).toHaveLength(1);
-    expect(html.indexOf('queue-item focus')).toBeLessThan(html.indexOf('data-key="decision:d2:answer_needed"')); // the first item is the focus
+    expect(html.match(/class="first"/g)).toHaveLength(1);
+    expect(html).toContain('<tr class="first" data-key="task:t1:task_finished"'); // the raised row is the first item sent, not the most urgent
   });
 
   it('each item has exactly one primary action to the right place, and only dismissible items can be marked as seen', () => {
     const html = render(queue([ask(1), item(2, { reason: { code: 'task_stopped', detailCode: 'budget_exhausted' }, need: 'stopped', tier: 3, key: 'task:t2:task_stopped' }), item(3, { key: 'allowance:2026-11-01:allowance_low', need: 'running_out', tier: 2, subject: { kind: 'allowance', id: '2026-11-01', title: 'Your monthly allowance' }, reason: { code: 'allowance_low', remainingMicroUsd: 4_000_000, limitMicroUsd: 50_000_000 }, action: { kind: 'open_budget' } })]));
-    const rows = html.split('<li ').slice(1).filter((r) => r.includes('data-key='));
+    const rows = rowsOf(html);
     expect(rows).toHaveLength(3);
-    for (const r of rows) expect(r.match(/class="button primary"/g)).toHaveLength(1);
-    const primary = rows.map((r) => /<a class="button primary" href="([^"]+)">([^<]+)</.exec(r)?.slice(1));
+    for (const r of rows) expect(r.match(/<a class="key( on)?" href="[^"]+">[^<]+<\/a><\/td><\/tr>/g)).toHaveLength(1); // one action, last in the row
+    const primary = rows.map((r) => /<a class="key(?: on)?" href="([^"]+)">([^<]+)<\/a><\/td><\/tr>/.exec(r)?.slice(1));
     expect(primary).toEqual([['#/decisions/d1', 'Review now'], ['#/tasks/t2', 'See why it stopped'], ['#/budget', 'Open budget']]);
     expect(rows.map((r) => r.includes('data-dismiss'))).toEqual([false, true, true]);
     expect(html).toContain('Mark as seen');
@@ -51,12 +53,13 @@ describe('P-24 the queue view', () => {
   it('says why in words, keeps exact times in <time>, and shows no code or raw timestamp', () => {
     const html = render(queue([ask(1), item(2, { need: 'stopped', tier: 3, key: 'task:t2:task_stopped', reason: { code: 'task_stopped', detailCode: 'budget_exhausted' } })]));
     expect(html).toContain('Dana is blocked on you'); // "(developer)" is dropped, as on every card
-    expect(html).toContain(`expires <time dateTime="${EXPIRES}"`);
-    expect(html).toContain('in 4 hours');
-    expect(html).toContain('Stopped — ran out of budget');
+    expect(html).toContain(`<time dateTime="${EXPIRES}"`);
+    expect(html).toContain('4 hours left');
+    expect(html).toContain('It ran out of budget');
     expect(html).toContain('3 hours ago');
-    expect(html).toContain('Blocked on you');
     expect(html).toContain('Orders API');
+    expect(html).toContain('<span class="visually-hidden">, blocked on you</span>'); // the lamp says what it is, for a screen reader
+    expect(html).not.toContain('Stopped —');
     const text = html.replace(/<[^>]*>/g, ' '); // what a person reads
     for (const code of ['answer_needed', 'task_stopped', 'budget_exhausted', 'approve_plan', 'blocked_on_you']) expect(text).not.toContain(code);
     expect(text).not.toMatch(/\d{4}-\d{2}-\d{2}T/);
@@ -106,25 +109,50 @@ describe('P-24 the queue view', () => {
     const card = { taskId: 'w1', applicationId: 'app-1', title: 'Still running', status: 'running', column: 'running' as const, workType: 'investigation', creatorId: 'dana', ownerPrincipalId: 'dana', updatedAt: '2026-11-16T11:00:00Z' };
     const work = { principalId: 'me', generatedAt: '2026-11-16T12:00:00Z', needsYou: [], stopped: [], waitingOnOthers: [], inProgress: [card], recentlyDone: [], applications: { 'app-1': 'Orders API' }, people, truncated: false };
     const html = render(queue([]), { work });
-    expect(html).toContain('<details class="queue-other"><summary>Your other work (1)</summary>');
+    expect(html).toContain('Your other work <span>(1)</span>');
     expect(html).toContain('Still running');
+    expect(html).toContain('An agent is running this task'); // no stage from the server
+    expect(html).toContain('class="tok run"');
     expect(render(queue([]), { work: { ...work, inProgress: [] } })).not.toContain('Your other work');
   });
 
-  it('the wording of every reason and the headline, exactly', () => {
+  it('the wording of every reason and the headline, exactly: plain sentences', () => {
     const q = queue([], { people: { dana: 'Dana', riley: 'Riley' } });
     const text = (over: Partial<QueueItem>) => reasonText(item(1, over), q, NOW);
-    expect(text(ask(1))).toBe('Dana is blocked on you, expires in 4 hours');
-    expect(text({ reason: { code: 'answer_needed' }, expiresAt: EXPIRES })).toBe('Your task is waiting for your answer, expires in 4 hours');
-    expect(text({ reason: { code: 'review_expiring', actorPrincipalId: 'riley' }, expiresAt: EXPIRES })).toBe('Riley has not answered your review request; the task stops if it expires, expires in 4 hours');
-    expect(text({ reason: { code: 'review_expiring' }, expiresAt: EXPIRES })).toBe('Someone has not answered your review request; the task stops if it expires, expires in 4 hours');
-    expect(text({ reason: { code: 'allowance_low', remainingMicroUsd: 4_000_000, limitMicroUsd: 50_000_000 } })).toBe('You have $4.00 left of your $50.00 allowance this month');
-    expect(text({ reason: { code: 'allowance_used_up' } })).toBe('Your allowance for this month is used up; new tasks are refused until it is raised');
-    expect(text({ reason: { code: 'task_needs_input' } })).toBe('Your task is waiting for input from you');
-    expect(text({ reason: { code: 'task_stopped', detailCode: 'budget_exhausted' } })).toBe('Stopped — ran out of budget, 3 hours ago');
-    expect(text({ reason: { code: 'task_stopped' } })).toBe('Stopped, 3 hours ago');
-    expect(text({ reason: { code: 'task_finished' } })).toBe('Finished — take a look at the result, 3 hours ago');
-    expect(queueHeadline(queue([ask(1)], { people: { dana: 'Dana' } }), NOW)).toBe('Next: "Review 1" — Dana is blocked on you, expires in 4 hours');
+    expect(text(ask(1))).toBe('Dana is blocked on you. 4 hours left.');
+    expect(text({ reason: { code: 'answer_needed' }, expiresAt: EXPIRES })).toBe('Your task is waiting for your answer. 4 hours left.');
+    expect(text({ reason: { code: 'review_expiring', actorPrincipalId: 'riley' }, expiresAt: EXPIRES })).toBe('Riley has not answered your review request. 4 hours left, and the task stops if it expires.');
+    expect(text({ reason: { code: 'review_expiring' }, expiresAt: EXPIRES })).toBe('Someone has not answered your review request. 4 hours left, and the task stops if it expires.');
+    expect(text({ reason: { code: 'allowance_low', remainingMicroUsd: 4_000_000, limitMicroUsd: 50_000_000 } })).toBe('You have $4.00 left of your $50.00 allowance this month.');
+    expect(text({ reason: { code: 'allowance_used_up' } })).toBe('Your allowance for this month is used up. New tasks are refused until it is raised.');
+    expect(text({ reason: { code: 'task_needs_input' } })).toBe('Your task is waiting for input from you.');
+    expect(text({ reason: { code: 'task_stopped', detailCode: 'decision_expired' } })).toBe('Stopped in Orders API 3 hours ago. The review request expired.');
+    expect(text({ reason: { code: 'task_stopped', detailCode: 'budget_exhausted' } })).toBe('Stopped in Orders API 3 hours ago. It ran out of budget.');
+    expect(text({ reason: { code: 'task_stopped' } })).toBe('Stopped in Orders API 3 hours ago.');
+    expect(text({ reason: { code: 'task_finished' } })).toBe('Finished in Orders API 3 hours ago. Take a look at the result.');
+    expect(reasonText(item(1, { reason: { code: 'task_finished' } }), { people }, NOW)).toBe('Finished 3 hours ago. Take a look at the result.'); // no project names, no "in"
+    expect(queueHeadline(queue([ask(1)], { people: { dana: 'Dana' } }), NOW)).toBe('Next: "Review 1" — Dana is blocked on you. 4 hours left.');
     expect(queueHeadline(queue([]), NOW)).toBe('Nothing needs you.');
+  });
+
+  it('draws the line from the server\'s stations, puts numbered lamps where the server says, and leaves off a lamp whose station is not on the line', () => {
+    const at = (nodeId: string) => ({ nodeId, label: nodeId, index: 1, count: 3, gate: nodeId === 'plan_review' });
+    const html = render(queue([ask(1, { stage: at('plan_review') }), ask(2, { stage: at('plan_review') }), item(3, { stage: at('close') }), item(4, { stage: at('somewhere_else') }), item(5)]));
+    const lamps = [...html.matchAll(/<li( class="gate")? data-lamps="(\w+)"><div class="toks">(.*?)<\/div><span class="mark"[^>]*><\/span><span class="name">([^<]+)</g)].map((m) => [m[4], m[2], [...(m[3] ?? '').matchAll(/class="tok (\w+)"[^>]*>(\d+)/g)].map((l) => `${String(l[1])}${String(l[2])}`)]);
+    expect(lamps).toEqual([['Scope', 'false', []], ['Plan review', 'true', ['amber1', 'amber2']], ['Close', 'true', ['green3']]]);
+    expect(html).toContain('<li class="gate"'); // the gate is marked
+    expect(html).toContain('a person signs here');
+    expect(html).toContain('aria-label="Stages, with your tasks at the stage they have reached"');
+    // No stations (an older server, or no plans): no line, and the table still stands.
+    const bare = render(queue([ask(1)], { stations: [] }));
+    expect(bare).not.toContain('class="line"');
+    expect(bare).toContain('data-key="decision:d1:answer_needed"');
+  });
+
+  it('an empty list says so, and still shows the line when there is work to place on it', () => {
+    const html = render(queue([]));
+    expect(html).toContain('Nothing needs you.');
+    expect(html).toContain('class="line"');
+    expect(html).not.toContain('<table aria-label="What needs you');
   });
 });

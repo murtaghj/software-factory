@@ -88,6 +88,10 @@ should require another tool. The CLI and the MCP server are other doors to the s
 separate sources of truth. New features (cross-team requests, digests, admission queues) get a
 place in this pane when they are built.
 
+## Dashboard design pass, direction B (2026-11-16)
+
+The owner chose direction B, "Control room" (docs/design/directions/direction.md), over the recommended A. Every dashboard screen was rebuilt to the specimen: a top bar instead of the sidebar (projects moved to the Projects page), the line and its lamps as the signature, full-width tables with 46px rows, one green-grey hue at three lightness steps with no shadows, Atkinson Hyperlegible Next self-hosted (no external requests; the font is the single `--font` token), and a phone layout where the line simplifies and tables stack. Plan sections read "Read" / "N of 12 read". Shared wording became plain sentences (`packages/client/src/wording.ts`, `queue.ts`); the CLI and MCP output follow. One read-only API addition (A-23): stage descriptors on queue items, board cards and my-work cards, `stations` on the queue and boards, and `label` and `gate` on plan nodes. Light and dark still follow the system setting; there is no toggle.
+
 ## Not decided yet
 
 - Deployment target: login provider, cluster for runners and Git provider (the spec leaves all

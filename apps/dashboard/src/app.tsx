@@ -95,20 +95,22 @@ export function App({ deps }: { deps: AppDeps }) {
   const me = usePolled<Me>(signedIn ? () => get<Me>('/v2/me') : undefined, `me:${String(signedIn)}`, 60_000, expire);
   const inbox = usePolled<InboxModel>(signedIn ? async () => inboxModel((await get<{ items: DecisionView[] }>('/v2/decisions?state=pending&assignedTo=me')).items, now()) : undefined, `inbox:${String(signedIn)}`, pollMs, expire);
 
+  const allowance = usePolled<AllowanceData>(signedIn ? () => get<AllowanceData>('/v2/me/allowance') : undefined, `allowance:${String(signedIn)}`, 30_000, expire);
+
   if (!session || !client) return <SignedOut message={authMessage} onSignIn={startSignIn} />;
-  if (!me.data) return <Notice kind={me.error ? 'error' : 'loading'}>{me.error ?? 'Loading…'}</Notice>;
+  if (!me.data) return <Notice kind={me.error ? 'error' : 'loading'} onRetry={me.error ? me.reload : undefined}>{me.error ?? 'Loading…'}</Notice>;
   return (
-    <Shell me={me.data} route={route} inboxCount={inbox.data?.items.length ?? 0} onSignOut={leave}>
+    <Shell me={me.data} route={route} inboxCount={inbox.data?.items.length ?? 0} allowance={allowance.data} onSignOut={leave}>
       <Page route={route} me={me.data} inbox={inbox} get={get} client={client} pollMs={pollMs} now={now} onUnauthorized={expire} />
     </Shell>
   );
 }
 
 type PageProps = { route: Route; me: Me; inbox: Loaded<InboxModel> & { reload: () => void }; get: <T>(path: string) => Promise<T>; client: FactoryClient; pollMs: number; now: () => number; onUnauthorized: () => void };
-function pending<T>(l: Loaded<T>, what: string): React.ReactElement | undefined {
+function pending<T>(l: Loaded<T> & { reload?: () => void }, what: string): React.ReactElement | undefined {
   if (l.data !== undefined) return undefined;
   if (l.missing) return <Notice kind="error">This {what} does not exist, or you do not have access to it.</Notice>;
-  return <Notice kind={l.error ? 'error' : 'loading'}>{l.error ?? 'Loading…'}</Notice>;
+  return <Notice kind={l.error ? 'error' : 'loading'} onRetry={l.error ? l.reload : undefined}>{l.error ?? 'Loading…'}</Notice>;
 }
 
 function Page(p: PageProps) {
@@ -208,8 +210,16 @@ function TaskPage({ get, client, me, pollMs, now, onUnauthorized, taskId }: Page
   );
 }
 
+type DecisionData = { decision: DecisionView; task: TaskView; plan: { planVersion: number; nodes: PlanNode[] } | undefined; runs: RunView[]; work: MyWork | undefined };
 function DecisionPage({ get, client, pollMs, now, onUnauthorized, inbox, decisionId }: PageProps & { decisionId: string }) {
-  const d = usePolled<{ decision: DecisionView; task: TaskView }>(async () => { const decision = await get<DecisionView>(`/v2/decisions/${decisionId}`); return { decision, task: await get<TaskView>(`/v2/tasks/${decision.taskId}`) }; }, `decision:${decisionId}`, pollMs, onUnauthorized);
+  const d = usePolled<DecisionData>(async () => {
+    const decision = await get<DecisionView>(`/v2/decisions/${decisionId}`);
+    const task = await get<TaskView>(`/v2/tasks/${decision.taskId}`);
+    // The line and the names are context; the review still works without them.
+    const plan = await get<{ planVersion: number; nodes: PlanNode[] }>(`/v2/tasks/${decision.taskId}/plan`).catch(() => undefined);
+    const runs = plan ? (await get<{ items: RunView[] }>(`/v2/tasks/${decision.taskId}/runs`).catch(() => ({ items: [] as RunView[] }))).items : [];
+    return { decision, task, plan, runs, work: await get<MyWork>('/v2/me/work').catch(() => undefined) };
+  }, `decision:${decisionId}`, pollMs, onUnauthorized);
   const [state, setState] = useState<ReviewState>({ reviewed: [], reason: '', problems: [], sending: false });
   useEffect(() => { setState({ reviewed: [], reason: '', problems: [], sending: false }); }, [decisionId]);
   // A short-lived link to the plan on the isolated download origin, fetched once per decision.
@@ -238,5 +248,11 @@ function DecisionPage({ get, client, pollMs, now, onUnauthorized, inbox, decisio
     })();
   };
   const toggle = (section: PlanSectionId): void => { setState((s) => ({ ...s, reviewed: s.reviewed.includes(section) ? s.reviewed.filter((x) => x !== section) : [...s.reviewed, section] })); };
-  return <DecisionReview decision={data.decision} item={item} taskTitle={data.task.spec.title} packetUrl={packetUrl} now={now()} state={state} onToggle={toggle} onReason={(reason) => { setState((s) => ({ ...s, reason })); }} onAnswer={answer} />;
+  const card = data.work?.needsYou.find((c) => c.taskId === data.decision.taskId);
+  const terminal = ['succeeded', 'incomplete', 'failed', 'cancelled'].includes(data.task.status);
+  const context = {
+    project: card ? data.work?.applications[card.applicationId] : undefined, askedBy: card ? data.work?.people[card.creatorId] : undefined,
+    steps: data.plan ? pipelineOf(data.plan.nodes, data.runs, data.plan.planVersion, data.task.currentNodeId, terminal) : undefined,
+  };
+  return <DecisionReview decision={data.decision} item={item} taskTitle={data.task.spec.title} packetUrl={packetUrl} context={context} now={now()} state={state} onToggle={toggle} onReason={(reason) => { setState((s) => ({ ...s, reason })); }} onAnswer={answer} />;
 }

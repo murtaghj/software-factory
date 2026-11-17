@@ -5,6 +5,7 @@
 import type { Database, Tx } from '@factory/database';
 import { authorize, type Principal } from '../auth/rbac.ts';
 import { ApiError } from '../tasks/service.ts';
+import { resolveStages, stageRows, type PlanReader, type StageDescriptor, type Station } from '../tasks/stations.ts';
 
 export const BOARD_COLUMNS = ['queued', 'running', 'waiting', 'paused', 'done', 'stopped'] as const;
 export type BoardColumn = (typeof BOARD_COLUMNS)[number];
@@ -19,12 +20,16 @@ export type TaskCard = {
   creatorId: string; ownerPrincipalId: string; currentNodeId?: string; waitingReason?: string;
   // The person a waiting task is waiting on, and the decision they have to answer.
   waitingOnPrincipalId?: string; decisionId?: string; decisionExpiresAt?: string;
+  // Where the task is on its plan's line (A-23). Absent until the task has a readable plan and a position.
+  stage?: StageDescriptor;
   updatedAt: string;
 };
 export type Board = {
   applicationId: string; name: string; generatedAt: string;
   columns: Record<BoardColumn, TaskCard[]>;
   needsPerson: TaskCard[];
+  // The line the cards sit on: the plans' stations, merged (A-23). Empty when no card has a readable plan.
+  stations: Station[];
   spentThisMonthMicroUsd: number;
   people: Record<string, string>;
   // True when a cap cut the list; the board then says so instead of looking complete.
@@ -96,8 +101,8 @@ export class BoardService {
     });
   }
 
-  async board(p: Principal, applicationId: string): Promise<Board> {
-    return this.tenant(p, async (tx) => {
+  async board(p: Principal, applicationId: string, read?: PlanReader): Promise<Board> {
+    const { board, rows } = await this.tenant(p, async (tx) => {
       const name = (await readableApplications(tx, p, applicationId)).get(applicationId);
       if (name === undefined) throw new ApiError(404, 'not_found', 'unknown or inaccessible resource');
       const active = await tx.query<Row>(`${SELECT} WHERE t.primary_application_id = $1 AND NOT ${FINISHED} ORDER BY t.updated_at, t.id LIMIT ${String(ACTIVE_CAP + 1)}`, [applicationId]);
@@ -110,17 +115,22 @@ export class BoardService {
       columns.stopped.sort(newestFirst);
       const spent = await tx.query<{ total: string | null }>(`SELECT sum(l.amount_micro_usd) AS total FROM factory.budget_ledger l JOIN factory.budget_account a ON a.org_id = l.org_id AND a.id = l.account_id JOIN factory.task t ON t.org_id = a.org_id AND t.id = a.task_id
         WHERE t.primary_application_id = $1 AND l.kind = 'observed_usage' AND l.created_at >= date_trunc('month', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'`, [applicationId]);
-      return {
-        applicationId, name, generatedAt: new Date().toISOString(), columns,
+      const board: Board = {
+        applicationId, name, generatedAt: new Date().toISOString(), columns, stations: [],
         needsPerson: cards.filter((c) => c.decisionId !== undefined).sort(soonestExpiry),
         spentThisMonthMicroUsd: Number(spent.rows[0]?.total ?? 0), people: await this.names(tx, cards),
         truncated: active.rows.length > ACTIVE_CAP || finished.rows.length > FINISHED_CAP,
       };
+      return { board, rows: await stageRows(tx, cards.map((c) => c.taskId)) };
     });
+    // Plans are read after the tenant transaction ends, so a read never holds two connections.
+    const { stations, stages } = await resolveStages(rows, read);
+    for (const c of Object.values(board.columns).flat()) { const stage = stages.get(c.taskId); if (stage) c.stage = stage; }
+    return { ...board, stations };
   }
 
-  async myWork(p: Principal): Promise<MyWork> {
-    return this.tenant(p, async (tx) => {
+  async myWork(p: Principal, read?: PlanReader): Promise<MyWork> {
+    const { work, rows } = await this.tenant(p, async (tx) => {
       const apps = await readableApplications(tx, p);
       const readable = [...apps.keys()];
       const mine = await tx.query<Row>(`${SELECT} WHERE t.primary_application_id = ANY($2::uuid[]) AND (t.creator_id = $1 OR t.owner_principal_id = $1) AND (NOT ${FINISHED} OR t.updated_at > now() - make_interval(days => ${String(FINISHED_WINDOW_DAYS)})) ORDER BY t.updated_at DESC, t.id LIMIT ${String(ACTIVE_CAP + 1)}`, [p.principalId, readable]);
@@ -129,7 +139,7 @@ export class BoardService {
       const own = mine.rows.slice(0, ACTIVE_CAP).map(card);
       const needsYou = asked.rows.slice(0, ACTIVE_CAP).map(card).sort(soonestExpiry);
       const all = [...own, ...needsYou];
-      return {
+      const work: MyWork = {
         principalId: p.principalId, generatedAt: new Date().toISOString(), needsYou,
         stopped: own.filter((c) => c.status === 'failed' || c.status === 'incomplete').sort(newestFirst),
         waitingOnOthers: own.filter((c) => (c.column === 'waiting' || c.column === 'paused') && c.waitingOnPrincipalId !== p.principalId).sort(oldestFirst),
@@ -139,6 +149,10 @@ export class BoardService {
         people: await this.names(tx, all, [p.principalId]),
         truncated: mine.rows.length > ACTIVE_CAP || asked.rows.length > ACTIVE_CAP,
       };
+      return { work, rows: await stageRows(tx, all.map((c) => c.taskId)) };
     });
+    const { stages } = await resolveStages(rows, read);
+    for (const c of [...work.needsYou, ...work.stopped, ...work.waitingOnOthers, ...work.inProgress, ...work.recentlyDone]) { const stage = stages.get(c.taskId); if (stage) c.stage = stage; }
+    return work;
   }
 }

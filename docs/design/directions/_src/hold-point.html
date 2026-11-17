@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Hold point: direction A specimen</title>
+<style>
+/*@font:archivo*/
+:root {
+  /* The inspection bench: galvanised steel, a paper traveler, stamp-pad ink, a yellow hold tag. */
+  --bench: #E9ECEA; --sheet: #FAFBF9; --well: #DDE2DF;
+  --ink: #15191B; --graphite: #485257; --pencil: #646E73;
+  --rule: rgba(21, 25, 27, 0.10); --rule-strong: rgba(21, 25, 27, 0.24);
+  --hold: #F2C200; --hold-ink: #15191B; --stop: #B3261E; --pass: #1E7548;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bench: #22282A; --sheet: #2A3134; --well: #1B2022;
+  --ink: #ECEFEC; --graphite: #B6BFC0; --pencil: #929DA0;
+  --rule: rgba(236, 239, 236, 0.10); --rule-strong: rgba(236, 239, 236, 0.26);
+  --hold: #F2C200; --hold-ink: #15191B; --stop: #FF8A7A; --pass: #70CC96;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bench: #22282A; --sheet: #2A3134; --well: #1B2022;
+    --ink: #ECEFEC; --graphite: #B6BFC0; --pencil: #929DA0;
+    --rule: rgba(236, 239, 236, 0.10); --rule-strong: rgba(236, 239, 236, 0.26);
+    --hold: #F2C200; --hold-ink: #15191B; --stop: #FF8A7A; --pass: #70CC96;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body { margin: 0; background: var(--bench); color: var(--ink); font: 400 15px/1.5 Archivo, "Helvetica Neue", Arial, sans-serif; font-variant-numeric: tabular-nums; }
+h1, h2, h3, p, ul, ol { margin: 0; } ul, ol { padding: 0; list-style: none; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 2px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* Specimen chrome */
+.page { max-width: 1280px; margin: 0 auto; padding: 48px 40px 96px; }
+.spec-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: start; margin-bottom: 48px; }
+.spec-head h1 { font-size: 46px; line-height: 1.05; font-weight: 700; letter-spacing: -0.025em; }
+.spec-head p { margin-top: 12px; max-width: 62ch; color: var(--graphite); font-size: 18px; line-height: 1.45; text-wrap: pretty; }
+.part { margin-top: 64px; }
+.part > h2 { font-size: 18px; font-weight: 650; letter-spacing: -0.005em; }
+.part > p { color: var(--graphite); max-width: 76ch; margin: 4px 0 20px; text-wrap: pretty; }
+.frame { border: 1px solid var(--rule-strong); border-radius: 8px; overflow: hidden; background: var(--bench); }
+
+/* Controls */
+.btn { font: inherit; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 0 14px; border-radius: 4px; border: 1px solid var(--rule-strong); background: transparent; color: var(--ink); cursor: pointer; white-space: nowrap; text-decoration: none; transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1), background-color 120ms linear; }
+.btn:hover { background: var(--rule); }
+.btn:active { transform: scale(0.97); }
+.btn.primary { background: var(--ink); color: var(--sheet); border-color: var(--ink); }
+.btn.primary:hover { background: color-mix(in srgb, var(--ink) 86%, var(--sheet)); }
+.btn.big { height: 44px; padding: 0 20px; font-size: 15px; }
+.btn.reject { color: var(--stop); border-color: color-mix(in srgb, var(--stop) 45%, transparent); }
+.btn.wide { width: 100%; }
+.quiet { font: inherit; font-size: 13px; font-weight: 500; color: var(--pencil); background: none; border: 0; padding: 6px 0; cursor: pointer; text-decoration: underline; text-decoration-color: var(--rule-strong); text-underline-offset: 3px; }
+.quiet:hover { color: var(--ink); text-decoration-color: currentColor; }
+@media (prefers-reduced-motion: reduce) { .btn, .box { transition: none !important; animation: none !important; } }
+
+/* The sign-off box: the signature. Initials in a box are a person at a gate. */
+.box { --s: 28px; display: inline-grid; place-items: center; flex: none; width: var(--s); height: var(--s); border-radius: 2px; font-size: calc(var(--s) * 0.42); font-weight: 700; font-stretch: 76%; line-height: 1; letter-spacing: 0.02em; }
+.box.signed { background: var(--ink); color: var(--sheet); }
+.box.yours { background: var(--hold); color: color-mix(in srgb, var(--hold-ink) 42%, var(--hold)); box-shadow: inset 0 0 0 1.5px var(--hold-ink); }
+.box.awaited { color: var(--pencil); border: 1.5px dashed var(--pencil); }
+.box.stopped { border: 1.5px solid var(--stop); background: linear-gradient(to top right, transparent calc(50% - 1px), var(--stop) calc(50% - 1px), var(--stop) calc(50% + 1px), transparent calc(50% + 1px)); }
+.box.passed { border: 1.5px solid var(--pass); color: var(--pass); font-stretch: 100%; font-size: calc(var(--s) * 0.5); }
+.box.low { box-shadow: inset 0 0 0 1.5px var(--ink); background: linear-gradient(to top, var(--hold) 0 22%, transparent 22%); }
+.agent { --s: 28px; display: inline-grid; place-items: center; flex: none; width: var(--s); height: var(--s); }
+.agent::before { content: ""; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--pencil); }
+.pair { display: inline-flex; align-items: center; align-self: start; }
+.pair .link { width: 12px; height: 1.5px; background: var(--ink); flex: none; }
+.pair .link.open { background: none; border-top: 1.5px dashed var(--pencil); height: 0; }
+
+/* App frame */
+.bar { display: flex; align-items: stretch; gap: 32px; height: 56px; padding: 0 32px; border-bottom: 1px solid var(--rule); }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 650; letter-spacing: -0.005em; }
+.brand .box { --s: 16px; }
+.bar nav { display: flex; gap: 4px; }
+.bar nav a { display: flex; align-items: center; gap: 8px; padding: 0 12px; font-size: 14px; font-weight: 500; color: var(--graphite); text-decoration: none; }
+.bar nav a:hover { color: var(--ink); }
+.bar nav a[aria-current="page"] { color: var(--ink); font-weight: 650; box-shadow: inset 0 -2px 0 var(--ink); }
+.bar nav .box { --s: 18px; color: var(--hold-ink); font-size: 11px; }
+.bar .me { margin-left: auto; display: flex; align-items: center; gap: 20px; font-size: 13px; color: var(--graphite); }
+.bar .me strong { color: var(--ink); font-weight: 600; font-size: 14px; }
+.bar .me > span { display: inline-flex; align-items: center; gap: 8px; }
+.bar .me .box { --s: 24px; }
+
+/* My work */
+.work { max-width: 864px; margin: 0 auto; padding: 40px 32px 56px; }
+.sheet { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; }
+.lead { display: grid; grid-template-columns: 112px minmax(0, 1fr); padding: 32px 32px 30px; }
+.lead .pair { margin-top: 2px; } .lead .box { --s: 36px; } .lead .pair .link { width: 14px; }
+.lead h3 { font-size: 31px; line-height: 1.12; font-weight: 650; letter-spacing: -0.022em; text-wrap: balance; }
+.lead .title { margin-top: 10px; font-size: 18px; line-height: 1.35; font-weight: 500; }
+.lead .why { margin-top: 4px; color: var(--graphite); max-width: 60ch; }
+.lead .why strong { color: var(--ink); font-weight: 600; }
+.lead .acts { margin-top: 22px; display: flex; align-items: center; gap: 16px; }
+.row { display: grid; grid-template-columns: 112px minmax(0, 1fr) auto; align-items: center; column-gap: 0; padding: 15px 32px; border-top: 1px solid var(--rule); }
+.row[data-tier-start] { border-top-color: var(--rule-strong); }
+.row .pair { align-self: center; }
+.row .title { font-weight: 600; line-height: 1.35; text-decoration: none; overflow-wrap: anywhere; }
+.row a.title:hover { text-decoration: underline; text-underline-offset: 3px; }
+.row .why { color: var(--graphite); font-size: 14px; }
+.row .acts { display: flex; align-items: center; gap: 16px; padding-left: 24px; }
+.after { display: flex; justify-content: space-between; padding: 10px 2px 0; }
+.other { margin-top: 44px; }
+.other h3 { font-size: 15px; font-weight: 650; padding: 0 32px 10px; }
+.other h3 span { color: var(--pencil); font-weight: 500; }
+.other .row { border-top-color: var(--rule); padding-top: 13px; padding-bottom: 13px; }
+.other .row .title { font-weight: 500; }
+.other .when { font-size: 13px; color: var(--pencil); padding-left: 24px; }
+
+/* Decision review */
+.review { max-width: 1064px; margin: 0 auto; padding: 32px 32px 56px; }
+.review .back { font-size: 13px; color: var(--pencil); }
+.review .head { display: grid; grid-template-columns: 112px minmax(0, 1fr); margin-top: 20px; }
+.review .head .box { --s: 36px; } .review .head .pair { margin-top: 2px; } .review .head .pair .link { width: 14px; }
+.review h3.q { font-size: 26px; line-height: 1.15; font-weight: 650; letter-spacing: -0.018em; text-wrap: balance; }
+.review .head p { margin-top: 8px; color: var(--graphite); max-width: 64ch; }
+.review .head p strong { color: var(--ink); font-weight: 600; }
+.review .head .btn { margin-top: 16px; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) 328px; gap: 48px; margin-top: 32px; align-items: start; }
+.sections .cap { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; padding: 12px 20px 10px 0; font-size: 13px; font-weight: 600; color: var(--pencil); }
+.sec { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto 28px; align-items: center; column-gap: 0; min-height: 48px; padding: 0 20px 0 0; border-top: 1px solid var(--rule); cursor: pointer; }
+.sec:hover { background: color-mix(in srgb, var(--ink) 3%, transparent); }
+.sec .n { text-align: right; padding-right: 20px; font-size: 13px; color: var(--pencil); }
+.sec .name { font-weight: 550; }
+.sec .at { font-size: 13px; color: var(--pencil); padding-right: 16px; visibility: hidden; }
+.sec .box { transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1); }
+.sec .box::after { content: attr(data-me); }
+.sec .box { background: var(--hold); color: color-mix(in srgb, var(--hold-ink) 42%, var(--hold)); box-shadow: inset 0 0 0 1.5px var(--hold-ink); }
+.sec:has(input:checked) .box { background: var(--ink); color: var(--sheet); box-shadow: none; }
+.sec:has(input:checked) .name { color: var(--graphite); font-weight: 450; }
+.sec:has(input:checked) .at { visibility: visible; }
+.sec:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: -2px; }
+.sec:active .box { transform: scale(0.92); }
+.verdict { position: sticky; top: 24px; padding-top: 6px; }
+.verdict .count { font-size: 22px; line-height: 1.2; font-weight: 650; letter-spacing: -0.012em; }
+.strip { display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; margin-top: 12px; }
+.strip i { height: 10px; border-radius: 1px; background: var(--hold); box-shadow: inset 0 0 0 1px var(--hold-ink); }
+.strip i.on { background: var(--ink); box-shadow: none; }
+.verdict .need { margin-top: 10px; font-size: 14px; color: var(--graphite); }
+.field { display: block; margin-top: 28px; font-size: 14px; font-weight: 600; }
+.field small { display: block; font-size: 13px; font-weight: 400; color: var(--pencil); }
+.field textarea { display: block; width: 100%; margin-top: 8px; font: inherit; font-weight: 400; font-size: 15px; padding: 10px 12px; min-height: 104px; resize: vertical; color: var(--ink); background: var(--well); border: 1px solid var(--rule-strong); border-radius: 4px; }
+.field textarea:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.verdict .acts { display: grid; gap: 8px; margin-top: 16px; }
+.verdict .acts .pairrow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+/* Reference panels */
+.states { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--rule-strong); }
+.states li { padding: 20px 16px 4px 0; }
+.states .box, .states .agent { --s: 40px; display: grid; }
+.states strong { display: block; margin-top: 14px; font-weight: 600; font-size: 14px; }
+.states span.d { display: block; font-size: 13px; color: var(--graphite); line-height: 1.4; margin-top: 2px; text-wrap: pretty; }
+.ref { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 56px; align-items: start; }
+.swatches { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px 12px; }
+.swatches i { display: block; height: 64px; border-radius: 3px; box-shadow: inset 0 0 0 1px var(--rule-strong); }
+.swatches strong { display: block; margin-top: 8px; font-size: 14px; font-weight: 600; }
+.swatches span { display: block; font-size: 13px; color: var(--graphite); }
+.type li { display: grid; grid-template-columns: 148px minmax(0, 1fr); align-items: baseline; padding: 12px 0; border-top: 1px solid var(--rule); }
+.type li > span:first-child { font-size: 13px; color: var(--graphite); }
+.type .t1 { font-size: 31px; line-height: 1.12; font-weight: 650; letter-spacing: -0.022em; }
+.type .t2 { font-size: 22px; line-height: 1.2; font-weight: 650; letter-spacing: -0.012em; }
+.type .t3 { font-size: 18px; font-weight: 500; }
+.type .t4 { font-size: 15px; }
+.type .t5 { font-size: 13px; font-weight: 600; color: var(--graphite); }
+.type .t6 { font-size: 15px; font-weight: 700; font-stretch: 76%; letter-spacing: 0.02em; }
+.foot { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--pencil); max-width: 96ch; }
+
+@media (max-width: 900px) {
+  .page { padding: 24px 16px 64px; } .spec-head { grid-template-columns: minmax(0, 1fr); } .spec-head h1 { font-size: 34px; }
+  .bar { flex-wrap: wrap; height: auto; padding: 0 16px; gap: 0 16px; } .brand { height: 48px; } .bar .me { height: 48px; } .bar .me .left { display: none; }
+  .bar nav { order: 3; flex: 1 1 100%; height: 44px; margin: 0 -12px; overflow-x: auto; }
+  .work, .review { padding: 20px 16px 40px; }
+  .lead { grid-template-columns: minmax(0, 1fr); padding: 20px; row-gap: 14px; } .lead h3 { font-size: 26px; }
+  .row { grid-template-columns: minmax(0, 1fr); row-gap: 8px; padding: 16px 20px; } .row .acts, .other .when { padding-left: 0; } .other h3 { padding-left: 20px; }
+  .review .head { grid-template-columns: minmax(0, 1fr); row-gap: 14px; } .split { grid-template-columns: minmax(0, 1fr); gap: 32px; } .verdict { position: static; }
+  .states { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ref { grid-template-columns: minmax(0, 1fr); gap: 40px; } .swatches { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="spec-head">
+    <div>
+      <h1>Hold point</h1>
+      <p>A hold point is a stop that only a named person can lift. This direction builds the whole product from that one object: a box waiting for somebody&rsquo;s initials. Yellow means the box is yours.</p>
+    </div>
+    <button type="button" class="btn" id="theme">Switch to dark</button>
+  </header>
+
+  <section class="part" aria-labelledby="p-work">
+    <h2 id="p-work">My work</h2>
+    <p>One sheet, ranked by the server. The first item is written out in full; the rest are rows on the same sheet. A heavier rule marks where the reason changes kind.</p>
+    <div class="frame">
+      <div class="bar">
+        <span class="brand"><span class="box yours" aria-hidden="true"></span>Software factory</span>
+        <nav aria-label="Main">
+          <a href="#" aria-current="page">My work</a>
+          <a href="#">Inbox <span class="box yours" aria-label="2 waiting on you">2</span></a>
+          <a href="#">Projects</a>
+          <a href="#">Budget</a>
+        </nav>
+        <div class="me"><span class="left">$7.00 left this month</span><span><span class="box signed" aria-hidden="true">RI</span><strong>Riley</strong></span></div>
+      </div>
+      <div class="work">
+        <ol class="sheet" aria-label="What needs you, most urgent first">
+          <li class="lead">
+            <span class="pair" role="img" aria-label="Dana is waiting for your sign-off"><span class="box signed">DA</span><span class="link"></span><span class="box yours">RI</span></span>
+            <div>
+              <h3>Dana is blocked on you</h3>
+              <p class="title">Why do some orders fail after a retry?</p>
+              <p class="why">The plan for Orders API needs your approval. The request <strong>expires in 2&nbsp;days</strong>.</p>
+              <p class="acts"><a class="btn primary big" href="#">Review the plan</a></p>
+            </div>
+          </li>
+          <li class="row">
+            <span class="pair" role="img" aria-label="Dana is waiting for your sign-off"><span class="box signed">DA</span><span class="link"></span><span class="box yours">RI</span></span>
+            <div><a class="title" href="#">Are duplicate invoices caused by the webhook retry?</a><p class="why">Dana is blocked on you in Billing API, expires in 4&nbsp;days</p></div>
+            <p class="acts"><a class="btn" href="#">Review now</a></p>
+          </li>
+          <li class="row" data-tier-start>
+            <span class="pair" role="img" aria-label="Your allowance is about to run out"><span class="box low"></span></span>
+            <div><a class="title" href="#">Your allowance is about to run out</a><p class="why">You have $7.00 left of your $60.00 allowance this month</p></div>
+            <p class="acts"><a class="btn" href="#">Open budget</a></p>
+          </li>
+          <li class="row" data-tier-start>
+            <span class="pair" role="img" aria-label="Stopped"><span class="box stopped"></span></span>
+            <div><a class="title" href="#">Can we drop the legacy orders export?</a><p class="why">Stopped in Orders API 3&nbsp;hours ago. The review request expired.</p></div>
+            <p class="acts"><button type="button" class="quiet">Mark as seen</button><a class="btn" href="#">See why it stopped</a></p>
+          </li>
+          <li class="row" data-tier-start>
+            <span class="pair" role="img" aria-label="Finished"><span class="box passed">&#10003;</span></span>
+            <div><a class="title" href="#">Add an idempotency key to order retries</a><p class="why">Finished in Orders API 1&nbsp;hour ago. Take a look at the result.</p></div>
+            <p class="acts"><button type="button" class="quiet">Mark as seen</button><a class="btn" href="#">See the result</a></p>
+          </li>
+        </ol>
+        <p class="after"><button type="button" class="quiet">How this list is ordered</button></p>
+        <section class="other" aria-labelledby="other-h">
+          <h3 id="other-h">Your other work <span>(2)</span></h3>
+          <ul>
+            <li class="row">
+              <span class="pair" role="img" aria-label="You are waiting for Sam"><span class="box signed">RI</span><span class="link open"></span><span class="box awaited">SA</span></span>
+              <div><a class="title" href="#">Why does proration round differently in March?</a><p class="why">Waiting on Sam to review the plan in Billing API</p></div>
+              <p class="when">expires in 6&nbsp;hours</p>
+            </li>
+            <li class="row">
+              <span class="pair" role="img" aria-label="An agent is working"><span class="agent"></span></span>
+              <div><a class="title" href="#">Trace the slow month-end report</a><p class="why">Running in Billing API, at Investigate</p></div>
+              <p class="when">started 12&nbsp;minutes ago</p>
+            </li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <section class="part" aria-labelledby="p-review">
+    <h2 id="p-review">Decision review</h2>
+    <p>The plan opens beside this page, so the page is a sign-off sheet: twelve numbered lines in the plan&rsquo;s own order. Ticking a line stamps your initials on it. Tick a few to try it.</p>
+    <div class="frame">
+      <div class="bar">
+        <span class="brand"><span class="box yours" aria-hidden="true"></span>Software factory</span>
+        <nav aria-label="Main">
+          <a href="#">My work</a>
+          <a href="#" aria-current="page">Inbox <span class="box yours" aria-label="2 waiting on you">2</span></a>
+          <a href="#">Projects</a>
+          <a href="#">Budget</a>
+        </nav>
+        <div class="me"><span class="left">$7.00 left this month</span><span><span class="box signed" aria-hidden="true">RI</span><strong>Riley</strong></span></div>
+      </div>
+      <div class="review">
+        <a class="back" href="#">Back to inbox</a>
+        <div class="head">
+          <span class="pair" role="img" aria-label="Dana is waiting for your sign-off"><span class="box signed">DA</span><span class="link"></span><span class="box yours">RI</span></span>
+          <div>
+            <h3 class="q">Why do some orders fail after a retry?</h3>
+            <p>Dana asked you to approve the plan for Orders API before implementation starts. The request <strong>expires in 2&nbsp;days</strong>.</p>
+            <a class="btn" href="#">Open the plan in a new tab</a>
+          </div>
+        </div>
+        <div class="split">
+          <form class="sheet sections" aria-label="Sections you have reviewed" onsubmit="return false">
+            <p class="cap"><span></span><span>Plan section</span><span>Your sign-off</span></p>
+            <label class="sec"><span class="n">1</span><span class="name">Intent and scope</span><span class="at">signed 14:02</span><input type="checkbox" class="visually-hidden" checked><span class="box" data-me="RI" aria-hidden="true"></span></label>
+            <label class="sec"><span class="n">2</span><span class="name">Current state</span><span class="at">signed 14:05</span><input type="checkbox" class="visually-hidden" checked><span class="box" data-me="RI" aria-hidden="true"></span></label>
+            <label class="sec"><span class="n">3</span><span class="name">Design</span><span class="at">signed 14:11</span><input type="checkbox" class="visually-hidden" checked><span class="box" data-me="RI" aria-hidden="true"></span></label>
+            <label class="sec"><span class="n">4</span><span class="name">Interfaces and data</span><span class="at">signed 14:14</span><input type="checkbox" class="visually-hidden" checked><span class="box" data-me="RI" aria-hidden="true"></span></label>
+            <label class="sec"><span class="n">5</span><span class="name">Implementation</span><span class="at">signed 14:20</span><input type="checkbox" class="visually-hidden" checked><span class="box" data-me="RI" aria-hidden="true"></span></label>
+            <label class="sec"><span class="n">6</span><span class="name">Acceptance tests</span><span class="at">signed just now</span><input type="checkbox" class="visually-hidden"><span class="box" data-me="RI" aria-hidden="true"></span></label>
+            <label class="sec"><span class="n">7</span><span class="name">Quality and security</span><span class="at">signed just now</span><input type="checkbox" class="visually-hidden"><span class="box" data-me="RI" aria-hidden="true"></span></label>
+            <label class="sec"><span class="n">8</span><span class="name">Delivery and recovery</span><span class="at">signed just now</span><input type="checkbox" class="visually-hidden"><span class="box" data-me="RI" aria-hidden="true"></span></label>
+            <label class="sec"><span class="n">9</span><span class="name">Operations</span><span class="at">signed just now</span><input type="checkbox" class="visually-hidden"><span class="box" data-me="RI" aria-hidden="true"></span></label>
+            <label class="sec"><span class="n">10</span><span class="name">Risks and decisions</span><span class="at">signed just now</span><input type="checkbox" class="visually-hidden"><span class="box" data-me="RI" aria-hidden="true"></span></label>
+            <label class="sec"><span class="n">11</span><span class="name">Definition of done</span><span class="at">signed just now</span><input type="checkbox" class="visually-hidden"><span class="box" data-me="RI" aria-hidden="true"></span></label>
+            <label class="sec"><span class="n">12</span><span class="name">Review and ownership</span><span class="at">signed just now</span><input type="checkbox" class="visually-hidden"><span class="box" data-me="RI" aria-hidden="true"></span></label>
+          </form>
+          <aside class="verdict" aria-label="Your decision">
+            <p class="count" id="count" role="status" aria-live="polite">5 of 12 signed</p>
+            <div class="strip" id="strip" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <p class="need" id="need">Approval needs all 12. You have 7 to go.</p>
+            <label class="field">Your reason<small>Recorded with your decision.</small><textarea name="reason" autocomplete="off" placeholder="What did you check, or what has to change?"></textarea></label>
+            <div class="acts">
+              <button type="button" class="btn primary big wide">Approve plan</button>
+              <div class="pairrow"><button type="button" class="btn">Request changes</button><button type="button" class="btn reject">Reject plan</button></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="part" aria-labelledby="p-sig">
+    <h2 id="p-sig">The sign-off box</h2>
+    <p>The signature element. It replaces coloured avatars and status chips, and it appears wherever a person stands at a gate: the queue, the inbox count, the review sheet, the task&rsquo;s stages and the board.</p>
+    <ul class="states">
+      <li><span class="box signed">DA</span><strong>Signed</strong><span class="d">Dana has done her part.</span></li>
+      <li><span class="box yours">RI</span><strong>Yours</strong><span class="d">Waiting for your initials. The only use of yellow.</span></li>
+      <li><span class="box awaited">SA</span><strong>Awaited</strong><span class="d">Waiting for Sam, not for you.</span></li>
+      <li><span class="box low"></span><strong>Running out</strong><span class="d">Time or money is nearly gone.</span></li>
+      <li><span class="box stopped"></span><strong>Stopped</strong><span class="d">Struck through. Nothing was delivered.</span></li>
+      <li><span class="box passed">&#10003;</span><strong>Passed</strong><span class="d">Finished, or a check that passed.</span></li>
+    </ul>
+  </section>
+
+  <section class="part" aria-labelledby="p-ref">
+    <h2 id="p-ref">Palette and type</h2>
+    <p>Neutral bench and paper carry the page, ink carries the actions, and yellow is reserved for the one thing that is yours to lift. Archivo is the only family; the stamps use its narrow width.</p>
+    <div class="ref">
+      <ul class="swatches" id="swatches">
+        <li><i style="background: var(--bench)"></i><strong>Bench</strong><span data-token="--bench"></span></li>
+        <li><i style="background: var(--sheet)"></i><strong>Sheet</strong><span data-token="--sheet"></span></li>
+        <li><i style="background: var(--ink)"></i><strong>Ink</strong><span data-token="--ink"></span></li>
+        <li><i style="background: var(--graphite)"></i><strong>Graphite</strong><span data-token="--graphite"></span></li>
+        <li><i style="background: var(--hold)"></i><strong>Hold</strong><span data-token="--hold"></span></li>
+        <li><i style="background: var(--stop)"></i><strong>Stop</strong><span data-token="--stop"></span></li>
+        <li><i style="background: var(--pass)"></i><strong>Pass</strong><span data-token="--pass"></span></li>
+        <li><i style="background: var(--well)"></i><strong>Well</strong><span data-token="--well"></span></li>
+      </ul>
+      <ul class="type">
+        <li><span>Lead, 31 / 650</span><span class="t1">Dana is blocked on you</span></li>
+        <li><span>Heading, 22 / 650</span><span class="t2">5 of 12 signed</span></li>
+        <li><span>Title, 18 / 500</span><span class="t3">Why do some orders fail after a retry?</span></li>
+        <li><span>Body, 15 / 400</span><span class="t4">The plan for Orders API needs your approval.</span></li>
+        <li><span>Note, 13 / 600</span><span class="t5">Recorded with your decision. $7.00 of $60.00 left.</span></li>
+        <li><span>Stamp, width 76</span><span class="t6">DA RI SA 12</span></li>
+      </ul>
+    </div>
+    <p class="foot">Archivo variable (weight and width axes), SIL Open Font License 1.1, from the npm package @fontsource-variable/archivo 5.3.0, embedded in this file. This page makes no network requests.</p>
+  </section>
+</div>
+<script>
+(function () {
+  var root = document.documentElement, button = document.getElementById('theme');
+  var asked = new URLSearchParams(location.search).get('theme');
+  var dark = asked ? asked === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  function hex(v) { return v.trim().toUpperCase(); }
+  function paint() {
+    root.setAttribute('data-theme', dark ? 'dark' : 'light');
+    button.textContent = dark ? 'Switch to light' : 'Switch to dark';
+    var cs = getComputedStyle(root);
+    document.querySelectorAll('[data-token]').forEach(function (el) { el.textContent = hex(cs.getPropertyValue(el.getAttribute('data-token'))); });
+  }
+  button.addEventListener('click', function () { dark = !dark; paint(); });
+  paint();
+  var boxes = document.querySelectorAll('.sec input'), cells = document.querySelectorAll('#strip i');
+  function tally() {
+    var n = 0; boxes.forEach(function (b) { if (b.checked) n++; });
+    cells.forEach(function (c, i) { c.className = i < n ? 'on' : ''; });
+    document.getElementById('count').textContent = n + ' of 12 signed';
+    document.getElementById('need').textContent = n === 12 ? 'All 12 sections are signed. You can approve.' : 'Approval needs all 12. You have ' + (12 - n) + ' to go.';
+  }
+  boxes.forEach(function (b) { b.addEventListener('change', tally); });
+  tally();
+})();
+</script>
+</body>
+</html>

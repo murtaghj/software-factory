@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>Control room: direction B specimen</title>
+<style>
+/*@font:atkinson*/
+:root {
+  /* The control room: an enamelled desk, a mimic diagram of the line, lamps that light when it stops. */
+  --panel: #E1E8E4; --console: #EEF3F0; --raised: #FAFCFA;
+  --lit: #14211C; --dim: #44564D; --unlit: #5C6E65;
+  --trace: rgba(20, 33, 28, 0.13); --trace-strong: rgba(20, 33, 28, 0.34);
+  --amber: #F0A100; --red: #C2281C; --green: #1B7F4C; --on-amber: #14211C; --on-red: #FFFFFF; --on-green: #FFFFFF;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --panel: #1B2825; --console: #22332F; --raised: #2B403B;
+  --lit: #E7F0EB; --dim: #ABBDB4; --unlit: #8A9E94;
+  --trace: rgba(231, 240, 235, 0.12); --trace-strong: rgba(231, 240, 235, 0.34);
+  --amber: #FFB52E; --red: #FF7466; --green: #74DDA4; --on-amber: #14211C; --on-red: #14211C; --on-green: #14211C;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --panel: #1B2825; --console: #22332F; --raised: #2B403B;
+    --lit: #E7F0EB; --dim: #ABBDB4; --unlit: #8A9E94;
+    --trace: rgba(231, 240, 235, 0.12); --trace-strong: rgba(231, 240, 235, 0.34);
+    --amber: #FFB52E; --red: #FF7466; --green: #74DDA4; --on-amber: #14211C; --on-red: #14211C; --on-green: #14211C;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body { margin: 0; background: var(--panel); color: var(--lit); font: 400 14px/1.45 "Atkinson Hyperlegible Next", Verdana, sans-serif; font-variant-numeric: tabular-nums; }
+h1, h2, h3, p, ul, ol { margin: 0; } ul, ol { padding: 0; list-style: none; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--lit); outline-offset: 2px; border-radius: 3px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* Specimen chrome */
+.page { max-width: 1280px; margin: 0 auto; padding: 48px 40px 96px; }
+.spec-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: start; margin-bottom: 48px; }
+.spec-head h1 { font-size: 44px; line-height: 1.05; font-weight: 700; letter-spacing: -0.02em; }
+.spec-head p { margin-top: 12px; max-width: 66ch; color: var(--dim); font-size: 17px; line-height: 1.5; text-wrap: pretty; }
+.part { margin-top: 64px; }
+.part > h2 { font-size: 17px; font-weight: 700; }
+.part > p { color: var(--dim); max-width: 80ch; margin: 4px 0 20px; text-wrap: pretty; }
+.frame { border: 1px solid var(--trace-strong); border-radius: 6px; overflow: hidden; background: var(--panel); }
+
+/* Controls */
+.key { font: inherit; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; height: 30px; padding: 0 12px; border-radius: 4px; border: 1px solid var(--trace-strong); background: transparent; color: var(--lit); cursor: pointer; white-space: nowrap; text-decoration: none; transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1), background-color 120ms linear; }
+.key:hover { background: var(--trace); }
+.key:active { transform: scale(0.97); }
+.key.on { background: var(--lit); color: var(--panel); border-color: var(--lit); }
+.key.on:hover { background: color-mix(in srgb, var(--lit) 86%, var(--panel)); }
+.key.tall { height: 40px; padding: 0 16px; font-size: 14px; }
+.key.refuse { color: var(--red); border-color: color-mix(in srgb, var(--red) 50%, transparent); }
+.plain { font: inherit; font-size: 13px; color: var(--unlit); background: none; border: 0; padding: 6px 0; cursor: pointer; text-decoration: underline; text-decoration-color: var(--trace-strong); text-underline-offset: 3px; }
+.plain:hover { color: var(--lit); }
+@media (prefers-reduced-motion: reduce) { .key, .lampbox { transition: none !important; } }
+
+/* Lamps and tokens: the signature's parts */
+.lamp { display: inline-block; width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--c, var(--unlit)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c, var(--unlit)) 24%, transparent); }
+.tok { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; font-size: 12px; font-weight: 700; line-height: 1; background: var(--c); color: var(--on); flex: none; }
+.amber { --c: var(--amber); --on: var(--on-amber); } .red { --c: var(--red); --on: var(--on-red); } .green { --c: var(--green); --on: var(--on-green); }
+.tok.else { background: none; box-shadow: inset 0 0 0 1.5px var(--unlit); min-width: 14px; width: 14px; height: 14px; padding: 0; }
+.tok.run { background: var(--lit); min-width: 8px; width: 8px; height: 8px; padding: 0; }
+.line .tok.else { margin-bottom: 4px; } .line .tok.run { margin-bottom: 7px; }
+
+/* App frame */
+.bar { display: flex; align-items: stretch; gap: 24px; height: 46px; padding: 0 20px; background: var(--console); border-bottom: 1px solid var(--trace); }
+.brand { display: flex; align-items: center; gap: 9px; font-weight: 700; }
+.brand i { display: flex; gap: 3px; } .brand i::before, .brand i::after { content: ""; width: 3px; height: 14px; background: var(--lit); }
+.bar nav { display: flex; }
+.bar nav a { display: flex; align-items: center; gap: 7px; padding: 0 12px; color: var(--dim); text-decoration: none; }
+.bar nav a:hover { color: var(--lit); }
+.bar nav a[aria-current="page"] { color: var(--lit); font-weight: 700; box-shadow: inset 0 -2px 0 var(--lit); }
+.bar nav .tok { min-width: 18px; height: 18px; font-size: 11px; padding: 0 5px; }
+.bar .right { margin-left: auto; display: flex; align-items: center; gap: 24px; color: var(--dim); font-size: 13px; }
+.fuel { display: flex; align-items: center; gap: 10px; }
+.fuel .tube { width: 96px; height: 6px; border-radius: 3px; background: var(--trace); overflow: hidden; }
+.fuel .tube i { display: block; height: 100%; background: var(--amber); }
+.fuel strong { color: var(--lit); font-weight: 600; }
+.bar .right .who { color: var(--lit); font-weight: 600; }
+
+/* The line */
+.linewrap { padding: 18px 20px 20px; border-bottom: 1px solid var(--trace); }
+.linehead { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; }
+.linehead h3 { font-size: 14px; font-weight: 700; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 12.5px; color: var(--dim); }
+.legend li { display: inline-flex; align-items: center; gap: 7px; }
+.legend .tok { min-width: 12px; width: 12px; height: 12px; padding: 0; margin: 0; }
+.legend .tok.run { min-width: 8px; width: 8px; height: 8px; }
+.line { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); margin-top: 6px; }
+.line li { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.line li::before { content: ""; position: absolute; top: 44px; right: 50%; width: 100%; height: 2px; background: var(--trace-strong); }
+.line li:first-child::before { display: none; }
+.line li.done::before, .line li.here::before { background: var(--green); }
+.line .toks { height: 36px; display: flex; align-items: flex-end; justify-content: center; gap: 4px; padding-bottom: 6px; }
+.line .mark { position: relative; z-index: 1; width: 12px; height: 18px; display: grid; place-items: center; }
+.line .mark::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--panel); box-shadow: inset 0 0 0 2px var(--unlit); }
+.line .gate .mark { width: 16px; background: var(--panel); }
+.line .gate .mark::before { width: 10px; height: 18px; border-radius: 0; background: none; box-shadow: none; border-left: 3px solid var(--lit); border-right: 3px solid var(--lit); }
+.line li.done .mark::before { background: var(--green); box-shadow: none; }
+.line .name { margin-top: 6px; font-size: 13px; color: var(--dim); }
+.line .gate .name { color: var(--lit); font-weight: 700; }
+.line .sub { font-size: 12.5px; color: var(--unlit); }
+.line li.here .sub { color: var(--lit); }
+
+/* The ranked table */
+.tablewrap { padding: 6px 20px 20px; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+th { text-align: left; font-size: 12.5px; font-weight: 400; color: var(--unlit); padding: 10px 12px 8px; }
+td { padding: 8px 12px; height: 46px; border-top: 1px solid var(--trace); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+td.task { white-space: normal; overflow-wrap: anywhere; line-height: 1.3; }
+td.num { text-align: center; padding-right: 4px; } td.num .tok { vertical-align: middle; }
+td.act { text-align: right; overflow: visible; }
+td.act .plain { margin-right: 12px; }
+tr.first td { background: var(--raised); } tr.first td, tr.first + tr td { border-top-color: transparent; }
+tr.first td:first-child { border-radius: 4px 0 0 4px; } tr.first td:last-child { border-radius: 0 4px 4px 0; }
+td a.t { font-weight: 600; text-decoration: none; } td a.t:hover { text-decoration: underline; text-underline-offset: 3px; }
+td.why, td.proj { color: var(--dim); } td.when { color: var(--dim); text-align: right; } th.when { text-align: right; }
+tr.first td.when { color: var(--lit); font-weight: 600; }
+.subhead { margin-top: 22px; padding: 0 12px 8px; font-size: 14px; font-weight: 700; }
+.subhead span { color: var(--unlit); font-weight: 400; }
+table.flight td { height: 38px; color: var(--dim); } table.flight td a.t { font-weight: 400; color: var(--lit); }
+.belowtable { padding: 8px 12px 0; }
+
+/* Decision review */
+.review { padding: 20px; }
+.review .top { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 0 0 16px; }
+.review .top .crumb { font-size: 13px; color: var(--unlit); }
+.review .top h3 { margin-top: 6px; font-size: 24px; line-height: 1.2; font-weight: 700; letter-spacing: -0.012em; text-wrap: balance; }
+.review .top p { margin-top: 4px; color: var(--dim); }
+.review .top p strong { color: var(--lit); font-weight: 600; }
+.review .linewrap { border: 1px solid var(--trace); border-radius: 4px; padding: 6px 20px 16px; background: var(--console); }
+.review .line li::before { top: 26px; } .review .line .toks { height: 18px; padding: 0; }
+.review .line .mark::before { background: var(--console); } .review .line .gate .mark { background: var(--console); }
+.review .line li.done .mark::before { background: var(--green); }
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) 372px; gap: 16px; margin-top: 16px; align-items: start; }
+.console { background: var(--console); border: 1px solid var(--trace); border-radius: 4px; padding: 16px 20px 18px; }
+.console h4 { margin: 0; font-size: 14px; font-weight: 700; }
+.console .hint { color: var(--dim); font-size: 13px; margin-top: 2px; }
+.secs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(6, auto); grid-auto-flow: column; column-gap: 28px; margin-top: 10px; }
+.sec { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; min-height: 42px; border-top: 1px solid var(--trace); cursor: pointer; }
+.sec .n { color: var(--unlit); font-size: 13px; }
+.sec .name { font-weight: 600; }
+.lampbox { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--unlit); }
+.lampbox::before { content: "Not read"; }
+.lampbox i { width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--unlit); display: grid; place-items: center; font-style: normal; font-size: 11px; font-weight: 700; color: transparent; transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1); }
+.sec:has(input:checked) .lampbox::before { content: "Read"; color: var(--dim); }
+.sec:has(input:checked) .lampbox i { background: var(--green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 24%, transparent); color: var(--on-green); }
+.sec:has(input:checked) .name { font-weight: 400; color: var(--dim); }
+.sec:has(input:focus-visible) { outline: 2px solid var(--lit); outline-offset: 1px; border-radius: 3px; }
+.sec:active .lampbox i { transform: scale(0.9); }
+.verdict .count { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+.dots { display: grid; grid-template-columns: repeat(12, 1fr); gap: 5px; margin-top: 10px; }
+.dots i { height: 6px; border-radius: 3px; background: var(--trace-strong); }
+.dots i.on { background: var(--green); }
+.field { display: block; margin-top: 18px; font-weight: 600; }
+.field small { display: block; font-size: 13px; font-weight: 400; color: var(--dim); }
+.field textarea { display: block; width: 100%; margin-top: 8px; font: inherit; font-weight: 400; padding: 9px 11px; min-height: 96px; resize: vertical; color: var(--lit); background: var(--panel); border: 1px solid var(--trace-strong); border-radius: 4px; }
+.field textarea:focus-visible { outline: 2px solid var(--lit); outline-offset: 1px; }
+.verdict .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+.verdict .acts .key.on { grid-column: 1 / -1; }
+
+/* Reference panels */
+.parts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-top: 1px solid var(--trace-strong); }
+.parts li { padding: 18px 16px 0 0; }
+.parts .sw { height: 28px; display: flex; align-items: center; gap: 6px; }
+.parts strong { display: block; margin-top: 8px; font-weight: 700; }
+.parts span.d { display: block; font-size: 13px; color: var(--dim); text-wrap: pretty; }
+.gatemark { display: inline-block; width: 10px; height: 18px; border-left: 3px solid var(--lit); border-right: 3px solid var(--lit); }
+.ref { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 56px; align-items: start; }
+.swatches { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px 12px; }
+.swatches i { display: block; height: 60px; border-radius: 3px; box-shadow: inset 0 0 0 1px var(--trace-strong); }
+.swatches strong { display: block; margin-top: 8px; font-weight: 700; }
+.swatches span { display: block; font-size: 13px; color: var(--dim); }
+.type li { display: grid; grid-template-columns: 148px minmax(0, 1fr); align-items: baseline; padding: 11px 0; border-top: 1px solid var(--trace); }
+.type li > span:first-child { font-size: 13px; color: var(--dim); }
+.type .t1 { font-size: 24px; line-height: 1.2; font-weight: 700; letter-spacing: -0.012em; }
+.type .t2 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+.type .t3 { font-size: 17px; font-weight: 700; }
+.type .t4 { font-size: 14px; }
+.type .t5 { font-size: 12.5px; color: var(--dim); }
+.type .t6 { font-size: 20px; font-weight: 400; letter-spacing: 0.04em; }
+.foot { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--trace); font-size: 13px; color: var(--unlit); max-width: 100ch; }
+
+@media (max-width: 900px) {
+  .page { padding: 24px 16px 64px; } .spec-head { grid-template-columns: minmax(0, 1fr); } .spec-head h1 { font-size: 32px; }
+  .bar { flex-wrap: wrap; height: auto; gap: 0 16px; padding: 0 12px; } .brand, .bar .right { height: 44px; } .fuel .tube { display: none; }
+  .bar nav { order: 3; flex: 1 1 100%; height: 40px; overflow-x: auto; }
+  .linewrap, .tablewrap, .review { padding-left: 12px; padding-right: 12px; }
+  .linehead { flex-direction: column; gap: 6px; } .line { overflow-x: auto; grid-template-columns: repeat(7, 104px); }
+  table, tbody, tr, td { display: block; } thead { display: none; } tr { padding: 10px 0; border-top: 1px solid var(--trace); }
+  td { height: auto; border: 0; padding: 2px 12px; white-space: normal; } td.when, td.act { text-align: left; } td.num { text-align: left; padding-bottom: 4px; } tr.first td { border-radius: 0 !important; }
+  .review .top { flex-direction: column; align-items: flex-start; } .cols { grid-template-columns: minmax(0, 1fr); } .secs { grid-template-columns: minmax(0, 1fr); grid-auto-flow: row; grid-template-rows: none; }
+  .parts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ref { grid-template-columns: minmax(0, 1fr); gap: 40px; } .swatches { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="spec-head">
+    <div>
+      <h1>Control room</h1>
+      <p>Every task travels the same line, from scope to close, and stops where a person has to sign. This direction draws that line across the top of the page and puts a numbered lamp on everything held along it. The table underneath is the same numbers, in the order the server ranked them.</p>
+    </div>
+    <button type="button" class="key" id="theme">Switch to light</button>
+  </header>
+
+  <section class="part" aria-labelledby="p-work">
+    <h2 id="p-work">My work</h2>
+    <p>Dense and full width. The line answers &ldquo;where is everything&rdquo;, the table answers &ldquo;what do I do first&rdquo;. Each lamp on the line carries the number of its row.</p>
+    <div class="frame">
+      <div class="bar">
+        <span class="brand"><i aria-hidden="true"></i>Software factory</span>
+        <nav aria-label="Main">
+          <a href="#" aria-current="page">My work</a>
+          <a href="#">Inbox <span class="tok amber" aria-label="2 waiting on you">2</span></a>
+          <a href="#">Projects</a>
+          <a href="#">Budget</a>
+        </nav>
+        <div class="right">
+          <span class="fuel"><span class="tok amber" aria-hidden="true">3</span><span class="tube" role="img" aria-label="88% of your allowance is used"><i style="width: 12%"></i></span><span><strong>$7.00</strong> of $60.00 left</span></span>
+          <span class="who">Riley</span>
+        </div>
+      </div>
+      <div class="linewrap">
+        <div class="linehead">
+          <h3>Where your work is held</h3>
+          <ul class="legend">
+            <li><span class="tok amber"></span>Held by you</li>
+            <li><span class="tok red"></span>Stopped</li>
+            <li><span class="tok green"></span>Finished</li>
+            <li><span class="tok else"></span>Waiting on someone else</li>
+            <li><span class="tok run"></span>Agent running</li>
+          </ul>
+        </div>
+        <ol class="line" aria-label="Stages, with your tasks at the stage they have reached">
+          <li><div class="toks"></div><span class="mark"></span><span class="name">Scope</span></li>
+          <li><div class="toks"></div><span class="mark"></span><span class="name">Plan</span></li>
+          <li class="gate"><div class="toks"><span class="tok amber">1</span><span class="tok amber">2</span><span class="tok red">4</span><span class="tok else" title="Waiting on Sam"></span></div><span class="mark"></span><span class="name">Plan review</span><span class="sub">a person signs here</span></li>
+          <li><div class="toks"><span class="tok run" title="Agent running"></span></div><span class="mark"></span><span class="name">Investigate</span></li>
+          <li><div class="toks"></div><span class="mark"></span><span class="name">Evidence review</span></li>
+          <li><div class="toks"></div><span class="mark"></span><span class="name">Deliver</span></li>
+          <li><div class="toks"><span class="tok green">5</span></div><span class="mark"></span><span class="name">Close</span></li>
+        </ol>
+      </div>
+      <div class="tablewrap">
+        <table aria-label="What needs you, most urgent first">
+          <colgroup><col style="width: 56px"><col><col style="width: 23%"><col style="width: 104px"><col style="width: 148px"><col style="width: 264px"></colgroup>
+          <thead><tr><th scope="col"><span class="visually-hidden">Rank</span></th><th scope="col">Task</th><th scope="col">Why it is here</th><th scope="col">Project</th><th scope="col" class="when">When</th><th scope="col"><span class="visually-hidden">Action</span></th></tr></thead>
+          <tbody>
+            <tr class="first">
+              <td class="num"><span class="tok amber" title="Blocked on you">1<span class="visually-hidden">, blocked on you</span></span></td>
+              <td class="task"><a class="t" href="#">Why do some orders fail after a retry?</a></td>
+              <td class="why">Dana is blocked on you</td><td class="proj">Orders API</td><td class="when">2 days left</td>
+              <td class="act"><a class="key on" href="#">Review now</a></td>
+            </tr>
+            <tr>
+              <td class="num"><span class="tok amber" title="Blocked on you">2<span class="visually-hidden">, blocked on you</span></span></td>
+              <td class="task"><a class="t" href="#">Are duplicate invoices caused by the webhook retry?</a></td>
+              <td class="why">Dana is blocked on you</td><td class="proj">Billing API</td><td class="when">4 days left</td>
+              <td class="act"><a class="key" href="#">Review now</a></td>
+            </tr>
+            <tr>
+              <td class="num"><span class="tok amber" title="About to run out">3<span class="visually-hidden">, about to run out</span></span></td>
+              <td class="task"><a class="t" href="#">Your monthly allowance</a></td>
+              <td class="why">$7.00 left of $60.00</td><td class="proj"></td><td class="when">resets in 2 weeks</td>
+              <td class="act"><a class="key" href="#">Open budget</a></td>
+            </tr>
+            <tr>
+              <td class="num"><span class="tok red" title="Stopped">4<span class="visually-hidden">, stopped</span></span></td>
+              <td class="task"><a class="t" href="#">Can we drop the legacy orders export?</a></td>
+              <td class="why">The review request expired</td><td class="proj">Orders API</td><td class="when">3 hours ago</td>
+              <td class="act"><button type="button" class="plain">Mark as seen</button><a class="key" href="#">See why it stopped</a></td>
+            </tr>
+            <tr>
+              <td class="num"><span class="tok green" title="Finished">5<span class="visually-hidden">, finished</span></span></td>
+              <td class="task"><a class="t" href="#">Add an idempotency key to order retries</a></td>
+              <td class="why">Take a look at the result</td><td class="proj">Orders API</td><td class="when">1 hour ago</td>
+              <td class="act"><button type="button" class="plain">Mark as seen</button><a class="key" href="#">See the result</a></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="belowtable"><button type="button" class="plain">How this list is ordered</button></p>
+        <p class="subhead">Your other work <span>(2)</span></p>
+        <table class="flight" aria-label="Your other work">
+          <colgroup><col style="width: 56px"><col><col style="width: 23%"><col style="width: 104px"><col style="width: 148px"><col style="width: 264px"></colgroup>
+          <tbody>
+            <tr><td class="num"><span class="tok else" title="Waiting on someone else"></span></td><td class="task"><a class="t" href="#">Why does proration round differently in March?</a></td><td class="why">Waiting on Sam to review the plan</td><td class="proj">Billing API</td><td class="when">6 hours left</td><td></td></tr>
+            <tr><td class="num"><span class="tok run" title="Agent running"></span></td><td class="task"><a class="t" href="#">Trace the slow month-end report</a></td><td class="why">An agent is running Investigate</td><td class="proj">Billing API</td><td class="when">12 minutes in</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="part" aria-labelledby="p-review">
+    <h2 id="p-review">Decision review</h2>
+    <p>The same line, now for one task, shows what your signature releases. The twelve sections read down two columns in the plan&rsquo;s order; each has a lamp that lights when you have read it. Tick a few to try it.</p>
+    <div class="frame">
+      <div class="bar">
+        <span class="brand"><i aria-hidden="true"></i>Software factory</span>
+        <nav aria-label="Main">
+          <a href="#">My work</a>
+          <a href="#" aria-current="page">Inbox <span class="tok amber" aria-label="2 waiting on you">2</span></a>
+          <a href="#">Projects</a>
+          <a href="#">Budget</a>
+        </nav>
+        <div class="right">
+          <span class="fuel"><span class="tube" role="img" aria-label="88% of your allowance is used"><i style="width: 12%"></i></span><span><strong>$7.00</strong> of $60.00 left</span></span>
+          <span class="who">Riley</span>
+        </div>
+      </div>
+      <div class="review">
+        <div class="top">
+          <div>
+            <a class="crumb" href="#">Back to inbox</a>
+            <h3>Why do some orders fail after a retry?</h3>
+            <p>Dana asked you to approve the plan for Orders API. <strong>2 days left</strong> before the request expires.</p>
+          </div>
+          <a class="key tall" href="#">Open the plan in a new tab</a>
+        </div>
+        <div class="linewrap">
+          <ol class="line" aria-label="Stages of this task">
+            <li class="done"><div class="toks"></div><span class="mark"></span><span class="name">Scope</span><span class="sub">done</span></li>
+            <li class="done"><div class="toks"></div><span class="mark"></span><span class="name">Plan</span><span class="sub">done</span></li>
+            <li class="gate here"><div class="toks"></div><span class="mark"></span><span class="name">Plan review</span><span class="sub">held here by you</span></li>
+            <li><div class="toks"></div><span class="mark"></span><span class="name">Investigate</span><span class="sub">not started</span></li>
+            <li><div class="toks"></div><span class="mark"></span><span class="name">Evidence review</span><span class="sub">not started</span></li>
+            <li><div class="toks"></div><span class="mark"></span><span class="name">Deliver</span><span class="sub">not started</span></li>
+            <li><div class="toks"></div><span class="mark"></span><span class="name">Close</span><span class="sub">not started</span></li>
+          </ol>
+        </div>
+        <div class="cols">
+          <form class="console" aria-label="Sections you have reviewed" onsubmit="return false">
+            <h4>Sections of the plan</h4>
+            <p class="hint">Mark each one as you read it. Approval needs all twelve.</p>
+            <div class="secs">
+              <label class="sec"><span class="n">1</span><span class="name">Intent and scope</span><input type="checkbox" class="visually-hidden" checked><span class="lampbox" aria-hidden="true"><i>&#10003;</i></span></label>
+              <label class="sec"><span class="n">2</span><span class="name">Current state</span><input type="checkbox" class="visually-hidden" checked><span class="lampbox" aria-hidden="true"><i>&#10003;</i></span></label>
+              <label class="sec"><span class="n">3</span><span class="name">Design</span><input type="checkbox" class="visually-hidden" checked><span class="lampbox" aria-hidden="true"><i>&#10003;</i></span></label>
+              <label class="sec"><span class="n">4</span><span class="name">Interfaces and data</span><input type="checkbox" class="visually-hidden" checked><span class="lampbox" aria-hidden="true"><i>&#10003;</i></span></label>
+              <label class="sec"><span class="n">5</span><span class="name">Implementation</span><input type="checkbox" class="visually-hidden" checked><span class="lampbox" aria-hidden="true"><i>&#10003;</i></span></label>
+              <label class="sec"><span class="n">6</span><span class="name">Acceptance tests</span><input type="checkbox" class="visually-hidden"><span class="lampbox" aria-hidden="true"><i>&#10003;</i></span></label>
+              <label class="sec"><span class="n">7</span><span class="name">Quality and security</span><input type="checkbox" class="visually-hidden"><span class="lampbox" aria-hidden="true"><i>&#10003;</i></span></label>
+              <label class="sec"><span class="n">8</span><span class="name">Delivery and recovery</span><input type="checkbox" class="visually-hidden"><span class="lampbox" aria-hidden="true"><i>&#10003;</i></span></label>
+              <label class="sec"><span class="n">9</span><span class="name">Operations</span><input type="checkbox" class="visually-hidden"><span class="lampbox" aria-hidden="true"><i>&#10003;</i></span></label>
+              <label class="sec"><span class="n">10</span><span class="name">Risks and decisions</span><input type="checkbox" class="visually-hidden"><span class="lampbox" aria-hidden="true"><i>&#10003;</i></span></label>
+              <label class="sec"><span class="n">11</span><span class="name">Definition of done</span><input type="checkbox" class="visually-hidden"><span class="lampbox" aria-hidden="true"><i>&#10003;</i></span></label>
+              <label class="sec"><span class="n">12</span><span class="name">Review and ownership</span><input type="checkbox" class="visually-hidden"><span class="lampbox" aria-hidden="true"><i>&#10003;</i></span></label>
+            </div>
+          </form>
+          <aside class="console verdict" aria-label="Your decision">
+            <p class="count" id="count" role="status" aria-live="polite">5 of 12 read</p>
+            <div class="dots" id="strip" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <label class="field">Your reason<small>Recorded with your decision.</small><textarea name="reason" autocomplete="off" placeholder="What did you check, or what has to change?"></textarea></label>
+            <div class="acts">
+              <button type="button" class="key on tall">Approve plan</button>
+              <button type="button" class="key tall">Request changes</button>
+              <button type="button" class="key tall refuse">Reject plan</button>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="part" aria-labelledby="p-sig">
+    <h2 id="p-sig">The line and its lamps</h2>
+    <p>The signature element. One diagram of the stages, reused at three sizes: all your work on the home page, one task on its own page and on the review, and a single mark on each board card.</p>
+    <ul class="parts">
+      <li><div class="sw"><span class="gatemark"></span></div><strong>Gate</strong><span class="d">A stage where a person signs. Also the product mark.</span></li>
+      <li><div class="sw"><span class="tok amber">1</span><span class="tok amber">2</span></div><strong>Held by you</strong><span class="d">Numbered to match its row in the table.</span></li>
+      <li><div class="sw"><span class="tok red">4</span></div><strong>Stopped</strong><span class="d">Sits at the stage where it stopped.</span></li>
+      <li><div class="sw"><span class="tok green">5</span></div><strong>Finished</strong><span class="d">At the end of the line until you have seen it.</span></li>
+      <li><div class="sw"><span class="tok else" style="margin: 0"></span><span class="tok run" style="margin: 0 0 0 6px"></span></div><strong>Not yours to act on</strong><span class="d">Waiting on someone else, or an agent running. No number.</span></li>
+    </ul>
+  </section>
+
+  <section class="part" aria-labelledby="p-ref">
+    <h2 id="p-ref">Palette and type</h2>
+    <p>One green-grey enamel in three depths, pale lettering, and three lamp colours that are only ever lamps. Atkinson Hyperlegible Next was drawn so that similar characters cannot be confused, which is the right property for a board read at a glance.</p>
+    <div class="ref">
+      <ul class="swatches">
+        <li><i style="background: var(--panel)"></i><strong>Panel</strong><span data-token="--panel"></span></li>
+        <li><i style="background: var(--console)"></i><strong>Console</strong><span data-token="--console"></span></li>
+        <li><i style="background: var(--raised)"></i><strong>Raised</strong><span data-token="--raised"></span></li>
+        <li><i style="background: var(--lit)"></i><strong>Lit</strong><span data-token="--lit"></span></li>
+        <li><i style="background: var(--dim)"></i><strong>Dim</strong><span data-token="--dim"></span></li>
+        <li><i style="background: var(--amber)"></i><strong>Amber lamp</strong><span data-token="--amber"></span></li>
+        <li><i style="background: var(--red)"></i><strong>Red lamp</strong><span data-token="--red"></span></li>
+        <li><i style="background: var(--green)"></i><strong>Green lamp</strong><span data-token="--green"></span></li>
+      </ul>
+      <ul class="type">
+        <li><span>Page title, 24 / 700</span><span class="t1">Why do some orders fail after a retry?</span></li>
+        <li><span>Count, 20 / 700</span><span class="t2">5 of 12 read</span></li>
+        <li><span>Heading, 17 / 700</span><span class="t3">Where your work is held</span></li>
+        <li><span>Body and table, 14</span><span class="t4">Dana is blocked on you. 2 days left.</span></li>
+        <li><span>Note, 12.5</span><span class="t5">Recorded with your decision. $7.00 of $60.00 left.</span></li>
+        <li><span>Unambiguous</span><span class="t6">0O 1lI 5S 8B rn m</span></li>
+      </ul>
+    </div>
+    <p class="foot">Atkinson Hyperlegible Next variable, SIL Open Font License 1.1, from the npm package @fontsource-variable/atkinson-hyperlegible-next 5.3.0, embedded in this file. This page makes no network requests.</p>
+  </section>
+</div>
+<script>
+(function () {
+  var root = document.documentElement, button = document.getElementById('theme');
+  var asked = new URLSearchParams(location.search).get('theme');
+  var dark = asked ? asked === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  function paint() {
+    root.setAttribute('data-theme', dark ? 'dark' : 'light');
+    button.textContent = dark ? 'Switch to light' : 'Switch to dark';
+    var cs = getComputedStyle(root);
+    document.querySelectorAll('[data-token]').forEach(function (el) { el.textContent = cs.getPropertyValue(el.getAttribute('data-token')).trim().toUpperCase(); });
+  }
+  button.addEventListener('click', function () { dark = !dark; paint(); });
+  paint();
+  var boxes = document.querySelectorAll('.sec input'), cells = document.querySelectorAll('#strip i');
+  function tally() {
+    var n = 0; boxes.forEach(function (b) { if (b.checked) n++; });
+    cells.forEach(function (c, i) { c.className = i < n ? 'on' : ''; });
+    document.getElementById('count').textContent = n + ' of 12 read';
+  }
+  boxes.forEach(function (b) { b.addEventListener('change', tally); });
+  tally();
+})();
+</script>
+</body>
+</html>

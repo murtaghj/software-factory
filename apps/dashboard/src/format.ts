@@ -10,7 +10,7 @@ export const STATUS: Record<string, { label: string; tone: Tone }> = {
   cancelling: { label: 'Cancelling', tone: 'warning' }, succeeded: { label: 'Done', tone: 'success' }, incomplete: { label: 'Stopped early', tone: 'warning' },
   failed: { label: 'Failed', tone: 'danger' }, cancelled: { label: 'Cancelled', tone: 'neutral' },
 };
-export { label, relativeTime, usd } from '@factory/client';
+export { label, relativeTime, timeLeft, usd } from '@factory/client';
 export const statusOf = (status: string): { label: string; tone: Tone } => STATUS[status] ?? { label: label(status), tone: 'neutral' };
 
 // A full, unambiguous time for tooltips and <time> titles.
@@ -22,16 +22,4 @@ export function fullTime(iso: string): string {
 export function shortName(name: string): string {
   const cut = name.indexOf('(');
   return (cut > 0 ? name.slice(0, cut) : name).trim();
-}
-export function initials(name: string): string {
-  const parts = shortName(name).split(' ').filter((p) => p.length > 0);
-  const first = parts[0] ?? '?';
-  const last = parts.length >= 2 ? parts[parts.length - 1] ?? '' : '';
-  return (last ? `${first.charAt(0)}${last.charAt(0)}` : first.slice(0, 2)).toUpperCase();
-}
-// A stable colour per person, from their name, so the same person looks the same everywhere.
-export function hueOf(name: string): number {
-  let h = 0;
-  for (const c of name) h = (h * 31 + (c.codePointAt(0) ?? 0)) % 360;
-  return h;
 }

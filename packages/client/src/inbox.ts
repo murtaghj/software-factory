@@ -2,6 +2,7 @@
 // comes from the API's own filter (`assignedTo=me`), so the server decides whose inbox it is. A
 // response is built here for a human to send; the workflow still re-checks subject, revision,
 // decider and reviewed scope when it applies it.
+import { label } from './wording.ts';
 import { validateContract, type DecisionResponse, type DecisionView, type PlanSectionId } from '@factory/contracts';
 
 export const PLAN_SECTION_IDS: readonly PlanSectionId[] = ['intent_scope', 'current_state', 'design', 'interfaces_data', 'implementation', 'acceptance_tests', 'quality_security', 'delivery_recovery', 'operations', 'risks_decisions', 'definition_of_done', 'review_ownership'];
@@ -42,7 +43,7 @@ export function buildDecisionResponse(item: InboxItem, input: ResponseInput): Bu
   if (item.urgency === 'expired') problems.push('This request has expired and can no longer be answered.');
   if (input.reason.trim().length === 0) problems.push('A reason is required.');
   const missing = item.sectionsToReview.filter((s) => !input.reviewedSectionIds.includes(s));
-  if (input.outcome === 'approve' && missing.length > 0) problems.push(`Approval needs every section reviewed; missing: ${missing.join(', ')}.`);
+  if (input.outcome === 'approve' && missing.length > 0) problems.push(`Approval needs every section reviewed; missing: ${missing.map((m) => label(m)).join(', ')}.`);
   if (problems.length > 0) return { ok: false, problems };
   const body = { commandId: input.commandId, expectedRevision: input.expectedRevision, subjectHash: item.subjectHash, outcome: input.outcome, reason: input.reason.trim(), reviewedSectionIds: item.sectionsToReview.filter((s) => input.reviewedSectionIds.includes(s)), actorKind: 'human' as const };
   const valid = validateContract('DecisionResponse', body);

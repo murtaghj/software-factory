@@ -2,7 +2,7 @@
 // presentation": task detail stays readable from its last projection while indicating staleness).
 import type { GateEvaluation, RunView, TaskView } from '@factory/contracts';
 import type { Connection } from './store.ts';
-import { relativeTime } from './format.ts';
+import { label, relativeTime } from './format.ts';
 
 const TERMINAL = new Set(['succeeded', 'incomplete', 'failed', 'cancelled']);
 export const STALE_AFTER_MS = 60_000;
@@ -43,8 +43,9 @@ export function taskModel(task: TaskView, runs: RunView[], gates: GateEvaluation
 }
 
 // The plan as a pipeline: every stage of the current plan with what has happened to it so far.
-export type PlanNode = { id: string; stageKind: string; role: string; dependsOn: string[]; mandatory: boolean };
-export type PipelineStep = { id: string; state: 'done' | 'current' | 'failed' | 'pending'; attempts: number };
+// `label` and `gate` come from the server (A-23); a server without them still draws, with words from the id.
+export type PlanNode = { id: string; stageKind: string; role: string; dependsOn: string[]; mandatory: boolean; label?: string; gate?: boolean };
+export type PipelineStep = { id: string; label: string; gate: boolean; state: 'done' | 'current' | 'failed' | 'pending'; attempts: number };
 export function pipelineOf(nodes: PlanNode[], runs: RunView[], planVersion: number, currentNodeId: string | undefined, terminal: boolean): PipelineStep[] {
   return nodes.map((n) => {
     const mine = runs.filter((r) => r.nodeId === n.id && r.planVersion === planVersion && r.supersededAt === undefined);
@@ -54,6 +55,6 @@ export function pipelineOf(nodes: PlanNode[], runs: RunView[], planVersion: numb
     else if (last && last.status === 'running' && !terminal) state = 'current';
     else if (last) state = 'failed'; // failed, inconclusive, or left running when the task ended
     else if (n.id === currentNodeId && !terminal) state = 'current';
-    return { id: n.id, state, attempts: mine.length };
+    return { id: n.id, label: n.label ?? label(n.id), gate: n.gate ?? false, state, attempts: mine.length };
   });
 }

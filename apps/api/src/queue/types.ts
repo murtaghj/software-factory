@@ -2,6 +2,7 @@
 // packages/client/src/queue.ts like MyWork (A-18): the generated contracts follow the read-only spec.
 import type { Tx } from '@factory/database';
 import type { Principal } from '../auth/rbac.ts';
+import type { StageDescriptor, Station } from '../tasks/stations.ts';
 
 export const QUEUE_SCHEMA = 'factory-queue/1';
 // Position in this array + 1 is the tier. This is the fixed ranking.
@@ -30,8 +31,9 @@ export type QueueCandidate = {
   since: string; // ISO: when this started needing you
   expiresAt?: string; // ISO: hard deadline, if any
 };
-// What the API returns. The engine adds these four; an adapter cannot set them.
-export type QueueItem = QueueCandidate & { key: string; rank: number; tier: QueueTier; sourceId: string };
+// What the API returns. The engine adds these four, and the stage when the item is about a task with a
+// readable plan (A-23); an adapter cannot set them.
+export type QueueItem = QueueCandidate & { key: string; rank: number; tier: QueueTier; sourceId: string; stage?: StageDescriptor };
 
 export type QueueSourceStatus = { id: string; kind: 'factory' | 'external'; status: 'ok' | 'degraded'; problem?: 'failed' | 'timed_out' | 'invalid_items' | 'stale'; items: number; truncated: boolean };
 export type QueueRules = { tiers: readonly QueueNeed[]; expiringWithinSeconds: number; allowanceLowPercent: number; windowDays: number };
@@ -40,6 +42,9 @@ export type Queue = {
   items: QueueItem[]; // already ranked; rank is 1..n
   sources: QueueSourceStatus[]; degraded: boolean; // degraded = any source not ok
   truncated: boolean; rules: QueueRules; // rules are sent so every client can show them
+  // The line every item sits on: the stations of the plans behind the items and behind the caller's own
+  // open tasks, merged (A-23). Empty when there is nothing to draw.
+  stations: Station[];
   applications: Record<string, string>; people: Record<string, string>;
 };
 

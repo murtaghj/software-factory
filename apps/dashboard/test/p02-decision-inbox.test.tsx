@@ -29,7 +29,7 @@ describe('P-02 decision inbox', () => {
     const item = inboxModel([decision('1')], NOW).items[0];
     if (!item) throw new Error('no item');
     const partial = buildDecisionResponse(item, { ...input, reviewedSectionIds: PLAN_SECTION_IDS.filter((s) => s !== 'design') });
-    expect(partial).toEqual({ ok: false, problems: ['Approval needs every section reviewed; missing: design.'] });
+    expect(partial).toEqual({ ok: false, problems: ['Approval needs every section reviewed; missing: Design.'] });
     expect(buildDecisionResponse(item, { ...input, reason: '   ' })).toMatchObject({ ok: false, problems: ['A reason is required.'] });
     // Rejecting or asking for changes does not need full coverage, and reports only what was read.
     const reject = buildDecisionResponse(item, { ...input, outcome: 'request_changes', reviewedSectionIds: ['design'] });
@@ -56,12 +56,14 @@ describe('P-02 decision inbox', () => {
     expect(html).not.toContain('<b>packet</b>');
     expect(html).toContain('Why is checkout slow?'); // which task, which project, who is asking
     expect(html).toContain('Orders API');
-    expect(html).toContain('asked by Dana');
+    expect(html).toContain('Asked by');
+    expect(html).toContain('>Dana<'); // "(developer)" is dropped
     expect(html).toContain('href="/decisions/00000000-0000-4000-8000-000000000001"');
     expect(html).not.toContain('href="/decisions/00000000-0000-4000-8000-000000000004"');
     expect(html).toContain('data-urgency="expired"');
     expect(html).toContain('No longer answerable');
-    expect(html).toContain('in 3 days');
+    expect(html).toContain('3 days left');
+    expect(html).toContain('<span class="visually-hidden">Expired</span>'); // the lamp of an expired row says so
     const empty = renderToStaticMarkup(<DecisionInbox model={inboxModel([], NOW)} {...href} />);
     expect(empty).toContain('Nothing is waiting on you.');
     expect(empty).not.toContain('class="inbox"');

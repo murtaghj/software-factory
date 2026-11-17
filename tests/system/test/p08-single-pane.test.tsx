@@ -107,22 +107,26 @@ describe('P-08 single pane of glass', () => {
     expect(tab.deps.location.href).toBe(`${ORIGIN}/#/inbox`); // the code is gone from the address bar
     await until(() => tab.text().includes('1 waiting on you.'), 'the inbox');
     const nav = [...dom.window.document.querySelectorAll('nav a')].map((a) => a.textContent);
-    expect(nav).toEqual(['My work', 'Inbox1', 'Budget', 'Projects', 'Orders API']); // the count sits on the inbox link; projects are one click away
+    expect(nav).toEqual(['My work', 'Inbox1', 'Projects', 'Budget']); // the count sits on the inbox link; the bar replaced the sidebar, so projects are listed on their own page
     expect(dom.window.document.querySelector('nav a[aria-current="page"]')?.textContent).toBe('Inbox1');
     expect(tab.text()).toContain('Riley');
     // The inbox says which task, which project and who is asking, in words.
-    await until(() => tab.text().includes('Why do refunds double-post?') && tab.text().includes('asked by Dana'), 'the inbox item context');
+    await until(() => tab.text().includes('Why do refunds double-post?') && tab.text().includes('Dana') && tab.text().includes('Asked by'), 'the inbox item context');
     expect(tab.text()).not.toMatch(/\d{4}-\d{2}-\d{2}T/); // no raw timestamps
     expect(tab.text()).not.toContain('plan_review');
 
     // My work says the same thing first.
     await tab.go('#/work');
     await until(() => tab.text().includes('Dana is blocked on you'), 'my work');
-    expect([...dom.window.document.querySelectorAll('.focus a.primary')].map((a) => [a.textContent, a.getAttribute('href')])).toEqual([['Review now', `#/decisions/${decision.id}`]]);
+    expect([...dom.window.document.querySelectorAll('tr.first a.key')].map((a) => [a.textContent, a.getAttribute('href')])).toEqual([['Review now', `#/decisions/${decision.id}`]]);
+    // The line draws the stations of the task's plan, with the gate marked and Riley's row number on it.
+    expect([...dom.window.document.querySelectorAll('ol.line > li .name')].map((n) => n.textContent)).toEqual(['Scope', 'Plan', 'Plan review', 'Investigate', 'Evidence review', 'Deliver', 'Close']);
+    expect(dom.window.document.querySelector('ol.line > li.gate .name')?.textContent).toBe('Plan review');
+    expect(dom.window.document.querySelector('ol.line > li.gate .tok.amber')?.textContent).toBe('1, blocked on you');
 
     // Review and answer: approval without every section is refused in place.
     await tab.go(`#/decisions/${decision.id}`);
-    await until(() => tab.text().includes('Sections you have reviewed'), 'the decision page');
+    await until(() => tab.text().includes('Sections of the plan'), 'the decision page');
     const boxes = [...dom.window.document.querySelectorAll('input[type="checkbox"]')] as unknown as HTMLInputElement[];
     expect(boxes).toHaveLength(12);
     expect(boxes.every((b) => !b.checked)).toBe(true); // never pre-ticked
@@ -130,11 +134,14 @@ describe('P-08 single pane of glass', () => {
     if (!reason) throw new Error('no reason field');
     await type(reason, 'Read in full; the plan covers the retry path.');
     await click(boxes[0] as HTMLInputElement);
-    await click(button('Approve'));
+    expect(tab.text()).toContain('1 of 12 read');
+    expect([...dom.window.document.querySelectorAll('ol.line > li')].map((li) => li.getAttribute('data-state'))).toEqual(['done', 'done', 'current', 'pending', 'pending', 'pending', 'pending']); // the task's own line heads the review
+    await click(button('Approve plan'));
     expect(tab.text()).toContain('Approval needs every section reviewed');
     expect((await h.call(riley, 'GET', `/v2/decisions/${decision.id}`)).body).toMatchObject({ state: 'pending' });
     for (const b of boxes.slice(1)) await click(b);
-    await click(button('Approve'));
+    expect(tab.text()).toContain('12 of 12 read');
+    await click(button('Approve plan'));
     await until(() => tab.text().includes('Your answer was sent.'), 'the confirmation');
     await until(() => tab.text().includes('Nothing is waiting on you') || !dom.window.document.querySelector('nav .count'), 'the inbox count to clear');
 
@@ -145,7 +152,7 @@ describe('P-08 single pane of glass', () => {
     expect(mine.text()).toContain('Why do refunds double-post?');
     expect(mine.text()).toContain('Outcome recorded');
     expect(mine.text()).toContain('7 of 7 stages done');
-    expect([...dom.window.document.querySelectorAll('.pipeline li')].map((li) => li.getAttribute('data-state'))).toEqual(Array(7).fill('done'));
+    expect([...dom.window.document.querySelectorAll('ol.line li')].map((li) => li.getAttribute('data-state'))).toEqual(Array(7).fill('done'));
     expect(dom.window.document.querySelector('form[aria-label="Task actions"]')).toBeNull(); // nothing to do to a finished task
     await mine.go('#/projects');
     await until(() => mine.text().includes('Orders API'), 'the project list');
@@ -163,7 +170,7 @@ describe('P-08 single pane of glass', () => {
     const tab = newTab();
     await signIn(tab, dana, `#/tasks/${taskId}`);
     await until(() => tab.text().includes('Waiting on Riley to review the plan'), 'the task page');
-    expect([...dom.window.document.querySelectorAll('.pipeline li')].map((li) => li.getAttribute('data-state'))).toEqual(['done', 'done', 'current', 'pending', 'pending', 'pending', 'pending']);
+    expect([...dom.window.document.querySelectorAll('ol.line li')].map((li) => li.getAttribute('data-state'))).toEqual(['done', 'done', 'current', 'pending', 'pending', 'pending', 'pending']);
     expect(button('Pause').disabled).toBe(true); // no reason yet
     const reason = dom.window.document.querySelector('form[aria-label="Task actions"] input');
     if (!reason) throw new Error('no reason field');

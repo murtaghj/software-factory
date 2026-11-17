@@ -6,7 +6,7 @@ const LABELS: Record<string, string> = {
   // gates
   scope_accepted: 'Scope accepted', plan_peer_approved: 'Plan approved by a peer', review_passed: 'Independent review passed', outcome_recorded: 'Outcome recorded',
   // why something is waiting or stopped
-  budget_exhausted: 'Ran out of budget', decision_expired: 'The review request expired', plan_rejected: 'The plan was rejected',
+  budget_exhausted: 'It ran out of budget', decision_expired: 'The review request expired', plan_rejected: 'The plan was rejected',
   // gate reasons
   criteria_mapped: 'Every criterion is covered', no_blocking_gaps: 'No blocking gaps', exact_subject_peer_approval: 'Approved by the assigned reviewer', no_blocking_findings: 'No blocking findings',
   criteria_unmapped: 'Some criteria are not covered', blocking_context_gap: 'Missing context blocks the work', reviewer_not_independent: 'The reviewer was not independent', unresolved_blocking_findings: 'Blocking findings are unresolved',
@@ -39,6 +39,14 @@ export function relativeTime(iso: string, nowMs: number): string {
   const whole = Math.max(1, Math.floor(amount));
   const text = `${String(whole)} ${unit}${whole === 1 ? '' : 's'}`;
   return then >= nowMs ? `in ${text}` : `${text} ago`;
+}
+
+// "2 days left", "expired": how long a deadline has, in the same rounding as relativeTime.
+export function timeLeft(iso: string, nowMs: number): string {
+  const t = relativeTime(iso, nowMs);
+  if (t === '') return '';
+  if (t === 'just now' || t.endsWith(' ago')) return 'expired';
+  return `${t.slice('in '.length)} left`;
 }
 
 // "$12.34", from micro-dollars. Whole thousands are grouped.
