@@ -2,8 +2,8 @@
 // Loading, polling and sign-in live in app.tsx.
 import type { DecisionView, PlanSectionId, TaskView } from '@factory/contracts';
 import type { InboxItem, Me } from '@factory/client';
-import type { ReactNode } from 'react';
-import { fullTime, label, relativeTime, shortName, timeLeft, usd } from './format.ts';
+import { useEffect, useRef, type ReactNode } from 'react';
+import { askOf, fullTime, label, relativeTime, shortName, timeLeft, usd } from './format.ts';
 import { TaskLine } from './line.tsx';
 import { NAV, href, type Route } from './routes.ts';
 import type { PipelineStep } from './view-model.ts';
@@ -19,8 +19,9 @@ function Fuel({ allowance }: { allowance: AllowanceData }) {
   const left = share(allowance.remainingMicroUsd, allowance.limitMicroUsd);
   return (
     <a className="fuel" href={href.budget} title="Your monthly allowance">
-      <span className="tube" role="img" aria-label={`${String(left)}% of your allowance is left`}><i data-low={left <= LOW_PERCENT ? 'true' : 'false'} style={{ width: `${String(left)}%` }} /></span>
-      <span><strong>{usd(allowance.remainingMicroUsd)}</strong> of {usd(allowance.limitMicroUsd)} left</span>
+      <span className="tube" aria-hidden="true"><i data-low={left <= LOW_PERCENT ? 'true' : 'false'} style={{ width: `${String(left)}%` }} /></span>
+      <span className="visually-hidden">{String(left)}% of your allowance is left. </span>
+      <span><strong>{usd(allowance.remainingMicroUsd)}</strong><span className="of"> of {usd(allowance.limitMicroUsd)}</span> left</span>
     </a>
   );
 }
@@ -30,13 +31,13 @@ function Fuel({ allowance }: { allowance: AllowanceData }) {
 export function Shell({ me, route, inboxCount, allowance, onSignOut, children }: { me: Me; route: Route; inboxCount: number; allowance?: AllowanceData | undefined; onSignOut: () => void; children: ReactNode }) {
   return (
     <div className="shell">
-      <a className="skip" href="#main">Skip to content</a>
+      <a className="skip" href="#main" onClick={(e) => { e.preventDefault(); document.getElementById('main')?.focus(); }}>Skip to content</a>
       <header className="bar">
         <a className="brand" href={href.work}><i aria-hidden="true" />Software factory</a>
         <nav aria-label="Main">
           {NAV.map((n) => (
             <a key={n.href} href={n.href} aria-current={n.pages.includes(route.page) ? 'page' : undefined}>
-              {n.label}{n.href === href.inbox && inboxCount > 0 ? <span className="tok amber count" aria-label={`${String(inboxCount)} waiting on you`}>{inboxCount}</span> : null}
+              {n.label}{n.href === href.inbox && inboxCount > 0 ? <span className="tok amber count">{inboxCount}<span className="visually-hidden"> waiting on you</span></span> : null}
             </a>
           ))}
         </nav>
@@ -121,7 +122,7 @@ export function TaskActions({ task, busy, reason, note, onReason, onCommand }: {
   return (
     <form className="console task-actions" aria-label="Task actions" onSubmit={(e) => { e.preventDefault(); }}>
       <h2>Control this task</h2>
-      <label className="field">Reason<small>Recorded with the action. Required.</small><input type="text" value={reason} onChange={(e) => { onReason(e.target.value); }} placeholder="Why are you pausing or cancelling?" autoComplete="off" /></label>
+      <label className="field">Reason<small>Recorded with the action. Required.</small><input type="text" name="reason" value={reason} onChange={(e) => { onReason(e.target.value); }} placeholder="Why are you pausing or cancelling…" autoComplete="off" /></label>
       <div className="actions">
         {task.status === 'paused' ? <button type="button" className="key" disabled={blocked} onClick={() => { onCommand('resume'); }}>Resume</button> : <button type="button" className="key" disabled={blocked} onClick={() => { onCommand('pause'); }}>Pause</button>}
         <button type="button" className="key refuse" disabled={blocked} onClick={() => { onCommand('cancel'); }}>Cancel task</button>
@@ -133,7 +134,6 @@ export function TaskActions({ task, busy, reason, note, onReason, onCommand }: {
 
 export type ReviewState = { reviewed: PlanSectionId[]; reason: string; problems: string[]; sending: boolean; sent?: string | undefined };
 export type ReviewContext = { project?: string | undefined; askedBy?: string | undefined; steps?: PipelineStep[] | undefined };
-const ASKED: Record<string, string> = { approve_plan: 'approve the plan', confirm_intent: 'confirm the intent', approve_rule_exception: 'approve a rule exception' };
 
 // Reviewing and answering one decision. Sections are ticked by the reviewer, never pre-ticked;
 // the approve button stays available so the reason for a refusal is shown rather than hidden.
@@ -143,8 +143,12 @@ export function DecisionReview({ decision, item, taskTitle, packetUrl, context =
 }) {
   const total = item?.sectionsToReview.length ?? 0;
   const read = state.reviewed.length;
-  const asked = item ? ASKED[item.action] ?? item.label.toLowerCase() : label(decision.action).toLowerCase();
+  const asked = askOf(decision.action).toLowerCase();
   const left = Date.parse(decision.expiresAt) - now;
+  const ready = total === 0 || read >= total;
+  // On a refusal the first problem takes focus, so a keyboard or screen reader user lands on the reason.
+  const firstProblem = useRef<HTMLLIElement>(null);
+  useEffect(() => { if (state.problems.length > 0) firstProblem.current?.focus(); }, [state.problems]);
   return (
     <main aria-labelledby="decision-title" className="page decision-page">
       <header className="review-top">
@@ -155,7 +159,6 @@ export function DecisionReview({ decision, item, taskTitle, packetUrl, context =
             {context.askedBy ? `${shortName(context.askedBy)} asked you to ${asked}` : `You were asked to ${asked}`}{context.project ? ` for ${context.project}` : ''}.{' '}
             {left > 0 ? <><strong><time dateTime={decision.expiresAt} title={fullTime(decision.expiresAt)}>{timeLeft(decision.expiresAt, now)}</time></strong> before the request expires.</> : <strong>The request has expired.</strong>}
           </p>
-          <p className="dim">{decision.reason}.</p>
         </div>
         {packetUrl ? <a className="key tall" href={packetUrl} target="_blank" rel="noreferrer">Open the plan in a new tab</a> : null}
       </header>
@@ -165,11 +168,11 @@ export function DecisionReview({ decision, item, taskTitle, packetUrl, context =
           {total > 0 ? (
             <fieldset className="console sections">
               <legend><h2>Sections of the plan</h2></legend>
-              <p className="hint">Mark each one as you read it. Approval needs all {total === 12 ? 'twelve' : String(total)}.</p>
+              <p className="hint">Mark each one as you read it. Approval needs all {total}.</p>
               <div className="secs" style={{ '--rows': Math.ceil(total / 2) } as React.CSSProperties}>
                 {item.sectionsToReview.map((s, i) => (
                   <label key={s} className="sec" data-read={state.reviewed.includes(s) ? 'true' : 'false'}>
-                    <span className="n">{i + 1}</span><span className="name">{label(s)}</span>
+                    <span className="n" aria-hidden="true">{i + 1}</span><span className="name">{label(s)}</span>
                     <input type="checkbox" className="visually-hidden" checked={state.reviewed.includes(s)} onChange={() => { onToggle(s); }} />
                     <span className="lampbox" aria-hidden="true"><i>&#10003;</i></span>
                   </label>
@@ -179,13 +182,14 @@ export function DecisionReview({ decision, item, taskTitle, packetUrl, context =
           ) : <div className="console"><p className="dim">This request has no plan sections to read.</p></div>}
           <aside className="console verdict" aria-label="Your decision">
             {total > 0 ? <>
-              <p className="count" role="status" aria-live="polite">{read} of {total} read</p>
+              <p className="count" id="read-count" role="status" aria-live="polite">{read} of {total} read</p>
               <div className="dots" aria-hidden="true" style={{ '--total': total } as React.CSSProperties}>{item.sectionsToReview.map((s) => <i key={s} className={state.reviewed.includes(s) ? 'on' : undefined} />)}</div>
             </> : null}
-            <label className="field">Your reason<small>Recorded with your decision.</small><textarea value={state.reason} onChange={(e) => { onReason(e.target.value); }} rows={4} required autoComplete="off" placeholder="What did you check, or what has to change?" /></label>
-            {state.problems.length > 0 ? <ul role="alert" className="problems">{state.problems.map((p) => <li key={p}><span className="lamp red" aria-hidden="true" />{p}</li>)}</ul> : null}
+            <label className="field">Your reason<small>Recorded with your decision.</small><textarea name="reason" value={state.reason} onChange={(e) => { onReason(e.target.value); }} rows={4} required autoComplete="off" placeholder="What did you check, or what has to change…" /></label>
+            {state.problems.length > 0 ? <ul role="alert" className="problems">{state.problems.map((p, i) => <li key={p} ref={i === 0 ? firstProblem : undefined} tabIndex={-1}><span className="lamp red" aria-hidden="true" />{p}</li>)}</ul> : null}
             <div className="acts">
-              <button type="button" className="key on tall" disabled={state.sending} onClick={() => { onAnswer('approve'); }}>{item.label}</button>
+              {/* Lit only when every section is read; until then it is an ordinary key. The server still refuses, and the reason shows in place. */}
+              <button type="button" className={ready ? 'key on tall' : 'key tall'} aria-describedby={total > 0 ? 'read-count' : undefined} disabled={state.sending} onClick={() => { onAnswer('approve'); }}>{item.label}</button>
               <button type="button" className="key tall" disabled={state.sending} onClick={() => { onAnswer('request_changes'); }}>Request changes</button>
               <button type="button" className="key refuse tall" disabled={state.sending} onClick={() => { onAnswer('reject'); }}>{item.action === 'approve_plan' ? 'Reject plan' : 'Reject'}</button>
             </div>

@@ -107,8 +107,8 @@ describe('P-08 single pane of glass', () => {
     expect(tab.deps.location.href).toBe(`${ORIGIN}/#/inbox`); // the code is gone from the address bar
     await until(() => tab.text().includes('1 waiting on you.'), 'the inbox');
     const nav = [...dom.window.document.querySelectorAll('nav a')].map((a) => a.textContent);
-    expect(nav).toEqual(['My work', 'Inbox1', 'Projects', 'Budget']); // the count sits on the inbox link; the bar replaced the sidebar, so projects are listed on their own page
-    expect(dom.window.document.querySelector('nav a[aria-current="page"]')?.textContent).toBe('Inbox1');
+    expect(nav).toEqual(['My work', 'Inbox1 waiting on you', 'Projects', 'Budget']); // the count sits on the inbox link; the bar replaced the sidebar, so projects are listed on their own page
+    expect(dom.window.document.querySelector('nav a[aria-current="page"]')?.textContent).toBe('Inbox1 waiting on you');
     expect(tab.text()).toContain('Riley');
     // The inbox says which task, which project and who is asking, in words.
     await until(() => tab.text().includes('Why do refunds double-post?') && tab.text().includes('Dana') && tab.text().includes('Asked by'), 'the inbox item context');

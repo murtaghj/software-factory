@@ -214,11 +214,15 @@ type DecisionData = { decision: DecisionView; task: TaskView; plan: { planVersio
 function DecisionPage({ get, client, pollMs, now, onUnauthorized, inbox, decisionId }: PageProps & { decisionId: string }) {
   const d = usePolled<DecisionData>(async () => {
     const decision = await get<DecisionView>(`/v2/decisions/${decisionId}`);
-    const task = await get<TaskView>(`/v2/tasks/${decision.taskId}`);
-    // The line and the names are context; the review still works without them.
-    const plan = await get<{ planVersion: number; nodes: PlanNode[] }>(`/v2/tasks/${decision.taskId}/plan`).catch(() => undefined);
-    const runs = plan ? (await get<{ items: RunView[] }>(`/v2/tasks/${decision.taskId}/runs`).catch(() => ({ items: [] as RunView[] }))).items : [];
-    return { decision, task, plan, runs, work: await get<MyWork>('/v2/me/work').catch(() => undefined) };
+    // The task is needed; the line and the names are context, so their failures do not stop the review.
+    // All four are asked at once.
+    const [task, plan, runs, work] = await Promise.all([
+      get<TaskView>(`/v2/tasks/${decision.taskId}`),
+      get<{ planVersion: number; nodes: PlanNode[] }>(`/v2/tasks/${decision.taskId}/plan`).catch(() => undefined),
+      get<{ items: RunView[] }>(`/v2/tasks/${decision.taskId}/runs`).then((r) => r.items).catch(() => [] as RunView[]),
+      get<MyWork>('/v2/me/work').catch(() => undefined),
+    ]);
+    return { decision, task, plan, runs: plan ? runs : [], work };
   }, `decision:${decisionId}`, pollMs, onUnauthorized);
   const [state, setState] = useState<ReviewState>({ reviewed: [], reason: '', problems: [], sending: false });
   useEffect(() => { setState({ reviewed: [], reason: '', problems: [], sending: false }); }, [decisionId]);
@@ -247,12 +251,13 @@ function DecisionPage({ get, client, pollMs, now, onUnauthorized, inbox, decisio
       d.reload();
     })();
   };
-  const toggle = (section: PlanSectionId): void => { setState((s) => ({ ...s, reviewed: s.reviewed.includes(section) ? s.reviewed.filter((x) => x !== section) : [...s.reviewed, section] })); };
+  // A refusal describes the form as it was; once the form changes it is out of date and goes away.
+  const toggle = (section: PlanSectionId): void => { setState((s) => ({ ...s, problems: [], reviewed: s.reviewed.includes(section) ? s.reviewed.filter((x) => x !== section) : [...s.reviewed, section] })); };
   const card = data.work?.needsYou.find((c) => c.taskId === data.decision.taskId);
   const terminal = ['succeeded', 'incomplete', 'failed', 'cancelled'].includes(data.task.status);
   const context = {
     project: card ? data.work?.applications[card.applicationId] : undefined, askedBy: card ? data.work?.people[card.creatorId] : undefined,
     steps: data.plan ? pipelineOf(data.plan.nodes, data.runs, data.plan.planVersion, data.task.currentNodeId, terminal) : undefined,
   };
-  return <DecisionReview decision={data.decision} item={item} taskTitle={data.task.spec.title} packetUrl={packetUrl} context={context} now={now()} state={state} onToggle={toggle} onReason={(reason) => { setState((s) => ({ ...s, reason })); }} onAnswer={answer} />;
+  return <DecisionReview decision={data.decision} item={item} taskTitle={data.task.spec.title} packetUrl={packetUrl} context={context} now={now()} state={state} onToggle={toggle} onReason={(reason) => { setState((s) => ({ ...s, problems: [], reason })); }} onAnswer={answer} />;
 }

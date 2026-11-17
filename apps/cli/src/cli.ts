@@ -188,8 +188,10 @@ export async function run(argv: string[], io: CliIo): Promise<number> {
         ...(note && queue.items.length > 0 ? [note] : []),
         ...(queue.truncated && queue.items.length > 0 ? [`(${TRUNCATED_NOTE.charAt(0).toLowerCase()}${TRUNCATED_NOTE.slice(1).replace(/\.$/, '')})`] : []),
         ...queue.items.map((i) => {
+          // The project is in the sentence for stopped and finished tasks; it is named once, not twice.
+          const text = reasonText(i, queue, now);
           const project = i.subject.applicationId ? queue.applications[i.subject.applicationId] : undefined;
-          return `${String(i.rank)}. [${needLabel(i.need)}] ${i.subject.title}${project ? ` [${project}]` : ''} — ${reasonText(i, queue, now)}  ->  ${command(i)}`;
+          return `${String(i.rank)}. [${needLabel(i.need)}] ${i.subject.title}${project && !text.includes(project) ? ` [${project}]` : ''} — ${text}  ->  ${command(i)}`;
         }),
         ...(work ? MY_WORK_SECTIONS.filter(({ key }) => key === 'inProgress' || key === 'waitingOnOthers').flatMap(({ key, label }) => (work[key].length === 0 ? [] : ['', `${label} (${String(work[key].length)})`, ...work[key].map((c) => `  ${cardLine(c, work.people, work.applications)}`)])) : []),
         '', rulesText(queue).at(-1) ?? '',

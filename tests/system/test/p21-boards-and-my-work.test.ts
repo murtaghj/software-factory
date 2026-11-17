@@ -121,7 +121,7 @@ describe('P-21 project boards and my work', () => {
     expect(await run(['work'], io)).toBe(EXIT.ok);
     // The ranked queue: her stopped task first, then what finished. Ranking is the server's; the CLI prints it in order.
     expect(out[0]).toMatch(/^Next: "Billing: ran out of budget" — Stopped in Billing API (just now|\d+ \w+ ago)\. It ran out of budget\./);
-    expect(out.filter((l) => /^\d+\. /.test(l)).map((l) => l.replace(/ — .*/, ''))).toEqual(['1. [Stopped] Billing: ran out of budget [Billing API]', '2. [Finished] Orders: finished investigation [Orders API]', '3. [Finished] Orders: awaiting plan review [Orders API]']);
+    expect(out.filter((l) => /^\d+\. /.test(l)).map((l) => l.replace(/ — .*/, ''))).toEqual(['1. [Stopped] Billing: ran out of budget', '2. [Finished] Orders: finished investigation', '3. [Finished] Orders: awaiting plan review']);
     expect(out.join('\n')).toContain(`factory status ${billingStopped}`);
     out.length = 0;
     expect(await run(['board', billing], io)).toBe(EXIT.ok);

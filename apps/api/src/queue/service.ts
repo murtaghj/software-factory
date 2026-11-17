@@ -106,6 +106,15 @@ export class QueueService {
     return r.ok ? { keys: new Set(r.value.rows.map((x) => x.item_key)), failed: false } : { keys: new Set(), failed: true };
   }
 
+  // The tasks that are items in the caller's queue right now, so another view can leave them out.
+  async itemTaskIds(p: Principal, requestId?: string): Promise<Set<string>> {
+    return this.tenant(p, async (tx) => {
+      const g = await this.gather(tx, p, requestId);
+      const acks = await this.ackedKeys(tx, p, g.candidates.filter((c) => c.candidate.dismissible).map((c) => keyOf(c.candidate)));
+      return new Set(rankQueue(g.candidates, acks.keys).items.flatMap((i) => (i.subject.taskId ? [i.subject.taskId] : [])));
+    });
+  }
+
   async get(p: Principal, requestId?: string, read?: PlanReader): Promise<Queue> {
     const { queue, rows } = await this.tenant(p, async (tx): Promise<{ queue: Queue; rows: StageRow[] }> => {
       const g = await this.gather(tx, p, requestId);
@@ -116,7 +125,7 @@ export class QueueService {
       // Positions on the line: the items' tasks, plus the caller's own open tasks so the line can be drawn for them too.
       const own = await this.guarded(tx, () => tx.query<{ id: string }>("SELECT t.id FROM factory.task t WHERE (t.creator_id = $1 OR t.owner_principal_id = $1) AND t.primary_application_id = ANY($2::uuid[]) AND t.status NOT IN ('succeeded','incomplete','failed','cancelled') ORDER BY t.updated_at DESC LIMIT 200", [p.principalId, [...g.apps.keys()]]));
       const taskIds = [...items.flatMap((i) => (i.subject.taskId ? [i.subject.taskId] : [])), ...(own.ok ? own.value.rows.map((r) => r.id) : [])];
-      const stageData = await this.guarded(tx, () => stageRows(tx, taskIds));
+      const stageData = await this.guarded(tx, () => stageRows(tx, taskIds, g.apps.keys()));
       const queue: Queue = {
         schema: QUEUE_SCHEMA, principalId: p.principalId, generatedAt: g.now.toISOString(), items, sources: g.sources, stations: [],
         degraded: acks.failed || !names.ok || g.sources.some((s) => s.status !== 'ok'), truncated: truncated || g.truncated, rules: QUEUE_RULES,

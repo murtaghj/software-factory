@@ -14,7 +14,7 @@ export function Tok({ kind, n, words, title }: { kind: LampKind; n?: number | un
   const said = words ?? LAMP_WORDS[kind];
   // Without a number a lit lamp is a plain lamp; the number is what makes it a token for a table row.
   if (n === undefined && (kind === 'amber' || kind === 'red' || kind === 'green')) return <span className={`lamp ${kind}`} title={title ?? said}><span className="visually-hidden">{said}</span></span>;
-  return <span className={`tok ${kind}`} title={title ?? said}>{n}<span className="visually-hidden">{n === undefined ? said : `, ${said.toLowerCase()}`}</span></span>;
+  return <span className={n === undefined ? `tok ${kind}` : `tok ${kind} numbered`} title={title ?? said}>{n}<span className="visually-hidden">{n === undefined ? said : `, ${said.toLowerCase()}`}</span></span>;
 }
 
 const classes = (...names: string[]): string | undefined => names.filter((c) => c !== '').join(' ') || undefined;
@@ -68,15 +68,17 @@ export function TaskLine({ steps, holder, label = 'Stages of this task' }: { ste
   );
 }
 
-// A card's mark: the line in miniature, filled up to the station the task has reached. Draws nothing
-// when the server gave no position.
+// A card's mark: the line in miniature, filled up to the station the task has reached. It draws only the
+// stations of the card's own plan (`stage.count` of them) and says so in words. The merged line is used
+// only to place gates, and only when it is the same length as the card's plan; otherwise just the
+// current station can be known to be a gate. Draws nothing when the server gave no position.
 export function MiniLine({ stations, stage, finished, tone }: { stations: Station[]; stage?: StageDescriptor | undefined; finished?: boolean; tone?: 'stopped' | undefined }): ReactNode {
-  if (!stage || stations.length === 0) return null;
-  const at = stations.findIndex((s) => s.nodeId === stage.nodeId);
-  if (at < 0) return null;
+  if (!stage || stage.index < 1 || stage.index > stage.count) return null;
+  const marks = stations.length === stage.count ? stations.map((s) => s.gate) : Array.from({ length: stage.count }, (_, i) => i + 1 === stage.index && stage.gate);
+  const at = stage.index - 1;
   return (
     <span className="mini" role="img" aria-label={`Stage ${String(stage.index)} of ${String(stage.count)}: ${stage.label}`} {...(tone ? { 'data-tone': tone } : {})}>
-      {stations.map((s, i) => <i key={s.nodeId} className={classes(s.gate ? 'gate' : '', i < at || (finished === true && i === at) ? 'done' : '', i === at && finished !== true ? 'here' : '')} />)}
+      {marks.map((gate, i) => <i key={i} className={classes(gate ? 'gate' : '', i < at || (finished === true && i === at) ? 'done' : '', i === at && finished !== true ? 'here' : '')} />)}
     </span>
   );
 }

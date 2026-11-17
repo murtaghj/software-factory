@@ -120,8 +120,13 @@ describe('P-24 queue ranking', () => {
     expect(validateCandidate(allowance, readable, 'factory.tasks')).toBe('allowance subject from another source');
     expect(validateCandidate(cand('stopped', { reason: { code: 'task_stopped', actorPrincipalId: 'not-a-uuid' } }), readable, 'factory.tasks')).toBe('bad actor');
     expect(validateCandidate(cand('stopped', { reason: { code: 'task_stopped', actorPrincipalId: '3f2c1b9e-8d4a-4f6e-9a1b-2c3d4e5f6a7b' } }), readable, 'factory.tasks')).toBeUndefined();
-    const mismatch = cand('stopped', { subject: { kind: 'task', id: 'a', title: 't', taskId: 'a', applicationId: APP }, action: { kind: 'open_task', taskId: 'b' } });
+    const one = '3f2c1b9e-8d4a-4f6e-9a1b-2c3d4e5f6a7b';
+    const two = '4a2c1b9e-8d4a-4f6e-9a1b-2c3d4e5f6a7b';
+    const mismatch = cand('stopped', { subject: { kind: 'task', id: 'a', title: 't', taskId: one, applicationId: APP }, action: { kind: 'open_task', taskId: two } });
     expect(validateCandidate(mismatch, readable, 'factory.tasks')).toBe('action and subject name different tasks');
+    // A task id that is not a UUID is refused: it is used to look the task up, to place it on the line.
+    const loose = cand('stopped', { subject: { kind: 'task', id: 'a', title: 't', taskId: "x'; DROP TABLE task;--", applicationId: APP }, action: { kind: 'open_task', taskId: "x'; DROP TABLE task;--" } });
+    expect(validateCandidate(loose, readable, 'factory.tasks')).toBe('bad task id');
   });
 
   it('validation: priority is an own property, a decision action needs a UUID, and a shown item must be acknowledgeable', () => {

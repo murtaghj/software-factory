@@ -41,6 +41,7 @@ export function validateCandidate(c: unknown, readable: ReadonlyMap<string, stri
   if (x.subject.kind === 'allowance') {
     if (sourceId !== BUDGET_SOURCE) return 'allowance subject from another source';
   } else if (x.subject.applicationId === undefined || !readable.has(x.subject.applicationId)) return 'application not readable';
+  if (x.subject.taskId !== undefined && (typeof x.subject.taskId !== 'string' || !UUID.test(x.subject.taskId))) return 'bad task id';
   if (x.reason.actorPrincipalId !== undefined && (typeof x.reason.actorPrincipalId !== 'string' || !UUID.test(x.reason.actorPrincipalId))) return 'bad actor';
   if (x.action.kind === 'open_task' && x.subject.taskId !== undefined && x.action.taskId !== x.subject.taskId) return 'action and subject name different tasks';
   return undefined;

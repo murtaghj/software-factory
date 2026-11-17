@@ -41,11 +41,12 @@ export function relativeTime(iso: string, nowMs: number): string {
   return then >= nowMs ? `in ${text}` : `${text} ago`;
 }
 
-// "2 days left", "expired": how long a deadline has, in the same rounding as relativeTime.
+// "2 days left", or "Expired": how long a deadline has, in the same rounding as relativeTime. It is a
+// phrase for a table cell; a sentence handles expiry itself (see reasonText).
 export function timeLeft(iso: string, nowMs: number): string {
   const t = relativeTime(iso, nowMs);
   if (t === '') return '';
-  if (t === 'just now' || t.endsWith(' ago')) return 'expired';
+  if (t === 'just now' || t.endsWith(' ago')) return 'Expired';
   return `${t.slice('in '.length)} left`;
 }
 

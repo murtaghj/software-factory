@@ -23,3 +23,7 @@ export function shortName(name: string): string {
   const cut = name.indexOf('(');
   return (cut > 0 ? name.slice(0, cut) : name).trim();
 }
+
+// What a decision asks of the person, in plain words ("Approve the plan"); the client's labels are for buttons.
+const ASKED: Record<string, string> = { approve_plan: 'Approve the plan', confirm_intent: 'Confirm the intent', approve_rule_exception: 'Approve a rule exception' };
+export const askOf = (action: string): string => ASKED[action] ?? label(action);

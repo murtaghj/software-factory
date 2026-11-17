@@ -197,14 +197,22 @@ export function buildApi(deps: ApiDeps): FastifyInstance {
   });
 
   // Reads a task's plan artifact as the caller (digest-verified), for the stage positions (A-23).
-  const planReader = (req: FastifyRequest): PlanReader => (taskId, ref) => deps.artifacts.readVerified(authContext(req, taskId), ref);
+  // A plan that fails its digest or reference check is an integrity problem: the answer stays soft (the task
+  // simply has no position), but it is logged with the artifact service's own code, `integrity_incident` or `ref_mismatch`.
+  const planReader = (req: FastifyRequest): PlanReader => async (taskId, ref) => {
+    try { return await deps.artifacts.readVerified(authContext(req, taskId), ref); } catch (e) {
+      if (e instanceof ArtifactError && (e.code === 'integrity_incident' || e.code === 'ref_mismatch')) console.error(JSON.stringify({ plan: 'verification_failed', code: e.code, taskId, requestId: req.id }));
+      throw e;
+    }
+  };
   // Project boards and "my work": not in the rev 1.13 OpenAPI (A-18, plan-additions P-21). Read-only.
   const boards = (): BoardService => {
     if (!deps.boards) throw new ApiError(503, 'dependency_unavailable', 'boards are not configured');
     return deps.boards;
   };
   app.get('/v2/me', (req) => boards().me(principalOf(req)));
-  app.get('/v2/me/work', (req) => boards().myWork(principalOf(req), planReader(req)));
+  // "Your other work" leaves out what is already an item in the ranked queue (one task, one row).
+  app.get('/v2/me/work', async (req) => boards().myWork(principalOf(req), planReader(req), deps.queue ? await deps.queue.itemTaskIds(principalOf(req), req.id) : undefined));
   // The ranked "what needs you next" queue and its "Mark as seen": not in the rev 1.13 OpenAPI (A-21,
   // plan-additions P-24). The server ranks; clients render the order they get.
   const queue = (): QueueService => {

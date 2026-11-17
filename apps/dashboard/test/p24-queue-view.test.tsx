@@ -2,6 +2,7 @@
 // the server sent and never sorts; every reason is a sentence, not a code; exact times stay in <time>.
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { timeLeft } from '@factory/client';
 import { QueueView, queueHeadline, reasonText, type Queue, type QueueItem } from '../src/index.ts';
 
 const NOW = Date.parse('2026-11-16T12:00:00Z');
@@ -116,6 +117,23 @@ describe('P-24 the queue view', () => {
     expect(render(queue([]), { work: { ...work, inProgress: [] } })).not.toContain('Your other work');
   });
 
+  it('a deadline that has passed is its own sentence, never "Dana is blocked on you. Expired."', () => {
+    const q = queue([], { people: { dana: 'Dana' } });
+    const past = ask(1, { expiresAt: '2026-11-16T11:00:00Z' });
+    expect(reasonText(past, q, NOW)).toBe('Dana is blocked on you. The request has expired.');
+    expect(reasonText(item(1, { reason: { code: 'review_expiring', actorPrincipalId: 'dana' }, expiresAt: '2026-11-16T11:00:00Z' }), q, NOW)).toBe('Dana has not answered your review request. The request has expired.');
+    expect(timeLeft('2026-11-16T11:00:00Z', NOW)).toBe('Expired'); // as a phrase in a table cell
+    expect(timeLeft(EXPIRES, NOW)).toBe('4 hours left');
+  });
+
+  it('amber means held by you: a review request of yours waiting on someone else is a numbered hollow lamp', () => {
+    const waiting = item(2, { key: 'decision:d2:review_expiring', tier: 2, need: 'running_out', dismissible: false, expiresAt: EXPIRES, subject: { kind: 'decision', id: 'd2', title: 'Waiting', taskId: 't2', applicationId: 'app-1' }, reason: { code: 'review_expiring', actorPrincipalId: 'riley' }, action: { kind: 'open_task', taskId: 't2' } });
+    const html = render(queue([ask(1), waiting]));
+    expect(html).toContain('class="tok amber numbered"');
+    expect(html).toContain('class="tok else numbered"');
+    expect(html.match(/class="tok amber numbered"/g)).toHaveLength(1);
+  });
+
   it('the wording of every reason and the headline, exactly: plain sentences', () => {
     const q = queue([], { people: { dana: 'Dana', riley: 'Riley' } });
     const text = (over: Partial<QueueItem>) => reasonText(item(1, over), q, NOW);
@@ -138,7 +156,7 @@ describe('P-24 the queue view', () => {
   it('draws the line from the server\'s stations, puts numbered lamps where the server says, and leaves off a lamp whose station is not on the line', () => {
     const at = (nodeId: string) => ({ nodeId, label: nodeId, index: 1, count: 3, gate: nodeId === 'plan_review' });
     const html = render(queue([ask(1, { stage: at('plan_review') }), ask(2, { stage: at('plan_review') }), item(3, { stage: at('close') }), item(4, { stage: at('somewhere_else') }), item(5)]));
-    const lamps = [...html.matchAll(/<li( class="gate")? data-lamps="(\w+)"><div class="toks">(.*?)<\/div><span class="mark"[^>]*><\/span><span class="name">([^<]+)</g)].map((m) => [m[4], m[2], [...(m[3] ?? '').matchAll(/class="tok (\w+)"[^>]*>(\d+)/g)].map((l) => `${String(l[1])}${String(l[2])}`)]);
+    const lamps = [...html.matchAll(/<li( class="gate")? data-lamps="(\w+)"><div class="toks">(.*?)<\/div><span class="mark"[^>]*><\/span><span class="name">([^<]+)</g)].map((m) => [m[4], m[2], [...(m[3] ?? '').matchAll(/class="tok (\w+)(?: numbered)?"[^>]*>(\d+)/g)].map((l) => `${String(l[1])}${String(l[2])}`)]);
     expect(lamps).toEqual([['Scope', 'false', []], ['Plan review', 'true', ['amber1', 'amber2']], ['Close', 'true', ['green3']]]);
     expect(html).toContain('<li class="gate"'); // the gate is marked
     expect(html).toContain('a person signs here');

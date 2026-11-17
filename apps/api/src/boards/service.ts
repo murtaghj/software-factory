@@ -121,7 +121,7 @@ export class BoardService {
         spentThisMonthMicroUsd: Number(spent.rows[0]?.total ?? 0), people: await this.names(tx, cards),
         truncated: active.rows.length > ACTIVE_CAP || finished.rows.length > FINISHED_CAP,
       };
-      return { board, rows: await stageRows(tx, cards.map((c) => c.taskId)) };
+      return { board, rows: await stageRows(tx, cards.map((c) => c.taskId), [applicationId]) };
     });
     // Plans are read after the tenant transaction ends, so a read never holds two connections.
     const { stations, stages } = await resolveStages(rows, read);
@@ -129,7 +129,9 @@ export class BoardService {
     return { ...board, stations };
   }
 
-  async myWork(p: Principal, read?: PlanReader): Promise<MyWork> {
+  // `queued` is the set of tasks that are already items in the person's ranked queue: they are left out
+  // of the lists "Your other work" is made from, so one task never shows twice (A-21: the server decides).
+  async myWork(p: Principal, read?: PlanReader, queued?: ReadonlySet<string>): Promise<MyWork> {
     const { work, rows } = await this.tenant(p, async (tx) => {
       const apps = await readableApplications(tx, p);
       const readable = [...apps.keys()];
@@ -142,14 +144,14 @@ export class BoardService {
       const work: MyWork = {
         principalId: p.principalId, generatedAt: new Date().toISOString(), needsYou,
         stopped: own.filter((c) => c.status === 'failed' || c.status === 'incomplete').sort(newestFirst),
-        waitingOnOthers: own.filter((c) => (c.column === 'waiting' || c.column === 'paused') && c.waitingOnPrincipalId !== p.principalId).sort(oldestFirst),
-        inProgress: own.filter((c) => c.column === 'queued' || c.column === 'running').sort(oldestFirst),
+        waitingOnOthers: own.filter((c) => (c.column === 'waiting' || c.column === 'paused') && c.waitingOnPrincipalId !== p.principalId && !queued?.has(c.taskId)).sort(oldestFirst),
+        inProgress: own.filter((c) => (c.column === 'queued' || c.column === 'running') && !queued?.has(c.taskId)).sort(oldestFirst),
         recentlyDone: own.filter((c) => c.status === 'succeeded' || c.status === 'cancelled').sort(newestFirst),
         applications: Object.fromEntries([...new Set(all.map((c) => c.applicationId))].map((id) => [id, apps.get(id) ?? ''])),
         people: await this.names(tx, all, [p.principalId]),
         truncated: mine.rows.length > ACTIVE_CAP || asked.rows.length > ACTIVE_CAP,
       };
-      return { work, rows: await stageRows(tx, all.map((c) => c.taskId)) };
+      return { work, rows: await stageRows(tx, all.map((c) => c.taskId), readable) };
     });
     const { stages } = await resolveStages(rows, read);
     for (const c of [...work.needsYou, ...work.stopped, ...work.waitingOnOthers, ...work.inProgress, ...work.recentlyDone]) { const stage = stages.get(c.taskId); if (stage) c.stage = stage; }

@@ -51,10 +51,11 @@ describe('P-02 decision inbox', () => {
 
   it('renders text, not markup; says when nothing is waiting; and gives an expired item no answer link', () => {
     const href = { taskHref: (id: string) => `/tasks/${id}`, decisionHref: (id: string) => `/decisions/${id}` };
-    const html = renderToStaticMarkup(<DecisionInbox model={inboxModel([decision('1'), decision('4', { expiresAt: '2026-11-12T11:00:00Z' })], NOW)} {...href} now={NOW} context={{ '00000000-0000-4000-8000-0000000000aa': { title: 'Why is checkout slow?', project: 'Orders API', askedBy: 'Dana (developer)' } }} />);
-    expect(html).toContain('&lt;b&gt;packet&lt;/b&gt;');
-    expect(html).not.toContain('<b>packet</b>');
-    expect(html).toContain('Why is checkout slow?'); // which task, which project, who is asking
+    const html = renderToStaticMarkup(<DecisionInbox model={inboxModel([decision('1'), decision('4', { expiresAt: '2026-11-12T11:00:00Z' })], NOW)} {...href} now={NOW} context={{ '00000000-0000-4000-8000-0000000000aa': { title: 'Why is <i>checkout</i> slow?', project: 'Orders API', askedBy: 'Dana (developer)' } }} />);
+    expect(html).not.toContain('packet'); // the worker's jargon reason is not shown; the column says what is asked, in plain words
+    expect(html).toContain('Approve the plan');
+    expect(html).not.toContain('class="at"'); // and the title is not repeated under itself
+    expect(html).toContain('Why is &lt;i&gt;checkout&lt;/i&gt; slow?'); // which task (as text), which project, who is asking
     expect(html).toContain('Orders API');
     expect(html).toContain('Asked by');
     expect(html).toContain('>Dana<'); // "(developer)" is dropped

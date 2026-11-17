@@ -63,13 +63,14 @@ export function reasonOf(item: QueueItem, queue: Pick<Queue, 'people'>): { lead:
 export function reasonText(item: QueueItem, queue: Pick<Queue, 'people'> & Partial<Pick<Queue, 'applications'>>, nowMs: number): string {
   const r = item.reason;
   const { lead } = reasonOf(item, queue);
-  const left = item.expiresAt === undefined ? '' : timeLeft(item.expiresAt, nowMs);
+  const gone = item.expiresAt !== undefined && Date.parse(item.expiresAt) <= nowMs; // the deadline has passed
+  const left = item.expiresAt === undefined || gone ? '' : timeLeft(item.expiresAt, nowMs);
   const where = item.subject.applicationId ? queue.applications?.[item.subject.applicationId] : undefined;
   const ago = relativeTime(item.since, nowMs);
   const started = (verb: string): string => [verb, where ? `in ${where}` : '', ago].filter((x) => x !== '').join(' ');
   switch (r.code) {
-    case 'answer_needed': return left ? `${lead}. ${left}.` : `${lead}.`;
-    case 'review_expiring': return left ? `${lead}. ${left}, and the task stops if it expires.` : `${lead}. The task stops if it expires.`;
+    case 'answer_needed': return gone ? `${lead}. The request has expired.` : left ? `${lead}. ${left}.` : `${lead}.`;
+    case 'review_expiring': return gone ? `${lead}. The request has expired.` : left ? `${lead}. ${left}, and the task stops if it expires.` : `${lead}. The task stops if it expires.`;
     case 'allowance_low': return `You have ${usd(r.remainingMicroUsd)} left of your ${usd(r.limitMicroUsd)} allowance this month.`;
     case 'allowance_used_up': return `${lead}. New tasks are refused until it is raised.`;
     case 'task_stopped': return r.detailCode ? `${started('Stopped')}. ${lead}.` : `${started('Stopped')}.`;

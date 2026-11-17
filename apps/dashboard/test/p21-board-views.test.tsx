@@ -32,6 +32,10 @@ describe('P-21 board view', () => {
     expect(placed).toContain('role="img" aria-label="Stage 2 of 3: Plan review"');
     expect(placed).toContain('<i class="done"></i><i class="gate here"></i><i></i>');
     expect(html).not.toContain('class="mini"'); // no position from the server: no mark
+    // A merged line longer than the card's own plan is not drawn: only the card's own 3 stations, and the words match.
+    const own = renderToStaticMarkup(<BoardView board={{ ...board, stations: [...LINE, { nodeId: 'extra', label: 'Extra', gate: false }, { nodeId: 'more', label: 'More', gate: false }], columns: { ...board.columns, running: [card(4, { title: 'Own', stage: { nodeId: 'investigate', label: 'Investigate', index: 3, count: 3, gate: false } })] } }} taskHref={href} now={Date.parse('2026-11-13T12:00:00Z')} />);
+    expect(own).toContain('aria-label="Stage 3 of 3: Investigate"');
+    expect(own).toContain('<i class="done"></i><i class="done"></i><i class="here"></i></span>'); // three marks, no more
     expect(html).toContain('href="/tasks/t3"');
     expect(html).not.toMatch(/<button|<form|<input|draggable/);
     expect(renderToStaticMarkup(<BoardView board={{ ...board, truncated: true }} taskHref={href} />)).toContain('too large to show in full');

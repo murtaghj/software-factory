@@ -3,7 +3,7 @@
 // format.ts and @factory/client, and exact times are available as tooltips and <time> values.
 import { BOARD_COLUMNS, COLUMN_LABELS, DISMISS_LABEL, TRUNCATED_NOTE, actionOf, degradedNote, needLabel, queueHeadline, reasonOf, rulesText, type Board, type InboxModel, type MyWork, type Queue, type QueueItem, type TaskCard } from '@factory/client';
 import type { ReactNode } from 'react';
-import { fullTime, label, relativeTime, shortName, statusOf, timeLeft, usd } from './format.ts';
+import { askOf, fullTime, label, relativeTime, shortName, statusOf, timeLeft, usd } from './format.ts';
 import { LineLegend, MiniLine, TaskLine, Tok, WorkLine, type Lamp, type LampKind } from './line.tsx';
 import type { TaskModel, PipelineStep } from './view-model.ts';
 
@@ -17,7 +17,7 @@ function Left({ iso, now }: { iso: string; now: number }) {
 export function FreshnessBanner({ freshness }: { freshness: TaskModel['freshness'] }) {
   return (
     <p role="status" aria-live="polite" data-stale={freshness.stale ? 'true' : 'false'} data-connection={freshness.connection} className={freshness.stale ? 'fresh fresh-stale' : 'fresh'}>
-      <span className={freshness.stale ? 'lamp amber' : 'lamp green'} aria-hidden="true" />{freshness.message}
+      <span className={freshness.stale ? 'lamp else' : 'lamp'} aria-hidden="true" />{freshness.message}
     </p>
   );
 }
@@ -52,6 +52,8 @@ export type QueueLinks = { taskHref: (taskId: string) => string; decisionHref: (
 const itemHref = (i: QueueItem, l: QueueLinks): string => (i.action.kind === 'answer_decision' ? l.decisionHref(i.action.decisionId) : i.action.kind === 'open_task' ? l.taskHref(i.action.taskId) : l.budgetHref);
 // Held by you, stopped, finished: the three lamps a numbered row can have.
 const LAMP_OF_NEED: Record<string, LampKind> = { blocked_on_you: 'amber', running_out: 'amber', stopped: 'red', finished: 'green' };
+// Amber is "held by you" and nothing else: a review request you made, waiting on someone, is a hollow lamp.
+const lampOf = (i: QueueItem): LampKind => (i.reason.code === 'review_expiring' ? 'else' : LAMP_OF_NEED[i.need] ?? 'amber');
 const NEED_FOCUS: Record<string, string> = { blocked_on_you: 'answer', running_out: 'answer', stopped: 'look', finished: 'clear' };
 
 // What a task that is not asking anything of you is doing, in a sentence, and the time that goes with it.
@@ -76,7 +78,7 @@ export function QueueView({ queue, work, links, onDismiss, now = Date.now() }: {
   const rules = rulesText(queue);
   const lamps: Record<string, Lamp[]> = {};
   const put = (nodeId: string, l: Lamp): void => { (lamps[nodeId] ??= []).push(l); };
-  for (const i of queue.items) if (i.stage) put(i.stage.nodeId, { key: i.key, kind: LAMP_OF_NEED[i.need] ?? 'amber', n: i.rank, words: needLabel(i.need), title: i.subject.title });
+  for (const i of queue.items) if (i.stage) put(i.stage.nodeId, { key: i.key, kind: lampOf(i), n: i.rank, words: needLabel(i.need), title: i.subject.title });
   const others = work ? other.map((c) => ({ card: c, ...otherLine(c, work.people, now) })) : [];
   for (const o of others) if (o.card.stage) put(o.card.stage.nodeId, { key: `other:${o.card.taskId}`, kind: o.kind, title: o.card.title });
   return (
@@ -90,8 +92,8 @@ export function QueueView({ queue, work, links, onDismiss, now = Date.now() }: {
         <WorkLine stations={queue.stations} lamps={lamps} label="Stages, with your tasks at the stage they have reached" />
       </section>
       <section className="band table-band">
-        {note ? <p className="note" role="status"><span className="lamp amber" aria-hidden="true" />{note}</p> : null}
-        {queue.truncated && queue.items.length > 0 ? <p className="note" role="status"><span className="lamp amber" aria-hidden="true" />{TRUNCATED_NOTE}</p> : null}
+        {note ? <p className="note" role="status"><span className="lamp" aria-hidden="true" />{note}</p> : null}
+        {queue.truncated && queue.items.length > 0 ? <p className="note" role="status"><span className="lamp" aria-hidden="true" />{TRUNCATED_NOTE}</p> : null}
         {queue.items.length === 0 ? (
           <p className="empty" role="status" aria-live="polite" data-focus="clear">{queueHeadline(queue, now)}</p>
         ) : (
@@ -105,11 +107,11 @@ export function QueueView({ queue, work, links, onDismiss, now = Date.now() }: {
                 const href = itemHref(item, links);
                 return (
                   <tr key={item.key} className={i === 0 ? 'first' : undefined} data-key={item.key} data-tier={item.tier} {...(i === 0 ? { 'data-focus': NEED_FOCUS[item.need] ?? 'clear' } : {})}>
-                    <td className="num"><Tok kind={LAMP_OF_NEED[item.need] ?? 'amber'} n={item.rank} words={needLabel(item.need)} /></td>
+                    <td className="num"><Tok kind={lampOf(item)} n={item.rank} words={needLabel(item.need)} /></td>
                     <td className="task">
                       <a className="t" href={href}>{item.subject.title || 'Untitled task'}</a>
                       {item.priority === 'incident' ? <span className="flag">Incident</span> : null}
-                      {item.stage ? <span className="at">{item.stage.label}</span> : null}
+                      {item.stage ? <span className="at">{item.need === 'stopped' && item.reason.code === 'task_stopped' ? 'Stopped at' : 'At'} {item.stage.label}</span> : null}
                     </td>
                     <td className="why">{lead}</td>
                     <td className="proj">{project}</td>
@@ -138,7 +140,7 @@ export function QueueView({ queue, work, links, onDismiss, now = Date.now() }: {
                 {others.map(({ card, kind, why, when }) => (
                   <tr key={card.taskId}>
                     <td className="num"><Tok kind={kind} /></td>
-                    <td className="task"><a className="t" href={links.taskHref(card.taskId)}>{card.title}</a>{card.stage ? <span className="at">{card.stage.label}</span> : null}</td>
+                    <td className="task"><a className="t" href={links.taskHref(card.taskId)}>{card.title}</a>{card.stage ? <span className="at">At {card.stage.label}</span> : null}</td>
                     <td className="why">{why}</td>
                     <td className="proj">{work.applications[card.applicationId]}</td>
                     <td className="when">{when}</td>
@@ -162,12 +164,12 @@ export function BoardView({ board, taskHref, now = Date.now() }: { board: Board;
         <h1 id="board-title">{board.name}</h1>
         <ul className="facts">
           <li><strong>{active}</strong> active</li>
-          <li data-tone={board.needsPerson.length > 0 ? 'amber' : 'none'}><strong>{board.needsPerson.length}</strong> waiting on a person</li>
+          <li data-tone={board.needsPerson.length > 0 ? 'wait' : 'none'}><strong>{board.needsPerson.length}</strong> waiting on a person</li>
           <li><strong>{usd(board.spentThisMonthMicroUsd)}</strong> spent this month</li>
           <li className="dim">updated <When iso={board.generatedAt} now={now} /></li>
         </ul>
       </header>
-      {board.truncated ? <p className="note" role="status"><span className="lamp amber" aria-hidden="true" />This board is too large to show in full; some tasks are not listed.</p> : null}
+      {board.truncated ? <p className="note" role="status"><span className="lamp" aria-hidden="true" />This board is too large to show in full; some tasks are not listed.</p> : null}
       <div className="board" role="list" aria-label={`${board.name} board`}>
         {BOARD_COLUMNS.map((col) => (
           <section key={col} role="listitem" className="column" aria-labelledby={`board-${col}`} data-column={col} data-empty={board.columns[col].length === 0 ? 'true' : 'false'}>
@@ -263,10 +265,10 @@ export function DecisionInbox({ model, taskHref, decisionHref, context = {}, now
               return (
                 <tr key={i.id} className={n === 0 && i.urgency !== 'expired' ? 'first' : undefined} data-urgency={i.urgency}>
                   <td className="num"><Tok kind={i.urgency === 'expired' ? 'else' : 'amber'} words={i.urgency === 'expired' ? 'Expired' : i.urgency === 'soon' ? 'Expires within a day' : 'Waiting on you'} /></td>
-                  <td className="task"><a className="t" href={taskHref(i.taskId)}>{c?.title ?? i.label}</a><span className="at">{i.label}</span></td>
-                  <td className="why">{i.reason}</td>
+                  <td className="task"><a className="t" href={taskHref(i.taskId)}>{c?.title ?? i.label}</a></td>
+                  <td className="why">{askOf(i.action)}</td>
                   <td className="proj">{c?.project}</td>
-                  <td className="proj">{c?.askedBy ? shortName(c.askedBy) : null}</td>
+                  <td className="proj asker">{c?.askedBy ? shortName(c.askedBy) : null}</td>
                   <td className="when">{i.urgency === 'expired' ? 'Expired' : <Left iso={i.expiresAt} now={now} />}</td>
                   <td className="act">{i.urgency === 'expired' ? <span className="dim">No longer answerable</span> : <a className={n === 0 ? 'key on' : 'key'} href={decisionHref(i.id)}>Review</a>}</td>
                 </tr>

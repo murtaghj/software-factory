@@ -178,8 +178,8 @@ describe('P-24 queue sources fail one at a time', () => {
 
   it('when the acknowledgement lookup fails the list is degraded even though every source answered', async () => {
     const dismissible: QueueAdapter = { id: 'test.dismissible', kind: 'factory', collect: () => Promise.resolve({ truncated: false, items: [{
-      need: 'finished', dismissible: true, priority: 'normal', since: '2026-11-01T00:00:00Z', subject: { kind: 'task', id: 'x', title: 'Done', taskId: 'x', applicationId: h.a.applicationId },
-      reason: { code: 'task_finished' }, action: { kind: 'open_task', taskId: 'x' },
+      need: 'finished', dismissible: true, priority: 'normal', since: '2026-11-01T00:00:00Z', subject: { kind: 'task', id: 'x', title: 'Done', taskId: '3f2c1b9e-8d4a-4f6e-9a1b-2c3d4e5f6a7b', applicationId: h.a.applicationId },
+      reason: { code: 'task_finished' }, action: { kind: 'open_task', taskId: '3f2c1b9e-8d4a-4f6e-9a1b-2c3d4e5f6a7b' },
     } satisfies QueueCandidate] }) };
     const migrator = new pg.Client({ connectionString: h.m.migratorUrl });
     await migrator.connect();
