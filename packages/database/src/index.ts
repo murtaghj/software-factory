@@ -6,3 +6,4 @@ export * from './testing.ts';
 export * from './projection.ts';
 export * from './budget.ts';
 export * from './workspace.ts';
+export * from './allocation.ts';

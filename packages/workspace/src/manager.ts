@@ -33,6 +33,10 @@ export interface WorkspaceManagerService extends ServiceInterfaces.WorkspaceMana
   materializationRequest(ctx: AuthContext, id: string, expectedEpoch: number): Promise<MaterializationRequestResult>;
   acceptMaterialization(ctx: AuthContext, id: string, expectedEpoch: number, receipt: MaterializeReceipt): Promise<WorkspaceRecord>;
   markWriterStarted(ctx: AuthContext, id: string, expectedEpoch: number, podUid: string): Promise<WorkspaceRecord>;
+  // W-017 (D17): the writer's pod is being stopped (`active` to `quiescing`), then shown stopped (`quiescing` to `retained`).
+  // `retained` is the state `release` and `replaceWriter` already accept; nothing here touches a volume.
+  markWriterQuiescing(ctx: AuthContext, id: string, expectedEpoch: number, podUid: string): Promise<WorkspaceRecord>;
+  markWriterStopped(ctx: AuthContext, id: string, expectedEpoch: number, podUid: string): Promise<WorkspaceRecord>;
   replaceWriter(ctx: AuthContext, id: string, expectedEpoch: number): Promise<ReplaceWriterOutcome>;
   release(ctx: AuthContext, id: string, expectedEpoch: number): Promise<ReleaseOutcome>;
 }
@@ -266,6 +270,38 @@ export function createWorkspaceManager(o: WorkspaceManagerOptions): WorkspaceMan
         if (row.state !== 'allocated') throw new WorkspaceError('invalid_state', `a writer can start only on an allocated workspace, not ${row.state}`);
         if (!(await acceptedReceipt(tx, row))) throw new WorkspaceError('invalid_state', 'no accepted materialization for the current generation');
         const next = await transitionWorkspace(tx, { orgId: row.orgId, id, expectedEpoch, from: ['allocated'], expectedGeneration: row.generation, patch: { state: 'active', ownerPodUid: podUid } });
+        if (!next) throw new WorkspaceError('stale_epoch', 'workspace changed under the lock');
+        return record(next);
+      });
+    },
+
+    async markWriterQuiescing(ctx, id, expectedEpoch, podUid) {
+      await requireRunner(ctx, 'workspace.mark_writer_quiescing', id);
+      if (typeof podUid !== 'string' || podUid === '') throw new WorkspaceError('invalid_request', 'podUid is required');
+      return db.withTenant({ orgId: ctx.orgId }, async (tx) => {
+        const row = await lockOrThrow(tx, ctx, id);
+        checkEpoch(row, expectedEpoch);
+        // A repeat is a no-op, and a writer that is already shown stopped has nothing left to quiesce.
+        if ((row.state === 'quiescing' || row.state === 'retained') && row.ownerPodUid === podUid) return record(row);
+        if (row.state !== 'active') throw new WorkspaceError('invalid_state', `only an active workspace can start quiescing, not ${row.state}`);
+        if (row.ownerPodUid !== podUid) throw new WorkspaceError('conflict', 'the workspace is held by another pod');
+        const next = await transitionWorkspace(tx, { orgId: row.orgId, id, expectedEpoch, from: ['active'], expectedGeneration: row.generation, patch: { state: 'quiescing' } });
+        if (!next) throw new WorkspaceError('stale_epoch', 'workspace changed under the lock');
+        return record(next);
+      });
+    },
+
+    async markWriterStopped(ctx, id, expectedEpoch, podUid) {
+      await requireRunner(ctx, 'workspace.mark_writer_stopped', id);
+      if (typeof podUid !== 'string' || podUid === '') throw new WorkspaceError('invalid_request', 'podUid is required');
+      return db.withTenant({ orgId: ctx.orgId }, async (tx) => {
+        const row = await lockOrThrow(tx, ctx, id);
+        checkEpoch(row, expectedEpoch);
+        if (row.state === 'retained' && row.ownerPodUid === podUid) return record(row);
+        if (row.state !== 'quiescing') throw new WorkspaceError('invalid_state', `only a quiescing workspace can be shown stopped, not ${row.state}`);
+        if (row.ownerPodUid !== podUid) throw new WorkspaceError('conflict', 'the workspace is held by another pod');
+        // The caller has the proof that no process of this writer is left (06-runner-workspaces.md:100); the work stays on its volume.
+        const next = await transitionWorkspace(tx, { orgId: row.orgId, id, expectedEpoch, from: ['quiescing'], expectedGeneration: row.generation, patch: { state: 'retained' } });
         if (!next) throw new WorkspaceError('stale_epoch', 'workspace changed under the lock');
         return record(next);
       });

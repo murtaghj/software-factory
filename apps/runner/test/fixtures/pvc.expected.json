@@ -1,0 +1,33 @@
+{
+  "apiVersion": "v1",
+  "kind": "PersistentVolumeClaim",
+  "metadata": {
+    "name": "factory-ws-b7oarlk2aytcod6z4d63-g1",
+    "namespace": "factory-exec-local",
+    "labels": {
+      "factory.local/org": "00000000-0000-4000-8000-000000000001",
+      "factory.local/task": "00000000-0000-4000-8000-000000000002",
+      "factory.local/workspace": "00000000-0000-4000-8000-000000000003",
+      "factory.local/generation": "1"
+    },
+    "annotations": {
+      "factory.local/org": "00000000-0000-4000-8000-000000000001",
+      "factory.local/task": "00000000-0000-4000-8000-000000000002",
+      "factory.local/allocation": "6d6363a2-a415-8491-9af4-367374fd9aac",
+      "factory.local/stage-run-full": "task-00000000-0000-4000-8000-000000000002/plan-1/implement/attempt-1",
+      "factory.local/spec-hash-full": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "factory.local/owner-epoch": "1"
+    }
+  },
+  "spec": {
+    "accessModes": [
+      "ReadWriteOncePod"
+    ],
+    "storageClassName": "local-path",
+    "resources": {
+      "requests": {
+        "storage": "2Gi"
+      }
+    }
+  }
+}

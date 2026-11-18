@@ -79,6 +79,20 @@
       ],
       "denyExternal": []
     },
+    "@factory/runner": {
+      "allowWorkspace": [
+        "@factory/contracts",
+        "@factory/domain",
+        "@factory/database",
+        "@factory/artifacts",
+        "@factory/workspace",
+        "@factory/test-support"
+      ],
+      "denyExternal": [
+        "@temporalio/",
+        "fastify"
+      ]
+    },
     "@factory/api": {
       "allowWorkspace": [
         "@factory/contracts",

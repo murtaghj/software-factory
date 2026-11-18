@@ -1,0 +1,234 @@
+{
+  "apiVersion": "batch/v1",
+  "kind": "Job",
+  "metadata": {
+    "name": "factory-pivtiima6zxpahjnxf4d-g1",
+    "namespace": "factory-exec-local",
+    "labels": {
+      "factory.local/org": "00000000-0000-4000-8000-000000000001",
+      "factory.local/task": "00000000-0000-4000-8000-000000000002",
+      "factory.local/allocation": "6d6363a2-a415-8491-9af4-367374fd9aac",
+      "factory.local/workspace": "00000000-0000-4000-8000-000000000003",
+      "factory.local/generation": "1",
+      "factory.local/stage-run": "f58385b75cd9871425ec44b8ecc48713",
+      "factory.local/spec-hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+    },
+    "annotations": {
+      "factory.local/org": "00000000-0000-4000-8000-000000000001",
+      "factory.local/task": "00000000-0000-4000-8000-000000000002",
+      "factory.local/allocation": "6d6363a2-a415-8491-9af4-367374fd9aac",
+      "factory.local/stage-run-full": "task-00000000-0000-4000-8000-000000000002/plan-1/implement/attempt-1",
+      "factory.local/spec-hash-full": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "factory.local/owner-epoch": "1",
+      "factory.local/manifest-digest": "158bad3bacc9344534d9c0cc618f8406451cb967cb8a13832f9a0701335f37b5"
+    }
+  },
+  "spec": {
+    "backoffLimit": 0,
+    "activeDeadlineSeconds": 3000,
+    "template": {
+      "metadata": {
+        "labels": {
+          "factory.local/org": "00000000-0000-4000-8000-000000000001",
+          "factory.local/task": "00000000-0000-4000-8000-000000000002",
+          "factory.local/allocation": "6d6363a2-a415-8491-9af4-367374fd9aac",
+          "factory.local/workspace": "00000000-0000-4000-8000-000000000003",
+          "factory.local/generation": "1",
+          "factory.local/stage-run": "f58385b75cd9871425ec44b8ecc48713",
+          "factory.local/spec-hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "annotations": {
+          "factory.local/org": "00000000-0000-4000-8000-000000000001",
+          "factory.local/task": "00000000-0000-4000-8000-000000000002",
+          "factory.local/allocation": "6d6363a2-a415-8491-9af4-367374fd9aac",
+          "factory.local/stage-run-full": "task-00000000-0000-4000-8000-000000000002/plan-1/implement/attempt-1",
+          "factory.local/spec-hash-full": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "factory.local/owner-epoch": "1",
+          "factory.local/manifest-digest": "158bad3bacc9344534d9c0cc618f8406451cb967cb8a13832f9a0701335f37b5"
+        }
+      },
+      "spec": {
+        "restartPolicy": "Never",
+        "terminationGracePeriodSeconds": 15,
+        "serviceAccountName": "factory-allocation-supervisor",
+        "automountServiceAccountToken": false,
+        "shareProcessNamespace": false,
+        "securityContext": {
+          "runAsNonRoot": true,
+          "fsGroup": 10001,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        },
+        "enableServiceLinks": false,
+        "initContainers": [
+          {
+            "name": "materialize",
+            "image": "factory-materializer:local",
+            "args": [
+              "materialize",
+              "--request",
+              "{\"branch\":\"factory/00000000-0000-4000-8000-000000000002/main\",\"cloneUrl\":\"https://git.example.test/org/repo.git\",\"commit\":\"cccccccccccccccccccccccccccccccccccccccc\",\"kind\":\"remote\",\"subpath\":\"\",\"target\":{\"generation\":1,\"orgId\":\"00000000-0000-4000-8000-000000000001\",\"workspaceId\":\"00000000-0000-4000-8000-000000000003\"},\"taskId\":\"00000000-0000-4000-8000-000000000002\"}"
+            ],
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "readOnlyRootFilesystem": true,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              },
+              "runAsUser": 10001,
+              "runAsGroup": 10001
+            },
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "128Mi",
+                "ephemeral-storage": "64Mi"
+              },
+              "limits": {
+                "cpu": "1",
+                "memory": "512Mi",
+                "ephemeral-storage": "1Gi"
+              }
+            },
+            "volumeMounts": [
+              {
+                "name": "workspace",
+                "mountPath": "/workspace"
+              }
+            ],
+            "terminationMessagePolicy": "File"
+          }
+        ],
+        "containers": [
+          {
+            "name": "supervisor",
+            "image": "factory-stub:local",
+            "args": [
+              "serve",
+              "--allocation",
+              "6d6363a2-a415-8491-9af4-367374fd9aac"
+            ],
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "readOnlyRootFilesystem": true,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              },
+              "runAsUser": 10002,
+              "runAsGroup": 10002
+            },
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "128Mi",
+                "ephemeral-storage": "64Mi"
+              },
+              "limits": {
+                "cpu": "1",
+                "memory": "512Mi",
+                "ephemeral-storage": "1Gi"
+              }
+            },
+            "volumeMounts": [
+              {
+                "name": "workspace",
+                "mountPath": "/workspace",
+                "readOnly": true
+              },
+              {
+                "name": "supervisor-tmp",
+                "mountPath": "/tmp"
+              },
+              {
+                "name": "factory-identity",
+                "mountPath": "/var/run/factory-identity",
+                "readOnly": true
+              }
+            ],
+            "terminationMessagePolicy": "File"
+          },
+          {
+            "name": "harness",
+            "image": "factory-stub:local",
+            "args": [
+              "harness"
+            ],
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "readOnlyRootFilesystem": true,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              },
+              "runAsUser": 10001,
+              "runAsGroup": 10001
+            },
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "128Mi",
+                "ephemeral-storage": "64Mi"
+              },
+              "limits": {
+                "cpu": "1",
+                "memory": "512Mi",
+                "ephemeral-storage": "1Gi"
+              }
+            },
+            "volumeMounts": [
+              {
+                "name": "workspace",
+                "mountPath": "/workspace"
+              },
+              {
+                "name": "harness-tmp",
+                "mountPath": "/tmp"
+              }
+            ],
+            "terminationMessagePolicy": "File"
+          }
+        ],
+        "volumes": [
+          {
+            "name": "workspace",
+            "persistentVolumeClaim": {
+              "claimName": "factory-ws-b7oarlk2aytcod6z4d63-g1"
+            }
+          },
+          {
+            "name": "supervisor-tmp",
+            "emptyDir": {
+              "sizeLimit": "256Mi"
+            }
+          },
+          {
+            "name": "harness-tmp",
+            "emptyDir": {
+              "sizeLimit": "256Mi"
+            }
+          },
+          {
+            "name": "factory-identity",
+            "projected": {
+              "sources": [
+                {
+                  "serviceAccountToken": {
+                    "audience": "factory-allocation:00000000-0000-4000-8000-000000000001:6d6363a2-a415-8491-9af4-367374fd9aac",
+                    "expirationSeconds": 600,
+                    "path": "token"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

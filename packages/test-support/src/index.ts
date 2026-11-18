@@ -2,3 +2,4 @@
 export * from './postgres.ts';
 export * from './oidc.ts';
 export * from './retry.ts';
+export * from './faults.ts';

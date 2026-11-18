@@ -1,0 +1,22 @@
+{
+  "name": "@factory/runner",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing.ts"
+  },
+  "dependencies": {
+    "@factory/artifacts": "workspace:*",
+    "@factory/contracts": "workspace:*",
+    "@factory/database": "workspace:*",
+    "@factory/domain": "workspace:*",
+    "@factory/workspace": "workspace:*"
+  },
+  "devDependencies": {
+    "@factory/test-support": "workspace:*",
+    "@types/pg": "8.23.1",
+    "pg": "8.23.1"
+  }
+}

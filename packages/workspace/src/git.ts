@@ -30,14 +30,22 @@ export const claimFactoryOwned = (path: string): FactoryOwnedRepo => new Factory
 // HOME for every Git child: one empty directory per user, never written to. With GIT_CONFIG_GLOBAL
 // and GIT_CONFIG_SYSTEM pointed at /dev/null nothing is read from it either; it exists so that Git
 // never falls back to a HOME the parent chose.
-// Waits until no process of the group exists (kill -0 on the group reports ESRCH), up to 10 s.
-async function groupGone(pid: number | undefined): Promise<boolean> {
+// Waits until no process of the group exists, up to 10 s. Only ESRCH means the group is gone. On macOS a group whose
+// only members are exited children that nobody has reaped yet answers kill(-pgid, 0) with EPERM, not ESRCH, so EPERM
+// keeps polling until the deadline (the members are reaped as soon as their parent exits or waits). Any other error
+// fails closed: the group is not shown gone.
+export async function groupGone(pid: number | undefined, timeoutMs = 10_000): Promise<boolean> {
   if (pid === undefined) return true;
-  for (let i = 0; i < 500; i += 1) {
-    try { process.kill(-pid, 0); } catch (e) { return (e as NodeJS.ErrnoException).code === 'ESRCH'; }
+  const deadline = performance.now() + timeoutMs;
+  for (;;) {
+    try { process.kill(-pid, 0); } catch (e) {
+      const code = (e as NodeJS.ErrnoException).code;
+      if (code === 'ESRCH') return true;
+      if (code !== 'EPERM') return false;
+    }
+    if (performance.now() >= deadline) return false;
     await new Promise((r) => setTimeout(r, 20));
   }
-  return false;
 }
 
 let emptyHome: string | undefined;

@@ -23,6 +23,18 @@ export default tseslint.config(
     ...tseslint.configs.disableTypeChecked,
   },
   {
+    // W-017: every age and deadline is computed in SQL on clock_timestamp(); and nothing may ask Kubernetes for a
+    // grace period of its own (a force delete, grace 0, removes the pod object while its processes still run).
+    files: ['apps/runner/src/**/*.ts'],
+    rules: {
+      'no-restricted-properties': ['error', { object: 'Date', property: 'now', message: 'W-017: judge time in SQL on clock_timestamp(), not in controller code' }],
+      'no-restricted-syntax': ['error',
+        { selector: "Property[key.name='gracePeriodSeconds']", message: 'W-017: only the HTTPS client sends a grace period, and it is always 15 s' },
+        { selector: "Literal[value='gracePeriodSeconds']", message: 'W-017: only the HTTPS client sends a grace period, and it is always 15 s' }],
+    },
+  },
+  { files: ['apps/runner/src/kube/https-client.ts'], rules: { 'no-restricted-syntax': 'off' } },
+  {
     files: ['apps/worker/src/workflows/**/*.ts'],
     rules: {
       'no-restricted-globals': ['error',

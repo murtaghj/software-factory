@@ -55,7 +55,7 @@ it is lstat'ed and a symlink is refused.
 ## Who may call what
 
 Every manager call (`allocateOrAttach`, `materializationRequest`, `acceptMaterialization`,
-`markWriterStarted`, `replaceWriter`, `release`, `materializeCandidate`) and
+`markWriterStarted`, `markWriterQuiescing`, `markWriterStopped`, `replaceWriter`, `release`, `materializeCandidate`) and
 `LocalWorkspaceHost.ensureMaterialized` requires the runner service identity; a refusal is audited.
 The publisher likewise needs a context scoped to the workspace's task, and never rewrites it.
 The caller's task scope is never rewritten: `allocateOrAttach` and `materializeCandidate` need a
@@ -70,6 +70,14 @@ workspace, generation and epoch. Registry clone URLs with credentials, `::` help
 values or option-like hosts are refused. The one userinfo allowed is a bare username (no password) on
 an `ssh://` URL or an scp-style address (`git@host:org/repo`): it carries no secret. A username in an
 https URL is usually a token and is refused.
+
+A writer's end (W-017, D17): `markWriterQuiescing` moves `active` to `quiescing` and `markWriterStopped` moves
+`quiescing` to `retained`, each for the pod that owns the workspace at the expected epoch, with the runner
+identity, the caller's task scope and the row lock, like `markWriterStarted`. A repeat by the same pod is a
+no-op, and `markWriterQuiescing` also accepts a workspace already `retained` by that pod. A different pod is
+`conflict`; any other source state is `invalid_state`. Neither touches the volume: a `retained` workspace keeps
+its work until an accepted checkpoint lets `release` remove it (W-020), and `release` still refuses `active` and
+`quiescing` as `writer_active`.
 
 A database session that is lost (killed, reset) raises `sessionLostSignal` in `@factory/database`,
 and `withTenant` throws the session's own error (for example 57P01) with the failure it caused as
