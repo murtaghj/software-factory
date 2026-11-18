@@ -155,7 +155,9 @@ error leaves (`sessionLostSignal` in `@factory/database`).
 
 - In pod mode the materializer's `remove` runs where the volume is, and a pod-side rename or
   delete can race a release. W-017's release must delete the PVC (by ownership label and UID), not
-  rely on the local `remove`.
+  rely on the local `remove`. (Done in W-017 17b: `PodVolumeMaterializer.remove` in `apps/runner`.)
+- `@factory/workspace/pod` (`src/pod-exports.ts`) is the narrow surface the pod executor's image loads: `LocalMaterializer`, `GitRunner`,
+  `WorkspaceError` and the request and receipt types, and nothing that reaches the manager. The image has no database.
 - `release` and `replaceWriter` need the row exclusively; the 75 s lock wait fails as
   `publish_in_progress`, whoever holds the lock (a publish or another transition).
 - The host checks that a row is materializable before fetching a candidate bundle (up to 512 MiB).

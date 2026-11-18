@@ -1,0 +1,11 @@
+# The stub containers of the supervisor and harness slots (A-27), one behaviour per tag, chosen at build time:
+#   run (default)  runs until TERM, then exits 0     ignore-term  ignores TERM; only KILL ends it
+#   exit0 / exit1  exits at once                     message      writes its first argument to the termination message
+#   stderr-fail    writes its first argument to stderr and exits 1
+FROM docker.io/library/node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
+ARG MODE=run
+# A RUN, not an ENV: the build cache keys a RUN on the argument's value, and an ENV of the same text would be reused for every mode.
+RUN printf '%s' "${MODE}" > /stub-mode
+COPY stub.js /stub.js
+USER 10001:10001
+ENTRYPOINT ["node", "/stub.js"]

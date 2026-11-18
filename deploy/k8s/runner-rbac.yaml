@@ -1,0 +1,50 @@
+# What the runner's process may do: exactly the calls of the KubeApi port, and no patch, exec, watch or collection delete.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: factory-runner
+  namespace: factory-exec-local
+rules:
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list", "delete"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "delete"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["create", "get", "list", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: factory-runner
+  namespace: factory-exec-local
+roleRef: { apiGroup: rbac.authorization.k8s.io, kind: Role, name: factory-runner }
+subjects:
+  - { kind: ServiceAccount, name: factory-runner, namespace: factory-exec-local }
+---
+# Cluster-scoped: token review, the storage class read at start, and the service-account key set that permit calls
+# verify a pod's token against before the token is reviewed (a non-resource URL).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: factory-runner
+rules:
+  - apiGroups: ["authentication.k8s.io"]
+    resources: ["tokenreviews"]
+    verbs: ["create"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    resourceNames: ["local-path"]   # the configured workspace class only (RunnerConfig.storageClass)
+    verbs: ["get"]
+  - nonResourceURLs: ["/openid/v1/jwks"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: factory-runner
+roleRef: { apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: factory-runner }
+subjects:
+  - { kind: ServiceAccount, name: factory-runner, namespace: factory-exec-local }

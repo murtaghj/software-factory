@@ -20,7 +20,7 @@
       "factory.local/stage-run-full": "task-00000000-0000-4000-8000-000000000002/plan-1/implement/attempt-1",
       "factory.local/spec-hash-full": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
       "factory.local/owner-epoch": "1",
-      "factory.local/manifest-digest": "158bad3bacc9344534d9c0cc618f8406451cb967cb8a13832f9a0701335f37b5"
+      "factory.local/manifest-digest": "dfbf337275bdee5f8294dc99f4cd680cd1e14c515f55e8b538e9094184ebf853"
     }
   },
   "spec": {
@@ -44,7 +44,7 @@
           "factory.local/stage-run-full": "task-00000000-0000-4000-8000-000000000002/plan-1/implement/attempt-1",
           "factory.local/spec-hash-full": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
           "factory.local/owner-epoch": "1",
-          "factory.local/manifest-digest": "158bad3bacc9344534d9c0cc618f8406451cb967cb8a13832f9a0701335f37b5"
+          "factory.local/manifest-digest": "dfbf337275bdee5f8294dc99f4cd680cd1e14c515f55e8b538e9094184ebf853"
         }
       },
       "spec": {
@@ -97,6 +97,10 @@
               {
                 "name": "workspace",
                 "mountPath": "/workspace"
+              },
+              {
+                "name": "materialize-tmp",
+                "mountPath": "/tmp"
               }
             ],
             "terminationMessagePolicy": "File"
@@ -199,6 +203,12 @@
             "name": "workspace",
             "persistentVolumeClaim": {
               "claimName": "factory-ws-b7oarlk2aytcod6z4d63-g1"
+            }
+          },
+          {
+            "name": "materialize-tmp",
+            "emptyDir": {
+              "sizeLimit": "256Mi"
             }
           },
           {

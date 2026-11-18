@@ -128,7 +128,8 @@ describe('W-017 cancel and the quiescence proof', () => {
     expect((await e.workspace(e.a, run2.workspaceId as string)).state).toBe('quiescing'); // nothing showed the writer stopped
     expect(await inst.runner.describeRun(e.ctx(e.a), s2.logicalId)).toMatchObject({ needsOperator: true, state: 'quarantined' });
     expect(inst.kube.pvcs.size).toBeGreaterThan(0); // the PVC is untouched
-    await expect(inst.runner.releaseWorkspace(e.ctx(e.a), run2.workspaceId as string, 1)).rejects.toMatchObject({ code: 'writer_active' }); // release is refused, rightly
+    await expect(inst.runner.releaseWorkspace(e.ctx(e.a), run2.workspaceId as string, 1)).rejects.toMatchObject({ code: 'allocation_quarantined' }); // the facade refuses first, rightly
+    await expect(inst.workspaces.release(e.runnerCtx(e.a), run2.workspaceId as string, 1)).rejects.toMatchObject({ code: 'writer_active' }); // and so does W-018 itself
   });
 
   it('a pod list at its cap is not proved; control: a list just under it is', async () => {

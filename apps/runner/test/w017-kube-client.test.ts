@@ -22,7 +22,7 @@ function makeLeaf(name: string, ca: string, san: string): void {
   ossl('x509', '-req', '-in', `${name}.csr`, '-CA', `${ca}.crt`, '-CAkey', `${ca}.key`, '-CAcreateserial', '-out', `${name}.crt`, '-days', '2', '-extfile', `${name}.ext`);
 }
 
-type Seen = { method: string; url: string; auth: string | undefined; body: string; clientCn: string | undefined };
+type Seen = { method: string; url: string; auth: string | undefined; body: string; clientCn: string | undefined; accept: string | undefined };
 let server: Server;
 let base: string;
 const seen: Seen[] = [];
@@ -38,7 +38,7 @@ beforeAll(async () => {
     req.on('data', (c: Buffer) => chunks.push(c));
     req.on('end', () => {
       const peer = (req.socket as unknown as { getPeerCertificate: () => { subject?: { CN?: string } } }).getPeerCertificate();
-      const s: Seen = { method: req.method ?? '', url: req.url ?? '', auth: req.headers.authorization, body: Buffer.concat(chunks).toString(), clientCn: peer.subject?.CN };
+      const s: Seen = { method: req.method ?? '', url: req.url ?? '', auth: req.headers.authorization, body: Buffer.concat(chunks).toString(), clientCn: peer.subject?.CN, accept: req.headers.accept };
       seen.push(s);
       handler(req, res, s);
     });
@@ -148,6 +148,12 @@ describe('W-017 HttpsKube', () => {
     handler = (_q, res) => { json(res, 200, { keys: [{ kty: 'EC', kid: 'k1', crv: 'P-256', x: 'a', y: 'b' }] }); };
     expect(await client().getServiceAccountJwks()).toEqual({ keys: [{ kty: 'EC', kid: 'k1', crv: 'P-256', x: 'a', y: 'b' }] });
     expect(seen.at(-1)).toMatchObject({ method: 'GET', url: '/openid/v1/jwks' });
+    // k3s 1.36.6 answers 406 to a request that accepts only application/json: the key set is application/jwk-set+json.
+    handler = (q, res) => { if (q.headers.accept?.includes('application/jwk-set+json') === true) json(res, 200, { keys: [{ kty: 'RSA', kid: 'k2' }] }); else json(res, 406, { reason: 'NotAcceptable' }); };
+    expect(await client().getServiceAccountJwks()).toEqual({ keys: [{ kty: 'RSA', kid: 'k2' }] });
+    expect(seen.at(-1)?.accept).toBe('application/jwk-set+json, application/json;q=0.9');
+    await expect(client().getPod('p')).rejects.toMatchObject({ status: 406 }); // control: every other route still asks for application/json only
+    expect(seen.at(-1)?.accept).toBe('application/json');
     handler = (_q, res) => { json(res, 200, {}); };
     expect(await client().getServiceAccountJwks()).toEqual({ keys: [] });
   });

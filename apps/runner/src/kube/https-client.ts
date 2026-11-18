@@ -32,7 +32,7 @@ export class HttpsKube implements KubeApi {
     this.#o = { requestTimeoutMs: 10_000, maxResponseBytes: 4 * 1024 * 1024, ...o };
   }
 
-  #call(method: string, path: string, body?: Json): Promise<Json> {
+  #call(method: string, path: string, body?: Json, accept = 'application/json'): Promise<Json> {
     const o = this.#o;
     return new Promise<Json>((resolve, reject) => {
       const payload = body === undefined ? undefined : Buffer.from(JSON.stringify(body));
@@ -41,7 +41,7 @@ export class HttpsKube implements KubeApi {
       const req = request({
         protocol: 'https:', hostname: this.#base.hostname, port: this.#base.port, method, path, ca: o.ca, rejectUnauthorized: true,
         ...(o.cert !== undefined && o.key !== undefined ? { cert: o.cert, key: o.key } : {}),
-        headers: { accept: 'application/json', ...(payload ? { 'content-type': 'application/json', 'content-length': payload.length } : {}), ...(o.token === undefined ? {} : { authorization: `Bearer ${o.token}` }) },
+        headers: { accept, ...(payload ? { 'content-type': 'application/json', 'content-length': payload.length } : {}), ...(o.token === undefined ? {} : { authorization: `Bearer ${o.token}` }) },
       }, (res) => {
         const chunks: Buffer[] = []; let size = 0;
         res.on('data', (c: Buffer) => {
@@ -109,7 +109,8 @@ export class HttpsKube implements KubeApi {
     return { authenticated: s.authenticated === true, ...(s.error === undefined ? {} : { error: s.error }), ...(s.user === undefined ? {} : { user: s.user }), ...(s.audiences === undefined ? {} : { audiences: s.audiences }) };
   }
   async getServiceAccountJwks(): Promise<Jwks> {
-    const r = await this.#call('GET', '/openid/v1/jwks');
+    // The key set is served as application/jwk-set+json; a request that accepts only application/json is answered 406 (measured on k3s 1.36.6).
+    const r = await this.#call('GET', '/openid/v1/jwks', undefined, 'application/jwk-set+json, application/json;q=0.9');
     return { keys: Array.isArray(r['keys']) ? (r['keys'] as Jwks['keys']) : [] };
   }
   async getStorageClass(name: string): Promise<StorageClassInfo> {

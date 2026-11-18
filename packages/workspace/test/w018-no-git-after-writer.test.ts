@@ -114,7 +114,8 @@ describe('no Git on a candidate-writable directory', () => {
     expect(files.filter((f) => /node:child_process/.test(read(f)))).toEqual(['git.ts']);
     expect(files.filter((f) => /claimFactoryOwned/.test(read(f))).sort()).toEqual(['git.ts', 'materializer.ts', 'publish.ts']);
     expect(files.filter((f) => /['"]worktree['"],\s*['"](remove|prune)['"]/.test(read(f)))).toEqual([]);
-    expect(files.filter((f) => /from '\.\/git\.ts'/.test(read(f)) && !['materializer.ts', 'publish.ts', 'index.ts'].includes(f))).toEqual([]);
+    expect(files.filter((f) => /from '\.\/git\.ts'/.test(read(f)) && !['materializer.ts', 'publish.ts', 'index.ts', 'pod-exports.ts'].includes(f))).toEqual([]);
+    expect(read('pod-exports.ts')).not.toMatch(/claimFactoryOwned|FactoryOwnedRepo/); // the pod surface re-exports the runner of Git and mints no handle
     expect(read('index.ts').split('\n').filter((l) => !l.startsWith('//')).join('\n')).not.toMatch(/claimFactoryOwned|FactoryOwnedRepo/);
   });
 });

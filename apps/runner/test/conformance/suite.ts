@@ -4,14 +4,14 @@
 // Fake-only faults (a duplicate pod, a lost node) are not in it and are never reported as cluster evidence.
 import { describe, expect, it } from 'vitest';
 import type { KubeError} from '../../src/index.ts';
-import { type ContainerSpec, type JobManifest, type KubeApi, type KubePod, type PvcManifest } from '../../src/index.ts';
+import { evaluateQuiescence, type ContainerSpec, type JobManifest, type KubeApi, type KubePod, type PvcManifest } from '../../src/index.ts';
 
 export type ConformanceDriver = {
   images: { exitOnTerm: string; ignoreTerm: string; message: string; stderrFail: string; exitZero: string };
   graceMs: number;                                   // how long a pod with a TERM-ignoring container lives after a delete
   rawDeleteJob(name: string): Promise<void>;         // a Job delete with no propagation policy
   forceDeletePod(name: string): Promise<void>;       // grace 0
-  isProcessAlive(podUid: string, container: string): boolean | undefined; // undefined: this tier cannot say
+  isProcessAlive(podUid: string, container: string): boolean | undefined | Promise<boolean | undefined>; // the container's process, as the runtime sees it; undefined: this tier cannot say
   waitFor(what: string, cond: () => Promise<boolean>, timeoutMs: number): Promise<void>;
   advanceReviewClock(ms: number): Promise<void>;     // fake: moves the logical clock; cluster: sleeps
   mintToken(podName: string, audience: string): Promise<string>;
@@ -21,6 +21,7 @@ export type ConformanceDriver = {
   record(key: string, value: string): void;
   // Cluster only: does RBAC allow `as` (a service account name in the namespace) this verb on this resource? A resource of the form
   // `nonResourceURL:<path>` asks about a non-resource URL (the runner needs `get` on /openid/v1/jwks).
+  // `storageclasses@<name>` asks about one named object.
   canI?(as: string, verb: string, resource: string): Promise<boolean>;
   runnerServiceAccount?: string; supervisorServiceAccount?: string;          // what a tier observed and the design does not depend on (row 9's order)
 };
@@ -33,11 +34,13 @@ export function registerConformance(tier: string, make: () => Promise<{ kube: Ku
       const s = await make();
       try { await f({ ...s, run: s.driver.uniqueSuffix() }); } finally { await s.close(); }
     };
-    const container = (name: string, image: string, over: Partial<ContainerSpec> = {}): ContainerSpec => ({ name, image, terminationMessagePolicy: 'File', ...over });
+    // Restricted pod security is enforced in the cluster's execution namespace, so the suite's pods meet it on every tier (the fake ignores it).
+    const container = (name: string, image: string, over: Partial<ContainerSpec> = {}): ContainerSpec => ({ name, image, terminationMessagePolicy: 'File',
+      securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: ['ALL'] }, runAsUser: 10001, runAsGroup: 10001 }, ...over });
     const job = (ns: string, name: string, run: string, containers: ContainerSpec[], o: { init?: ContainerSpec[]; claim?: string } = {}): JobManifest => ({
       apiVersion: 'batch/v1', kind: 'Job', metadata: { name, namespace: ns, labels: { 'conf/run': run, 'conf/job': name.slice(0, 40) }, annotations: {} },
       spec: { backoffLimit: 0, activeDeadlineSeconds: 600, template: { metadata: { labels: { 'conf/run': run, 'conf/job': name.slice(0, 40) }, annotations: {} }, spec: {
-        restartPolicy: 'Never', terminationGracePeriodSeconds: 15, serviceAccountName: 'factory-allocation-supervisor', automountServiceAccountToken: false, shareProcessNamespace: false, securityContext: {},
+        restartPolicy: 'Never', terminationGracePeriodSeconds: 15, serviceAccountName: 'factory-allocation-supervisor', automountServiceAccountToken: false, shareProcessNamespace: false, securityContext: { runAsNonRoot: true, seccompProfile: { type: 'RuntimeDefault' } },
         ...(o.init ? { initContainers: o.init } : {}), containers, volumes: o.claim ? [{ name: 'workspace', persistentVolumeClaim: { claimName: o.claim } }] : [] } } } });
     const pvc = (ns: string, name: string, run: string, mode: string): PvcManifest => ({ apiVersion: 'v1', kind: 'PersistentVolumeClaim', metadata: { name, namespace: ns, labels: { 'conf/run': run }, annotations: {} },
       spec: { accessModes: [mode], storageClassName: 'local-path', resources: { requests: { storage: '64Mi' } } } });
@@ -82,17 +85,28 @@ export function registerConformance(tier: string, make: () => Promise<{ kube: Ku
       await kube.deletePod(pb.metadata.name, pb.metadata.uid);
     }));
 
-    it('4. TERM reaches both containers at once: the one that exits shows terminated while the pod is still listed with a deletion timestamp, and the pod goes when the other is killed', () => withSubject(async ({ kube, driver, run }) => {
+    it('4. TERM reaches both containers at once: the one that exits is gone from the runtime while the pod is still listed with a deletion timestamp, and the pod goes when the other is killed', () => withSubject(async ({ kube, driver, run }) => {
       const name = `conf-${run}-4`;
       await kube.createJob(job(driver.namespace, name, run, [container('polite', driver.images.exitOnTerm), container('stubborn', driver.images.ignoreTerm)]));
       const pod = await onePod(kube, driver, run, name);
       await driver.waitFor('both running', async () => { const p = (await podsOf(kube, run, name))[0]; return p !== undefined && running('polite')(p) && running('stubborn')(p); }, 30_000);
       const t0 = Date.now();
       await kube.deletePod(pod.metadata.name, pod.metadata.uid);
-      await driver.waitFor('polite is terminated', async () => (await podsOf(kube, run, name))[0]?.status.containerStatuses?.find((c) => c.name === 'polite')?.state.terminated !== undefined, driver.graceMs);
+      // What the runtime shows: the polite process is gone at once (TERM reached both), the stubborn one is not (TERM ignored).
+      // "At once": within about 3 s, long before the other container's grace period could have ended it. A runtime that cannot be asked
+      // (an undefined answer) is a failure, not a pass.
+      await driver.waitFor('the polite process has exited (answer exactly false)', async () => (await driver.isProcessAlive(pod.metadata.uid, 'polite')) === false, 3000);
       const mid = (await podsOf(kube, run, name))[0];
       expect(mid?.metadata.deletionTimestamp).toBeDefined();                                       // still listed, Terminating
       expect(mid?.status.containerStatuses?.find((c) => c.name === 'stubborn')?.state.terminated).toBeUndefined();
+      const polite = await driver.isProcessAlive(pod.metadata.uid, 'polite');
+      const stubborn = await driver.isProcessAlive(pod.metadata.uid, 'stubborn');
+      expect(polite).toBe(false);
+      expect(stubborn).toBe(true);                                                                // control: TERM did not end the one that ignores it
+      driver.record('row4.runtime_polite_alive', String(polite)); driver.record('row4.runtime_stubborn_alive', String(stubborn));
+      // What the API shows differs by tier, and the proof is safe either way: it reads a Terminating pod as "not finished" until it is gone.
+      // k3s 1.36.6 keeps the polite container `running` in the pod status until the pod is gone; the fake publishes the exit.
+      driver.record('row4.polite_status_while_terminating', mid?.status.containerStatuses?.find((c) => c.name === 'polite')?.state.terminated !== undefined ? 'terminated' : 'running');
       await driver.waitFor('the pod is gone', async () => (await podsOf(kube, run, name)).length === 0, driver.graceMs + 30_000);
       expect(Date.now() - t0).toBeGreaterThanOrEqual(driver.graceMs * 0.5);                      // not before the grace period had run (about)
     }));
@@ -152,7 +166,8 @@ export function registerConformance(tier: string, make: () => Promise<{ kube: Ku
 
     it('9. after its pod is deleted a backoffLimit 0 Job gets no replacement pod', () => withSubject(async ({ kube, driver, run }) => {
       const name = `conf-${run}-9`;
-      await kube.createJob(job(driver.namespace, name, run, [container('c', driver.images.exitOnTerm)]));
+      // The container ignores TERM, so its process lives for the whole grace period and the proof has something to stay unproved about.
+      await kube.createJob(job(driver.namespace, name, run, [container('c', driver.images.ignoreTerm)]));
       const pod = await onePod(kube, driver, run, name);
       await driver.waitFor('running', async () => (await podsOf(kube, run, name)).some(running('c')), 30_000);
       await kube.deletePod(pod.metadata.name, pod.metadata.uid);
@@ -161,8 +176,17 @@ export function registerConformance(tier: string, make: () => Promise<{ kube: Ku
       const seen: string[] = [];
       const t0 = Date.now();
       let gone = false;
+      let checked = 0;
       while (!gone && Date.now() - t0 < driver.graceMs + 30_000) {
         const pods = await podsOf(kube, run, name);
+        // The proof (as if the Job were absent) reads pod status only. While the process is still alive, it must stay unproved at every
+        // poll, whichever of the Job's Failed and the container's exit the cluster shows first. The pods are read BEFORE the process, so a
+        // process alive now was alive then.
+        const alive = await driver.isProcessAlive(pod.metadata.uid, 'c');
+        if (alive === true) {
+          expect(evaluateQuiescence({ jobAbsent: true, pods, podsTruncated: false, jobUidRecorded: true, stoppingForMs: 60_000, requestDeadlineMs: 10_000 }).proved, 'the proof stays unproved while the process lives').toBe(false);
+          checked += 1;
+        }
         gone = pods.length === 0;
         const exited = pods.some((p) => p.status.containerStatuses?.some((c) => c.state.terminated !== undefined));
         const failed = ((await kube.getJob(name)).status.conditions ?? []).some((c) => c.type === 'Failed');
@@ -171,11 +195,13 @@ export function registerConformance(tier: string, make: () => Promise<{ kube: Ku
         if (!gone) await new Promise((r) => setTimeout(r, 20));
       }
       expect(gone).toBe(true);
+      expect(checked, 'the unproved-while-alive assertion ran at least once').toBeGreaterThan(0);
+      expect(evaluateQuiescence({ jobAbsent: true, pods: [], podsTruncated: false, jobUidRecorded: true, stoppingForMs: 60_000, requestDeadlineMs: 10_000 }).proved).toBe(true); // control: with the pod gone it is proved
       await new Promise((r) => setTimeout(r, 1500));
       expect(await podsOf(kube, run, name)).toHaveLength(0);                                     // no replacement
       const order = seen.length === 0 ? 'neither_observed_before_the_pod_went' : seen.join('_then_');
       driver.record('row9.order', order);
-      expect(['neither_observed_before_the_pod_went', 'job_failed', 'container_exit', 'job_failed_then_container_exit', 'container_exit_then_job_failed']).toContain(order);
+      expect(['neither_observed_before_the_pod_went', 'job_failed', 'container_exit', 'job_failed_then_container_exit', 'container_exit_then_job_failed']).toContain(order); // recorded, not asserted: the design does not depend on the order
     }));
 
     it('10. File policy: an init container\'s message and exit code are in the pod status while the app containers run; a longer message is cut at 4,096 bytes; a failed step that wrote only to its log has an empty message', () => withSubject(async ({ kube, driver, run }) => {
@@ -239,9 +265,16 @@ export function registerConformance(tier: string, make: () => Promise<{ kube: Ku
       const pod = await onePod(kube, driver, run, name);
       await driver.waitFor('running', async () => (await podsOf(kube, run, name)).some(running('c')), 30_000);
       await driver.forceDeletePod(pod.metadata.name);
-      expect(await podsOf(kube, run, name)).toHaveLength(0);                                      // the object is gone at once
-      const alive = driver.isProcessAlive(pod.metadata.uid, 'c');
-      if (alive !== undefined) expect(alive).toBe(true);                                          // ...the process is not
+      // A Job's pod carries the Job controller's tracking finalizer, so on k3s the object lingers for a moment (marked for deletion)
+      // until the controller lets it go; the fake removes it at once. Either way the object goes and the process is still there.
+      await driver.waitFor('the pod object is gone', async () => !(await podsOf(kube, run, name)).some((p) => p.metadata.uid === pod.metadata.uid), 10_000);
+      const alive = await driver.isProcessAlive(pod.metadata.uid, 'c');
+      expect(alive).toBe(true);                                                                   // ...the process is not (an undefined answer fails)
+      driver.record('row14.runtime_alive_after_object_gone', String(alive));
+      // Whether the Job controller starts a replacement pod after a force delete (backoffLimit 0; a normal delete, row 9, gets none)
+      // is recorded, not asserted: the design does not depend on it, and a duplicate pod is handled by the writer claim either way.
+      await new Promise((r) => setTimeout(r, 1500));
+      driver.record('row14.replacement_pod', String((await podsOf(kube, run, name)).length > 0));
     }));
 
     // Rows 13 and 15 are about the cluster's RBAC and exist only where there is one (the k3s tier, 17b); the fake registers neither.
@@ -249,9 +282,11 @@ export function registerConformance(tier: string, make: () => Promise<{ kube: Ku
       it('13. every call the suite makes succeeds under the runner\'s Role; the supervisor\'s service account is refused a patch of pods/status and a read of any pod', () => withSubject(async ({ driver }) => {
         const can = driver.canI?.bind(driver);
         if (!can || !driver.runnerServiceAccount || !driver.supervisorServiceAccount) throw new Error('a cluster driver supplies canI and the two service account names');
-        for (const [verb, res] of [['create', 'jobs'], ['get', 'jobs'], ['list', 'jobs'], ['delete', 'jobs'], ['get', 'pods'], ['list', 'pods'], ['delete', 'pods'], ['create', 'persistentvolumeclaims'], ['delete', 'persistentvolumeclaims'], ['create', 'tokenreviews'], ['get', 'nonResourceURL:/openid/v1/jwks']] as const) {
+        for (const [verb, res] of [['create', 'jobs'], ['get', 'jobs'], ['list', 'jobs'], ['delete', 'jobs'], ['get', 'pods'], ['list', 'pods'], ['delete', 'pods'], ['create', 'persistentvolumeclaims'], ['get', 'persistentvolumeclaims'], ['list', 'persistentvolumeclaims'], ['delete', 'persistentvolumeclaims'], ['create', 'tokenreviews'], ['get', 'storageclasses@local-path'], ['get', 'nonResourceURL:/openid/v1/jwks']] as const) {
           expect(await can(driver.runnerServiceAccount, verb, res), `runner ${verb} ${res}`).toBe(true);
         }
+        expect(await can(driver.runnerServiceAccount, 'get', 'storageclasses@some-other-class')).toBe(false); // the read is limited to the configured class
+        expect(await can(driver.runnerServiceAccount, 'patch', 'pods/status')).toBe(false);
         expect(await can(driver.supervisorServiceAccount, 'patch', 'pods/status')).toBe(false);
         expect(await can(driver.supervisorServiceAccount, 'get', 'pods')).toBe(false);
       }));

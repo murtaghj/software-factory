@@ -3,7 +3,7 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/node_modules/**', '**/dist/**', 'docs/**', 'tools/test-fixtures/**', '**/*.generated.ts', '**/generated/**'] },
+  { ignores: ['**/node_modules/**', '**/dist/**', 'docs/**', '.k3s/**', 'deploy/**', 'tools/test-fixtures/**', '**/*.generated.ts', '**/generated/**'] },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   {

@@ -166,8 +166,15 @@ async function passDesired(d: RunnerDeps, a: AllocationRow): Promise<boolean> {
   }
   const current = await stillDesired();
   if (!current) return true;
-  const got = await createOrFetch<KubeJob>(() => d.kube.createJob(job), () => d.kube.getJob(job.metadata.name), (o) => jobIsOurs(o, a, d.config) && templateDifferences(o, job).length === 0);
-  if (got.kind === 'foreign') return (await toQuarantined(d, a, 'job_not_ours')) !== undefined;
+  // The reason is diagnostic only (nothing decides on it): which part of the live Job differs, as paths, so an operator can see why.
+  let whyNot = 'job_not_ours';
+  const got = await createOrFetch<KubeJob>(() => d.kube.createJob(job), () => d.kube.getJob(job.metadata.name), (o) => {
+    if (!jobIsOurs(o, a, d.config)) { whyNot = 'job_not_ours:identity'; return false; }
+    const diffs = templateDifferences(o, job);
+    if (diffs.length > 0) whyNot = `job_not_ours:template:${diffs.slice(0, 12).join(',')}`.slice(0, 512);
+    return diffs.length === 0;
+  });
+  if (got.kind === 'foreign') return (await toQuarantined(d, a, whyNot)) !== undefined;
   if (got.kind === 'retry') return false;
   const held = got.object;
   await faultsOf(d).hit('runner.after_job_create');

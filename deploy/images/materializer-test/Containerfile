@@ -1,0 +1,16 @@
+# The test image of the materializer (A-31, standing in for INT-02 and W-021): the production image plus its own
+# entry, which also accepts file://, a fixture bare repository to clone, and a Git wrapper that can hold one clone
+# open (see git-wrapper.sh). Never deployed outside the k3s tier.
+FROM docker.io/library/factory-materializer:local
+USER 0:0
+# The helpers (git-upload-pack and friends, in /usr/bin and the exec path) are links to git; they must keep their own names when they run,
+# so they point at the real binary, not at the wrapper.
+RUN mv /usr/bin/git /usr/bin/git.real \
+ && for l in /usr/libexec/git-core/* /usr/bin/git-*; do \
+      if [ -L "$l" ]; then case "$(readlink "$l")" in ../../bin/git) ln -sf ../../bin/git.real "$l" ;; git) ln -sf git.real "$l" ;; esac; fi; \
+    done
+COPY --chmod=0755 git-wrapper.sh /usr/bin/git
+COPY --chown=10001:10001 fixture /fixture
+COPY --chown=0:0 test-app /app/apps/runner/test
+USER 10001:10001
+ENTRYPOINT ["/sbin/tini", "--", "node", "/app/apps/runner/test/pod/materialize-test-entry.ts"]

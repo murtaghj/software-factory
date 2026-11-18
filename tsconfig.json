@@ -11,6 +11,7 @@
     "fixtures/**/*.ts",
     "tools/**/*.ts",
     "vitest.config.ts",
+    "vitest.k8s.config.ts",
     "eslint.config.ts",
     "apps/*/src/**/*.tsx",
     "apps/*/test/**/*.tsx",

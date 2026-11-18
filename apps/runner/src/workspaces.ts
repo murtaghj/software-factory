@@ -48,6 +48,8 @@ export async function releaseWorkspace(d: RunnerDeps, ctx: AuthContext, id: stri
   if (!found) throw new RunnerError('not_found', 'unknown workspace');
   if (found.ws.taskId !== taskId) return refuseScope(d, ctx, 'runner.workspace.release', id, 'task_scope');
   if (found.allocations.some((a) => isLive(a.state))) throw new RunnerError('allocation_live', 'the workspace has a live allocation; cancel it and wait for terminated');
+  // Nothing proved a quarantined allocation's pod stopped, so its volume is untouched until an operator has dealt with it ("quarantined means PVC untouched").
+  if (found.allocations.some((a) => a.state === 'quarantined')) throw new RunnerError('allocation_quarantined', 'the workspace has a quarantined allocation; an operator must resolve it before release', { needsOperator: true });
   for (const a of found.allocations) if (a.state === 'terminated') await settleWorkspace(d, a, 'proof');
   return d.workspaces.release(runnerCtx(d, ctx.orgId, taskId, ctx.correlationId), id, expectedEpoch);
 }

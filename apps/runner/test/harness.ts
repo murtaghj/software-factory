@@ -11,7 +11,7 @@ import { Database, createMigratedDatabase, openBudgetAccount, provisionOrganizat
 import { canonicalHash } from '@factory/domain';
 import { Faults } from '@factory/test-support';
 import { createWorkspaceManager, type GitMaterializer, type WorkspaceManagerService } from '@factory/workspace';
-import { createRunner, encodeReceiptMessage, tokenAudience, type RunnerConfig, type RunnerService } from '../src/index.ts';
+import { createPodVolumeMaterializer, createRunner, encodeReceiptMessage, tokenAudience, type KubeApi, type RunnerConfig, type RunnerService } from '../src/index.ts';
 import type { RunnerDeps } from '../src/core.ts';
 import { FakeKube, createTestConfig } from '../src/testing.ts';
 
@@ -29,6 +29,8 @@ export const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeou
 export type Tenant = { orgId: string; principalId: string; applicationId: string; repositoryId: string; taskId: string; accountId: string };
 export type Stage = { logicalId: string; nodeId: string; role: string; inputHash: string; binding: Record<string, unknown>; limits: Record<string, number> };
 export type Instance = { runner: RunnerService; deps: RunnerDeps; kube: FakeKube; faults: Faults; db: Database; workspaces: WorkspaceManagerService; config: RunnerConfig };
+// The same, against a real cluster (the k3s tier): the port is any KubeApi.
+export type ClusterInstance = Omit<Instance, 'kube'> & { kube: KubeApi };
 
 // The pod-mode `remove` lives in 17b; release in 17a's tests uses a stub that reports the volume absent.
 export const absentMaterializer: GitMaterializer = {
@@ -38,7 +40,7 @@ export const absentMaterializer: GitMaterializer = {
 
 const ref = (n: string): ArtifactRef => ({ artifactId: randomUUID(), sha256: sha256(n), mediaType: 'application/json', schemaVersion: '1.0', sizeBytes: 2 });
 
-export async function createEnv(prefix: string, opts: { config?: ConfigOver } = {}) {
+export async function createEnv(prefix: string, opts: { config?: ConfigOver; cloneUrl?: string } = {}) {
   const m: MigratedDatabase = await createMigratedDatabase(prefix);
   const orgA = randomUUID();
   const orgB = randomUUID();
@@ -57,7 +59,7 @@ export async function createEnv(prefix: string, opts: { config?: ConfigOver } = 
     await db.withTenant({ orgId }, async (tx) => {
       await tx.query("INSERT INTO factory.principal (org_id, id, issuer, subject, display_name) VALUES ($1,$2,'https://issuer.test',$3,'User')", [orgId, t.principalId, `u-${t.principalId}`]);
       await tx.query("INSERT INTO factory.application (org_id, id, app_key, name, owner_ids, lifecycle, data_classification) VALUES ($1,$2,$3,'Orders','[]','production','internal')", [orgId, t.applicationId, `orders-${t.applicationId.slice(0, 8)}`]);
-      await tx.query("INSERT INTO factory.repository (org_id, id, provider, installation_ref, external_id, clone_url, default_branch, policy_ref) VALUES ($1,$2,'local','inst',$3,'https://git.example.test/org/repo.git','main','{}')", [orgId, t.repositoryId, `repo-${t.repositoryId}`]);
+      await tx.query("INSERT INTO factory.repository (org_id, id, provider, installation_ref, external_id, clone_url, default_branch, policy_ref) VALUES ($1,$2,'local','inst',$3,$4,'main','{}')", [orgId, t.repositoryId, `repo-${t.repositoryId}`, opts.cloneUrl ?? 'https://git.example.test/org/repo.git']);
       await tx.query("INSERT INTO factory.application_repository (org_id, id, application_id, repository_id, subpath, purpose) VALUES ($1,$2,$3,$4,'','primary')", [orgId, randomUUID(), t.applicationId, t.repositoryId]);
       await tx.query("INSERT INTO factory.task (org_id, id, creator_id, primary_application_id, target_kind, target_context, work_type, change_class, delivery_scope, status) VALUES ($1,$2,$3,$4,'existing_application',$5,'feature','feature','pr','running')",
         [orgId, t.taskId, t.principalId, t.applicationId, JSON.stringify({ kind: 'existing_application', applicationId: t.applicationId })]);
@@ -100,22 +102,29 @@ export async function createEnv(prefix: string, opts: { config?: ConfigOver } = 
   }
 
   // A runner instance: its own pool and manager (as a second controller process would have), sharing one fake cluster by default.
-  function newRunner(o: { kube?: FakeKube; faults?: Faults; ownPool?: boolean; config?: ConfigOver; nowMs?: () => number } = {}): Instance {
+  function newRunner(o: { kube?: FakeKube; faults?: Faults; ownPool?: boolean; config?: ConfigOver; nowMs?: () => number; pod?: { settle?: { timeoutMs: number; pollMs: number }; wait?: (ms: number) => Promise<void> } } = {}): Instance {
+    return build({ ...o, kube: o.kube ?? new FakeKube() }) as Instance;
+  }
+  // The pod-mode runner against any cluster: PodVolumeMaterializer is the workspace manager's materializer.
+  function newClusterRunner(o: { kube: KubeApi; ownPool?: boolean; config?: ConfigOver; faults?: Faults }): ClusterInstance {
+    return build({ ...o, pod: {} });
+  }
+  function build(o: { kube: KubeApi; faults?: Faults; ownPool?: boolean; config?: ConfigOver; nowMs?: () => number; pod?: { settle?: { timeoutMs: number; pollMs: number }; wait?: (ms: number) => Promise<void> } }): ClusterInstance {
     const idb = o.ownPool ? Database.connect(m.runtimeUrl, 10) : db;
     if (o.ownPool) extraPools.push(idb);
-    const kube = o.kube ?? new FakeKube();
+    const kube = o.kube;
     const faults = o.faults ?? new Faults();
     const cfg = o.config ? createTestConfig({ runnerIdentity: RUNNER_ID, controlPlaneIdentities: [CALLER], pools: { authoring: 500, verifier: 500 }, ...opts.config, ...o.config }) : config;
-    const workspaces = createWorkspaceManager({ db: idb, artifacts: new ArtifactService({ db: idb, store, signingKey: Buffer.alloc(32, 7), downloadOrigin: 'http://127.0.0.1:1' }), runnerIdentity: RUNNER_ID, materializer: absentMaterializer });
+    const workspaces = createWorkspaceManager({ db: idb, artifacts: new ArtifactService({ db: idb, store, signingKey: Buffer.alloc(32, 7), downloadOrigin: 'http://127.0.0.1:1' }), runnerIdentity: RUNNER_ID, materializer: o.pod ? createPodVolumeMaterializer({ kube, config: cfg, db: idb, ...o.pod }) : absentMaterializer });
     const deps: RunnerDeps = { db: idb, kube, workspaces, config: cfg, faults, artifacts, ...(o.nowMs ? { monotonicNowMs: o.nowMs } : {}) };
     return { runner: createRunner(deps), deps, kube, faults, db: idb, workspaces, config: cfg };
   }
 
   // A workspace row for a stage run (what W-023's Activity does through the facade before startOrAttach).
-  async function newWorkspace(t: Tenant, s: Stage, inst: Instance): Promise<string> {
+  async function newWorkspace(t: Tenant, s: Stage, inst: Pick<Instance, 'workspaces'>, o: { baseCommit?: string } = {}): Promise<string> {
     const id = randomUUID();
     const setup = await putArtifact(t, Buffer.from('{"schema":"factory-setup-profile/1","fixture":true}'), 'setup_profile');
-    await inst.workspaces.allocateOrAttach(runnerCtx(t), id, { repositoryId: t.repositoryId, baseCommit: 'c'.repeat(40), branch: `factory/${t.taskId}/main`, role: s.role as 'implementer', stageRunId: s.logicalId, setupProfileRef: setup, specHash: hex('e') });
+    await inst.workspaces.allocateOrAttach(runnerCtx(t), id, { repositoryId: t.repositoryId, baseCommit: o.baseCommit ?? 'c'.repeat(40), branch: `factory/${t.taskId}/main`, role: s.role as 'implementer', stageRunId: s.logicalId, setupProfileRef: setup, specHash: hex('e') });
     return id;
   }
 
@@ -169,7 +178,7 @@ export async function createEnv(prefix: string, opts: { config?: ConfigOver } = 
   const receiptMessage = (generation = 1): string => encodeReceiptMessage({ ...receiptFor(), generation });
 
   return {
-    m, db, a, b, config, artifacts, ctx, runnerCtx, newStage, input, putArtifact, newRunner, newWorkspace, q, allocations, allocation, workspace, backdate, auditCount, tables, receiptFor, receiptMessage, runningAllocation, waiters,
+    m, db, a, b, config, artifacts, ctx, runnerCtx, newStage, input, putArtifact, newRunner, newClusterRunner, newWorkspace, q, allocations, allocation, workspace, backdate, auditCount, tables, receiptFor, receiptMessage, runningAllocation, waiters,
     async close(): Promise<void> {
       for (const x of extraPools) await x.close().catch(() => undefined); // a test may have closed it already ("controller A dies")
       await db.close();

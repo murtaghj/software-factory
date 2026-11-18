@@ -1,0 +1,17 @@
+# The pod executor's image (W-017, 17b): Node, Git 2.48 or later, the production entry and the few modules it loads.
+# Built by scripts/k3s.sh from a staged context (`.k3s/ctx/materializer`), which holds exactly the files named below.
+# The entry runs W-018's LocalMaterializer in a trusted init container: no database, no identity token, no credential.
+FROM docker.io/library/node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
+# Git and tini are pinned to the versions the build was measured with. tini is PID 1: Node is not an init process, so without it
+# the orphaned children of a killed Git (remote helpers) stay zombies, and the group never reads as gone until the grace period is over.
+# apk is removed in the same layer: nothing in a running pod can install anything.
+RUN apk add --no-cache git=2.54.1-r0 tini=0.19.0-r3 && git --version && rm -rf /sbin/apk /etc/apk /lib/apk /var/cache/apk
+COPY --chown=0:0 app /app
+# @factory/workspace's path module imports the database package for a function this image never calls; the stub keeps
+# the image free of a database client (and of the factory's whole dependency tree).
+RUN mkdir -p /app/node_modules/@factory \
+ && ln -s ../../packages/workspace /app/node_modules/@factory/workspace \
+ && ln -s ../../packages/domain /app/node_modules/@factory/domain \
+ && ln -s ../../stubs/database /app/node_modules/@factory/database
+USER 10001:10001
+ENTRYPOINT ["/sbin/tini", "--", "node", "/app/apps/runner/src/pod/materialize-entry.ts"]

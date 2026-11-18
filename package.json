@@ -11,6 +11,7 @@
     "lint": "eslint --max-warnings=0 . && node tools/check-boundaries.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
+    "test:k8s": "vitest run --config vitest.k8s.config.ts",
     "services:up": "sh scripts/services.sh up",
     "services:down": "sh scripts/services.sh down",
     "contracts:generate": "node packages/contracts/scripts/generate.ts",

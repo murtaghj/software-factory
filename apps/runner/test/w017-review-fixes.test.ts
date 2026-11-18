@@ -207,7 +207,7 @@ describe('review fixes', () => {
     // What a real API server stores for our manifest: defaults filled in, generated keys added, quantities written another way.
     const withServerDefaults = (m: JobManifest): JobManifest => {
       const j = structuredClone(m) as unknown as { metadata: Rec; spec: Rec & { template: { metadata: { labels: Rec }; spec: Rec & { containers: Rec[]; initContainers?: Rec[]; volumes: Rec[] } } } };
-      Object.assign(j.spec, { parallelism: 1, completions: 1, completionMode: 'NonIndexed', suspend: false, podReplacementPolicy: 'TerminatingOrFailed', selector: { matchLabels: { 'batch.kubernetes.io/controller-uid': 'uid-1' } } });
+      Object.assign(j.spec, { parallelism: 1, completions: 1, completionMode: 'NonIndexed', suspend: false, manualSelector: false, podReplacementPolicy: 'TerminatingOrFailed', selector: { matchLabels: { 'batch.kubernetes.io/controller-uid': 'uid-1' } } });
       Object.assign(j.spec.template.metadata.labels, { 'controller-uid': 'uid-1', 'job-name': 'j', 'batch.kubernetes.io/controller-uid': 'uid-1', 'batch.kubernetes.io/job-name': 'j' });
       const ps = j.spec.template.spec;
       Object.assign(ps, { dnsPolicy: 'ClusterFirst', schedulerName: 'default-scheduler', serviceAccount: ps['serviceAccountName'] });
@@ -227,6 +227,7 @@ describe('review fixes', () => {
       ['a privileged container', (j) => { (containers(j)[0]?.['securityContext'] as Rec)['privileged'] = true; }],
       ['a host path volume', (j) => { j.spec.template.spec.volumes.push({ name: 'host', hostPath: { path: '/' } } as never); }],
       ['host networking', (j) => { pod(j)['hostNetwork'] = true; }],
+      ['a manual selector (the server writes false; k3s 1.36.6, measured)', (j) => { spec(j)['manualSelector'] = true; }],
       ['another image', (j) => { (containers(j)[1] as Rec)['image'] = 'evil:latest'; }],
       ['a command', (j) => { (containers(j)[0] as Rec)['command'] = ['/bin/sh', '-c', 'exfiltrate']; }],
       ['a lifecycle hook', (j) => { (containers(j)[1] as Rec)['lifecycle'] = { postStart: { exec: { command: ['/bin/sh'] } } }; }],

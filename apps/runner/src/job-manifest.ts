@@ -49,7 +49,9 @@ export function renderJob(i: RenderInput): JobManifest {
   if (workspace) {
     if (!i.request) throw new RunnerError('invalid_request', 'a workspace allocation is rendered with its materialization request');
     // The request holds no secret: W-018 refuses clone URLs that carry credentials.
-    init.push(container('materialize', c.images.materializer, ['materialize', '--request', canonicalJson(i.request)], 10001, c.resources.materializer, [{ name: 'workspace', mountPath: '/workspace' }]));
+    // The root file system is read-only, and Git needs a private home and temporary files: an emptyDir at /tmp, this container's own.
+    init.push(container('materialize', c.images.materializer, ['materialize', '--request', canonicalJson(i.request)], 10001, c.resources.materializer,
+      [{ name: 'workspace', mountPath: '/workspace' }, { name: 'materialize-tmp', mountPath: '/tmp' }]));
   }
   const supervisor = container('supervisor', c.images.supervisor, ['serve', '--allocation', a.id], 10002, c.resources.supervisor,
     [{ name: 'workspace', mountPath: '/workspace', readOnly: true }, { name: 'supervisor-tmp', mountPath: '/tmp' }, { name: 'factory-identity', mountPath: '/var/run/factory-identity', readOnly: true }]);
@@ -65,7 +67,7 @@ export function renderJob(i: RenderInput): JobManifest {
           restartPolicy: 'Never', terminationGracePeriodSeconds: c.graceSeconds, serviceAccountName: c.supervisorServiceAccount, automountServiceAccountToken: false,
           shareProcessNamespace: false, securityContext: { runAsNonRoot: true, fsGroup: 10001, seccompProfile: { type: 'RuntimeDefault' } }, enableServiceLinks: false,
           ...(init.length > 0 ? { initContainers: init } : {}), containers: [supervisor, harness],
-          volumes: [workspaceVolume, { name: 'supervisor-tmp', emptyDir: { sizeLimit: '256Mi' } }, { name: 'harness-tmp', emptyDir: { sizeLimit: '256Mi' } },
+          volumes: [workspaceVolume, ...(init.length > 0 ? [{ name: 'materialize-tmp', emptyDir: { sizeLimit: '256Mi' } }] : []), { name: 'supervisor-tmp', emptyDir: { sizeLimit: '256Mi' } }, { name: 'harness-tmp', emptyDir: { sizeLimit: '256Mi' } },
             { name: 'factory-identity', projected: { sources: [{ serviceAccountToken: { audience, expirationSeconds: 600, path: 'token' } }] } }],
         },
       },
@@ -101,7 +103,7 @@ export function jobIsOurs(job: Pick<KubeJob, 'metadata'>, a: AllocationRow, conf
     && an[k.stageRunFull] === a.stageRunLogicalId && (a.jobUid === null || job.metadata.uid === a.jobUid);
 }
 // A PVC under our name is ours when its ownership labels name this workspace, generation and organization.
-export function pvcIsOurs(pvc: Pick<KubePvc, 'metadata'>, a: AllocationRow, workspaceId: string, config: RunnerConfig): boolean {
+export function pvcIsOurs(pvc: Pick<KubePvc, 'metadata'>, a: Pick<AllocationRow, 'orgId' | 'taskId' | 'generation'>, workspaceId: string, config: RunnerConfig): boolean {
   const k = labelKeys(config.labelPrefix);
   const l = pvc.metadata.labels;
   return pvc.metadata.name === pvcName(a.orgId, workspaceId, a.generation) && l[k.org] === a.orgId && l[k.workspace] === workspaceId && l[k.generation] === String(a.generation) && l[k.task] === a.taskId;
@@ -194,6 +196,7 @@ function normalizeJob(job: { spec: unknown }): Json {
   spec['completions'] ??= 1;
   spec['completionMode'] ??= 'NonIndexed';
   spec['suspend'] ??= false;
+  spec['manualSelector'] ??= false; // k3s 1.36.6 writes it (false) on a Job that sets none; a live `true` still differs from the rendered one
   spec['podReplacementPolicy'] ??= 'TerminatingOrFailed';
   return spec;
 }
