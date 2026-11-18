@@ -1,9 +1,10 @@
 # M2 plan: isolated execution
 
-Revision 5, 2026-11-18. Written against spec rev 1.13. Planning only; no source changed.
-Revision 2 answered the adversarial review of revision 1; revision 3 reworks the W-018 brief after its own second review. Section 7 lists what changed and what was not taken as written.
+Revision 6, 2026-11-18. Written against spec rev 1.13. Planning only; no source changed.
+Revision 2 answered the adversarial review of revision 1; revision 3 reworks the W-018 brief after its own second review. Section 8 lists what changed and what was not taken as written.
 Revision 4 adds the W-017 brief as section 5, with decisions D12 to D16 and spec issues SI-19 to SI-25. The old sections 5 and 6 are now 6 and 7.
-Revision 5 reworks the W-017 brief after its first review (no-go: four blockers, thirteen should-fix items, all taken), records the owner's decision D17, adds D18 and SI-26, and adds the results of a third k3s session that probed the two behaviours the brief rests on. A second review passed it for 17a subject to edits N1 to N7 and five small ones, which are made in section 5 (section 7, round 4).
+Revision 5 reworks the W-017 brief after its first review (no-go: four blockers, thirteen should-fix items, all taken), records the owner's decision D17, adds D18 and SI-26, and adds the results of a third k3s session that probed the two behaviours the brief rests on. A second review passed it for 17a subject to edits N1 to N7 and five small ones, which are made in section 5 (section 8, round 4).
+Revision 6 adds the W-019 brief as section 6, with decisions D19 to D27 and spec issues SI-27 to SI-33, revised twice after two rounds of an adversarial review and a security review.
 
 Code references are to the working tree after the worker split (P-18, P-19, P-20: done, about to be
 committed on top of `b63a1a6`). The newest patch marker is `authority-v1`
@@ -33,10 +34,10 @@ against `backlog.json`: every dependency is built, assumed under D2, or earlier 
 | # | Package | Delivers here | Depends on | Acceptance (tier) | Days · size |
 | --- | --- | --- | --- | --- | --- |
 | 1 | **W-018** Workspace manager and Git materialization | New `packages/workspace`: a `WorkspaceManager` for rows, epochs and fencing; a `GitMaterializer` port with a local executor; a publisher that updates task refs from a factory-owned repository; setup profile; independent source for verifiers. Brief in section 4. | W-006 ✓, W-007 ✓ | AC-12 (fencing half), AC-22 (source half), AC-38 (local ref half): F, real Git | 4–6 · L |
-| 2 | **W-017** Kubernetes controller and Job protocol | New `apps/runner`: `Runner.startOrAttach/getRun/cancel/getResult`, desired/observed reconcile, deterministic Job names, versioned allocations, and the **runner side of the start permit and pod-specific writer claim** (as the backlog deliverable says). The `KubeApi` port, its fake and the k3s tier (section 2). The pod executor for `GitMaterializer`. A capacity stand-in until W-088 (A-30). First named fault points. Brief in section 5. **17a built, not yet committed or reviewed: the port, `HttpsKube`, `FakeKube` and its kubelet, the controller and reconciler, permits, capacity stand-in, receipt rules and D17's two transitions. 17b (pod executor entry, `PodVolumeMaterializer` and release, manifests, images, k3s tier) is open.** | W-006 ✓, W-011 ✓; W-005, W-077, W-097 by assumption (D2) | AC-10 (one allocation, one permit winner at the runner API), AC-11: F and K | 4–6 · L, likely at the top |
-| 3 | **W-019** Lease fencing and process supervision | New `apps/supervisor`: the supervisor that takes and renews the permit, heartbeat 10 s / suspect 30 s / expiry 60 s judged on the **Postgres clock**, stale-epoch rejection, process-tree stop, the `QuiescenceProof` record (runner-issued: pod UID, terminal state of every container, detachment observation; accepted only from the runner identity), volume reuse on that proof, the quarantine record for a replaced generation (all three left out of W-018), the network start gate (D11). | W-017, W-018 | AC-10 (a real duplicate supervisor exits without touching the workspace), AC-12 (quarantine half): F. AC-15: F for the protocol only; **tree stop is claimed at K only** | 4–6 · L |
-| 4 | **W-020** Durable checkpoints and restore | In `packages/workspace`: committed and dirty-state manifests, self-contained bundles, finalization, restore into a clean allocation; `checkpoint_job` child rows and their fencing (SI-12). **Starts with the untrusted-Git reader** (below). | W-007 ✓, W-018, W-019 | AC-13, AC-14, AC-16: F, real Git | 4–6, plus 3–5 for the reader · L |
-| 5 | **W-023** Runner Activity attachment and cancellation | In `apps/worker`: `startOrAttachExecution`, `awaitExecution`, `cancelExecution` Activities; typed infrastructure versus semantic outcomes; cleanup on every non-semantic path; the new cleanup rule for `outcome_recorded`. Behind `patched('runner-v1')`. Design constraints in section 6. | W-019, W-020, W-011 ✓ | AC-10, AC-14, AC-15: F with Temporal | 3–5 · L |
+| 2 | **W-017** Kubernetes controller and Job protocol | New `apps/runner`: `Runner.startOrAttach/getRun/cancel/getResult`, desired/observed reconcile, deterministic Job names, versioned allocations, and the **runner side of the start permit and pod-specific writer claim** (as the backlog deliverable says). The `KubeApi` port, its fake and the k3s tier (section 2). The pod executor for `GitMaterializer`. A capacity stand-in until W-088 (A-30). First named fault points. Brief in section 5. **Built and committed in two commits: 17a (`2d363a4`: the port, `HttpsKube`, `FakeKube` and its kubelet, the controller and reconciler, permits, capacity stand-in, receipt rules and D17's two transitions) and 17b (`1f2096d`: pod executor entry, `PodVolumeMaterializer` and release, manifests, images and the k3s tier).** | W-006 ✓, W-011 ✓; W-005, W-077, W-097 by assumption (D2) | AC-10 (one allocation, one permit winner at the runner API), AC-11: F and K | 4–6 · L, likely at the top |
+| 3 | **W-019** Lease fencing and process supervision | New `apps/supervisor`: the supervisor that takes and renews the permit, heartbeat 10 s / suspect 30 s / expiry 60 s judged on the **Postgres clock**, stale-epoch rejection, process-tree stop, the `QuiescenceProof` record (runner-issued: pod UID, the terminal state of every container still listed, and `gone` for a pod the kubelet removed, detachment observation; accepted only from the runner identity), the rule for a replaced generation's volume (D19), the quarantine record for a replaced generation (all three left out of W-018), the network start gate (D11). | W-017, W-018 | AC-10 (a real duplicate supervisor exits without touching the workspace), AC-12 (quarantine half): F. AC-15: F for the protocol only; **tree stop is claimed at K only** | 10 to 12 against 4–6, step 0 then two commits · L |
+| 4 | **W-020** Durable checkpoints and restore | In `packages/workspace`: committed and dirty-state manifests, self-contained bundles, finalization, restore into a clean allocation; `checkpoint_job` child rows and their fencing (SI-12); `finalizing` and its pass (D22). **Starts with the untrusted-Git reader** (below). | W-007 ✓, W-018, W-019 | AC-13, AC-14, AC-16: F, real Git | 4–6, plus 3–5 for the reader · L |
+| 5 | **W-023** Runner Activity attachment and cancellation | In `apps/worker`: `startOrAttachExecution`, `awaitExecution`, `cancelExecution` Activities; typed infrastructure versus semantic outcomes; cleanup on every non-semantic path; the new cleanup rule for `outcome_recorded`. Behind `patched('runner-v1')`. Design constraints in section 7. | W-019, W-020, W-011 ✓ | AC-10, AC-14, AC-15: F with Temporal | 3–5 · L |
 | 6 | **W-024** Workspace and resource sweeper | UID-scoped cleanup, retention, orphan reconcile, failed cleanup left visible as an operator obligation. Moved ahead of the checkpoint: it is the only cleanup that survives a failed or terminated workflow. Never force-deletes. | W-019, W-020 | AC-43: F and K | 3–4 · S |
 | 7 | **W-021** Capability proxy and execution profiles | Extend the W-008 proxy into the runner: scoped grants, per-role identities, denied-operation audit, **durable call counters** (today they are an in-memory map, `apps/api/src/auth/capability-proxy.ts:47`, so a restart resets every limit); namespace, NetworkPolicy and admission manifests. | W-008 ✓, W-019 | AC-19: F. AC-56: K gives partial evidence, **R to claim** | 4–6 · M |
 | 8 | **W-022** Canonical verifier supervisor | New `apps/verifier`: exact source and package execution, externally collected results, counts and integrity checks, trusted finalization. Uses the W-004 fixture releases. | W-012 ✓, W-018, W-021; W-097 by assumption | AC-21, AC-22, AC-23, AC-24: F | 4–6 · M |
@@ -155,7 +156,7 @@ One suite runs these against `FakeKube` and against k3s. The fake must model eac
 ## 3. Owner decisions
 
 The crew proceeds on the default unless told otherwise. None of these blocks W-018. D12 to D18
-belong to the W-017 brief (section 5). D17 is decided; none of the others blocks its start.
+belong to the W-017 brief (section 5). D17 is decided; none of the others blocks its start. D19 to D27 belong to the W-019 brief (section 6) and are decided provisionally.
 
 | # | Decision | Recommended default |
 | --- | --- | --- |
@@ -173,10 +174,19 @@ belong to the W-017 brief (section 5). D17 is decided; none of the others blocks
 | D12 | Where the runner's network listener is built. Pods may reach only "the factory control-plane runner API" (`09-verification-security.md:77`), and apps cannot import each other (`tools/boundaries.json`), so the supervisor and the worker both need one eventually. | Not in W-017, which has nothing that could call it. W-019 adds the pod-facing listener with the supervisor; W-023 adds the worker-facing route and its client. W-017's service validates every input as wire input, so both are thin. Building it in W-017 costs one to two days more. |
 | D13 | Bundle sources (verifier copies, restores) for the pod materializer. | Not in W-017: `remote` sources only. A bundle needs a scoped artifact read from inside a pod, which arrives with W-021 and is first used by W-022. W-020's restore tests use the local materializer. |
 | D14 | How many generations one stage run may consume. The spec sets no bound, and warns against multiplied retry loops (`04-temporal.md:100`). | Three, then a typed `generation_limit`. Configurable. |
-| D15 | One PVC per workspace generation. Old generations' PVCs stay in place until W-019 (reuse on proof) and W-024 (sweep). Consequence: a workspace that had a replacement cannot reach `released` until the older PVC is gone; it stays `releasing` with `needsOperator`, because no row may be `released` while a PVC with its label exists. | Accept. On this machine they are small and `scripts/k3s.sh down` removes them. The storage class must have reclaim policy `Delete`; the runner refuses to start otherwise. The alternative is for W-017 to delete an older generation's PVC itself once that generation is `terminated` and replaced; it is a few lines, but it takes reclaiming a fenced generation away from W-019 and W-024, where W-018 put it. |
+| D15 | One PVC per workspace generation. Old generations' PVCs stay in place until W-024 (sweep). Consequence: a workspace that had a replacement cannot reach `released` until the older PVC is gone; it stays `releasing` with `needsOperator`, because no row may be `released` while a PVC with its label exists. | Accept. On this machine they are small and `scripts/k3s.sh down` removes them. The storage class must have reclaim policy `Delete`; the runner refuses to start otherwise. The alternative is for W-017 to delete an older generation's PVC itself once that generation is `terminated` and replaced; it is a few lines, but it takes reclaiming a fenced generation away from W-019 and W-024, where W-018 put it. |
 | D16 | W-017 is larger than its estimate: 8 to 10 days against 4–6. | Two commits (17a, 17b), each with an independent review, and one build-log line after the second. |
 | D17 | **Decided** (owner's call, relayed by the coordinator on 2026-11-18 after the W-017 review). W-018 as shipped cannot release a workspace whose writer was stopped. | Follow `06-runner-workspaces.md:100`. W-017 may amend `packages/workspace` with one minimal change: `active → quiescing` when a stop begins, and `quiescing → retained` only on W-017's quiescence proof, both with the runner identity and an epoch check. `release` then works from `retained` as it does today and deletes the PVC of the generation that holds the work. Section 5 names the functions, the row states and the tests. |
 | D18 | Where the cancel record lives. It must exist per stage run, even with no allocation, and the allocate step reads it. No table has a column for it (SI-20). | An `audit_event` row with a deterministic id (a version-8 UUID from organization and stage run) and pinned `actor_id`, `action`, `resource_kind` and `outcome`, written with `ON CONFLICT DO NOTHING` under the stage run's lock. No migration; the lookup is a primary-key read; the runtime role can only insert, so it cannot be undone. Section 5 has the exact fields. |
+| D19 | What "volume reuse" means in M2 (C2). | **Decided (provisional): no writer reuse.** A replacement always gets a new claim. The proof decides only what may happen to the old one: a read-only checkpoint mount (W-020) or reclaim (W-024). Not taken: reusing the storage with a trusted wipe (2 to 3 days, and unclaimable before D4); reuse with contents (the spec has no flow that reads them). |
+| D20 | W-019 is larger than its estimate: 10 to 12 days against 4–6. | **Decided (provisional): step 0, then 19a, then 19b**, each commit with an independent review; one build-log line after the second. |
+| D21 | A package outside the spec's module list for the wire contract (C13, P-27). | **Decided (provisional): accept `packages/runner-protocol`.** |
+| D22 | Whether W-019 enters `finalizing`. | **Decided (provisional): it does not.** A harness exit goes `running → stopping` (`harness_exited`) and ends `terminated`. W-020 adds `finalizing` where the checkpoint child uses it. |
+| D23 | TLS on the listener, and the CA. A security call. | **Decided (provisional): accept, with the security review's changes.** TLS on every address; plaintext only behind a flag the test configuration alone can set; one pinned CA, no system roots; the CA's digest in the supervisor's arguments and an immutable ConfigMap; the supervisor refuses a runner URL that is not `https:` or is loopback; an ECDSA P-256 listener certificate. Certificate issue and rotation on a real cluster belong to INT-05 and INT-06. |
+| D24 | The network gate before W-021 ships a policy (C8). | **Decided (provisional): `required` in production**, so a cluster without the policy starts no harness. **Every local k3s run applies the listener-only egress policy** and runs with the gate `required`. `disabled` remains only in the fake tier, which has no network to gate, and as step 0 item 5's fallback; in that fallback it must be gone before W-077. |
+| D25 | How long a quarantined volume is kept, and who owns the obligation. A security call. | **Decided (provisional): 30 days, owner `platform-operator`**, the record `restricted`; an open-quarantine count on every pass for alerting; deletion before `preserveUntil` only by an audited operator action. The action is built in W-024 (A-34). |
+| D26 | Who stores the `StageInput`, and who builds `watchEvents` and log chunks (C5, C6). | **Decided (provisional), the brief's default:** W-023 stores the input. Events and log chunks wait for a harness adapter and for storage the schema does not have: W-023 with W-077. W-019 builds neither. |
+| D27 | A runner API outage longer than 50 s stops every running writer, and each loses its unacknowledged work. | **Decided (provisional), the brief's default:** accept; it is the spec's lease. On a real cluster run two runner replicas (rule 2 of section 5 already allows it). P-28 records a possible grace rule; it is not built. The rate limits of this brief are what keep a harness from causing the same thing. |
 
 ## 4. First package brief: W-018 Workspace manager and Git materialization
 
@@ -354,7 +364,7 @@ Temporal. A local setup executor and a bundle-making helper live here and are no
 ## 5. Second package brief: W-017 Kubernetes controller and Job protocol
 
 Written 2026-11-18 against W-018 as committed (`57b16e9`), and revised the same day after its first
-review: four blockers and thirteen should-fix items, all taken (section 7, round 3). Every
+review: four blockers and thirteen should-fix items, all taken (section 8, round 3). Every
 Kubernetes behaviour below is either a row of the section 2 table (verified) or is marked **to
 confirm in the k3s tier**. The two that carry the design were probed on k3s during the revision
 (step 0, below); the rest wait for 17b.
@@ -500,7 +510,7 @@ What the row cannot hold, and where it goes instead:
 | `running` | One pod holds the writer claim and its permit; heartbeats are expected. | `running` |
 | `suspect` | The last heartbeat is older than 30 s, or the pod that holds the writer claim is not `Running`. No new allocation may be made (`06-runner-workspaces.md:12`). | `reconciling` |
 | `stopping` | Cancel, lease expiry or a failed start. The controller is deleting and waiting for the proof. | `reconciling` |
-| `finalizing` | Expected shutdown for a checkpoint, writer claim reserved. **Entered by W-019 and W-020, not here.** The reconciler leaves these rows alone. | `finalizing` |
+| `finalizing` | Expected shutdown for a checkpoint, writer claim reserved. **Entered by W-020, not here (D22).** The reconciler leaves these rows alone. | `finalizing` |
 | `terminated` | Quiescence proved, no accepted result. | `cancelled` if the stage run has a cancel record; otherwise `reconciling`, and the next `startOrAttach` allocates a new generation |
 | `completed` | An accepted terminal result. **Entered by later packages.** | `completed` |
 | `quarantined` | Termination could not be proved in time, or an object with our name is not ours. The PVC is left alone, an audit row records the obligation, and `describeRun` shows `needsOperator`. | `reconciling` |
@@ -518,7 +528,7 @@ Legal edges, enforced in one table (`src/states.ts`); every other pair is refuse
 | `desired`, `starting`, `running`, `suspect` | `stopping` | Cancel. Start deadline passed. No materialization request. Every pod of the allocation bad, with no candidate and none pending or running. The pod that holds the writer claim failed or gone. Lease expired. Writer's pod gone or finished. Before a permit, the workspace at this epoch is neither `allocated` nor `active` and owned by this allocation's `pod_uid` (the second is a permit between its steps, which the same pod's retry completes). |
 | `stopping` | `terminated` | The quiescence proof. The transaction takes the workspace `FOR SHARE` before the allocation and refuses while the workspace is `active` or `quiescing` at this epoch for this `pod_uid`; the pass settles it and tries again. Capacity is released in the same transaction. |
 | `stopping` | `quarantined` | No proof by the stop deadline. |
-| `running` | `finalizing` | Declared here so later packages cannot invent edges; driven by W-019 and W-020. |
+| `running` | `finalizing` | Declared here so later packages cannot invent edges; driven by W-020 (D22: W-019 does not enter `finalizing`). |
 | `finalizing` | `completed`, `stopping`, `quarantined` | The same. |
 
 Nothing goes straight to `terminated`. A cancel that arrives in `desired` still passes through
@@ -885,7 +895,7 @@ Assumptions W-017 writes to `docs/assumptions.md`:
 - **A-31** (new; stands in for INT-02 and W-021): the pod materializer clones a fixture repository inside a test image over `file://`; no Git credential exists in any pod; `bundle` sources are not served to pods.
 
 Spec issues W-017 records in `docs/spec-issues.md`: SI-13 and SI-14 from the earlier list, and
-SI-19 to SI-26, all in the table in section 6.
+SI-19 to SI-26, all in the table in section 7.
 
 ### Definition of done
 
@@ -898,7 +908,669 @@ SI-19 to SI-26, all in the table in section 6.
 - The READMEs state the three rules, which part runs where, the allocation and workspace state tables, the permit steps, the receipt rules, the two phases, the residual risks, the release order (cancel, wait, release) and what is not built.
 - Nothing is left behind by either tier: each test file checks its namespace and its process groups at teardown.
 
-## 6. Risks
+## 6. Third package brief: W-019 Lease fencing and process supervision
+
+Written 2026-11-18 against `1f2096d` (W-017b committed, tree clean), and revised twice the same day,
+after each round of its two reviews (section 8, round 5). No test and no cluster was run for this brief: every code fact below
+was read today, and every Kubernetes behaviour is either a row of section 2 or of W-017's build-log
+line (verified), or is marked **to confirm in the k3s tier**. Seven of those carry design weight
+and are probed first (step 0).
+
+**Goal.** Put a real supervisor in the supervisor slot of the allocation Job, and give the runner
+the endpoint it calls. When W-019 is done:
+
+- exactly one pod's supervisor holds the permit, renews it every 10 s and lets its harness start; a duplicate exits without touching the workspace;
+- a writer that has lost its lease, or whose workspace was fenced, is refused on every pod-facing call and stops itself;
+- a cancel, a harness exit and a supervisor exit all stop the whole pod, and the stop leaves a durable proof;
+- a stop that cannot be proved leaves a quarantine record, and the replacement runs on a new volume.
+
+No Temporal, no workflow change, no migration, no new npm dependency, no Claude, no checkpoint and
+no `finalizing` (W-020, D22), no factory tools (W-075), no production NetworkPolicy (W-021).
+
+**Size.** More than the backlog's 4–6 days; I expect 10 to 12. D22's shrink took about a day out,
+and the two reviews put about two back (three rate limits, the lease clause, the CA digest, the
+deny-target list, the egress policy on every k3s run, and their tests). Round 2 added the
+connection limits and a few hours; the estimate stands, nearer its top. **Step 0**: the probe, half
+a day, first. **19a**: the runner side, in the fake tier, with tests as the callers. **19b**: the
+supervisor, the launcher, the manifests, the images and the k3s tier. Each commit has its own
+review (D20). The acceptance lines are logged after 19b.
+
+**Words.** "The listener" is the runner's pod-facing HTTPS endpoint. "The local endpoint" is the
+supervisor's own endpoint on `127.0.0.1` inside the pod. "The launcher" is the trusted first
+process of the harness container. "Fenced" means the supervisor has learned, or must assume, that
+it no longer holds the lease. "The proof" is the stored `QuiescenceProof`. "The hold" is the cancel
+window of `06-runner-workspaces.md:90`. "PVC", "writer claim" and "governing pod" are as in section 5.
+
+**Spec to read.** `06-runner-workspaces.md:7` (no completion from an exit code), `:16-17` (permit,
+duplicate, launch), `:23-27` (leases, reuse, epoch checks), `:65` (a request to pause is not
+quiescence), `:76` and `:82` (replay from the last acknowledged boundary, into a new empty
+allocation), `:88-90` (envelope, cancel), `:100-104` (cleanup, quarantine), `:108-116` (pod
+boundary, whole-pod stop, no self-report, path-safe reads), `:120`;
+`09-verification-security.md:71-77`; `11-platform-operations.md:27`, `:43`;
+`13-testing-release.md:5`, `:19`, `:64`; `04-temporal.md:83-87`, `:98`;
+`examples/kubernetes-job.json`; `contracts/interfaces.ts:62-97`; `domain.schema.json`
+`cleanupObligationRefs` (`:6108`). Code: `apps/runner/src/permit.ts`, `reconcile.ts`,
+`quiescence.ts`, `states.ts`, `job-manifest.ts:56-71`, `:120-124`, `workspaces.ts`,
+`pod-volume-materializer.ts`, `kube/api.ts`, `kube/fake-kubelet.ts`, `config.ts:28-33`;
+`apps/runner/README.md` (hand-offs, residual risks, what k3s showed);
+`packages/workspace/src/paths.ts:152-171`, `materializer.ts:87-112`, `:153-161`, `manager.ts:68-69`,
+`:263-325`, `:359-388`, `publish.ts:112-121`; `packages/database/src/allocation.ts:115-119`,
+`:144-175`, `:200-226`; `packages/artifacts/src/service.ts:284-317`; `compose.yaml:8-22`.
+
+### What is already built, and is not rebuilt here
+
+- The heartbeat rule on the runner side: 10 s beat, 30 s suspect, 60 s expiry, all judged in SQL on `clock_timestamp()` (`config.ts:56`, `reconcile.ts:256-267`, `allocation.ts:167-175`). W-019 adds the sender.
+- Both permit calls, the local signature check, the token review, the pod read and the writer claim (`permit.ts`). `PermitRequest.source` and `deps.admitSource` were left for this listener (`permit.ts:27`, `:88`; `core.ts:35`).
+- `PodObservation` and the pure proof (`quiescence.ts`), `settleWorkspace` (`workspaces.ts:15-28`), and the two workspace transitions of D17.
+- Every edge W-019 drives is already in `states.ts:8-18`. No edge is added, and `finalizing` is not entered (D22).
+- Release already refuses a workspace with a quarantined allocation (`workspaces.ts:52`).
+
+### Conflicts and corrections
+
+Each row was checked against the code or the spec today. "Brief" says what this section does about it.
+
+| # | Where | What it says | What is actually there | Brief |
+| --- | --- | --- | --- | --- |
+| C1 | Section 5 hand-off (`m2-plan.md:725`, `:851`); `apps/runner/README.md:150-154` | W-018's 0700 modes are in "three places": `ensureSafeChild`, and the workspace and staging `mkdirSync` in `materializer.ts`. Change them to 0750. | There is a **fourth**: `materializer.ts:156` makes `g<n>/work` at 0700, and it sits between the generation directory and the checkout, so the three changes alone still lock the supervisor out of `work/main`. `git/` and `work/main` are made by Git under the process umask, and nothing sets one. `ensureSafeChild` is shared with the publisher's scratch path (`publish.ts:113`); a blanket change there would expose only the organization and workspace directory names, because the staging directory and the bundle have their own 0700 and 0600 (`publish.ts:114`, `:121`). On a host (`LocalMaterializer` on this Mac) 0750 opens every checkout to the user's group, which is the real reason not to change the default. | 0750 is reachable only through the pod export, with umask 027 ("Modes", in 19b). Every host path keeps 0700. |
+| C2 | Section 1 row 3; section 4 `replaceWriter`; section 5 hand-off ("volume reuse is the PVC-name function called with the older generation"); D15 | W-019 builds volume reuse on proof. | Three things stand against a second writer on a used volume. (a) The spec replays a lost stage from its last acknowledged boundary into "a new empty allocation" (`06:76`, `:82`); nothing consumes a predecessor's dirty tree. (b) W-018's Git rule: `allocated` means no writer has ever started on the generation, and the trusted clone, `ensureMaterialized`'s repair and `release` all rest on it. (c) Detachment is listed in section 2 as unproven until a real cluster. The directory, the PVC name and `pvcIsOurs` are all keyed by generation as well. The backlog deliverable says "isolated replacement rules", not reuse. | D19 (decided): no writer ever mounts another generation's claim in M2. W-019 builds the proof, the quarantine record and the one function that says what may be done with an old volume. Its consumers are W-020 and W-024. SI-28. |
+| C3 | Section 1 row 3 | The proof holds "the terminal state of every container". | On k3s 1.36.6 a Terminating pod keeps every container `running` in the API until the object is gone (conformance row 4). After a cancel there is no terminal status to store, only the absence of the pod. | The record says `finished` with container states for a pod still listed, and `gone` for the writer's pod when it is absent. For `gone` it also needs the node (below). |
+| C4 | Section 1 row 3 | W-019 builds "heartbeat 10 s / suspect 30 s / expiry 60 s judged on the Postgres clock". | Built in W-017. | W-019 builds the sender and the supervisor's own stop rule. |
+| C5 | Section 5 (`m2-plan.md:613`); `runner.ts:43` | `watchEvents` is `not_supported` "until W-019". | There is no harness adapter before W-077, and the schema has no table for harness events or log chunks (only `task_event` and `audit_event`). | Not built here. D26 moves it, with the log chunks of `06:88`, to W-023 and W-077. SI-32. |
+| C6 | Section 5 hand-off; SI-26 | Persisting the full `StageInput` is "W-019's or W-023's". | No code path in W-019 reads it: the supervisor needs the organization, allocation, epoch, generation and workspace, and all five are in the rows. What a stored input must be bound to is SI-21, which is W-023's. | W-023 (D26). The supervisor gets its five values as arguments rendered from the rows. |
+| C7 | Section 5 state table and edge table | `finalizing` is "entered by W-019 and W-020". | With no checkpoint child, `finalizing` here would be a capacity hold with no consumer. | D22 (decided): W-019 does not enter it. A harness exit goes `running → stopping`. The reconciler still leaves `finalizing` rows alone, and W-017's assertion (`w017-states.test.ts:55-59`) stands. |
+| C8 | Section 1 row 3; D11 | W-019 builds the network start gate. | The gate needs a policy to observe, and production NetworkPolicy is W-021's, four packages later. | The mechanism is built. The k3s tier carries one local policy on every run, which is also what keeps pods off the Mac's own services (D24). |
+| C9 | `06:17` against `06:108`, `:116` | "Only the winning supervisor may launch the harness", with the two in separate containers and no shared process namespace. | Kubernetes starts both containers. The supervisor can neither start nor signal a process in the other one. | SI-27: a launcher in the harness image waits for the supervisor's start signal. The only stop that counts is the pod delete. |
+| C10 | `06:90` against `states.ts` | Cancel allows "up to 30 seconds for a safe checkpoint request" before the delete. | W-017 deletes at once (`start.ts:175-177`, `reconcile.ts:269-283`). | The hold and a stop acknowledgement are built here. What a checkpoint at cancel is, is W-020's. SI-29. |
+| C11 | Today's code | Stale-writer rejection. | `renewAllocationLease` and `passRunning` never read the workspace. If anything fences a workspace while its allocation is `running` (a hand-back after human takeover, `06:27`; W-020's restore), the old writer keeps renewing. No caller does that today (`start.ts:76`, `:90-93`). | Closed in 19a: the renewal and the `running` pass both require the workspace to be at the allocation's epoch. |
+| C12 | Today's code | Leases. | The claimant's acquire retry on a `running` row is granted with no lease condition and no refresh (`permit.ts:145`, `:165`, `:188`). A supervisor that retries late would take a fence time the server never granted. Only tests call it today. | Closed in 19a (rule 4). |
+| C13 | `tools/boundaries.json` | Apps are never importable. | The supervisor and the runner must agree on a wire format, and W-023's worker client will need the same. | A new package, `packages/runner-protocol`, which is outside the module list of `01-scope-architecture.md:84-99` (P-27, D21, decided). |
+| C14 | `core.ts:20` | `artifacts` is optional in `RunnerDeps` ("getResult only"). | The proof and the quarantine record are controller artifacts. | It becomes required. W-017's harness already passes it. |
+
+### Seven rules
+
+W-017's three rules stand (no Kubernetes call in a transaction; controllers are kept apart by names
+and compare-and-swap, not a lease; `terminated` is a proof). The first gains one clause: **no
+object-store call inside a transaction either**. Four more:
+
+4. **Authority is the runner's answer to this call, and it is checked against the lease.** Every
+   pod-facing call is reviewed, read against the pod and checked against the rows, as the permits
+   are today. **Every route that grants, or that changes an allocation's state, carries the lease
+   condition in its own locked statement** (`controller_lease_until > clock_timestamp()`), and
+   every grant refreshes the lease in that statement. Nothing the supervisor remembers is
+   authority, and its own clock can only make it stop **earlier** than the server would.
+5. **Only the pod delete stops a writer.** The supervisor cannot signal the harness. A cooperative
+   stop is a courtesy; no proof, state change or record depends on anything reported from inside
+   the pod (`06:65`, `:116`). What the runner knows about a container, it reads from the cluster.
+6. **A stored proof is a one-way door.** Once an allocation has a proof it can only become
+   `terminated`. **Every move to `quarantined` reads the proof link under the row lock and refuses
+   when one exists.**
+7. **One generation, one claim, one writer** (D19). The renderer has no input through which an
+   allocation could name another generation's PVC.
+
+### Step 0: the probe
+
+Half a day on AC power, before 19a is written, with the pinned k3s image and no factory code
+beyond W-017's images. Items 1, 4 and 7 shape 19a; the rest shape 19b. Each has a named fallback.
+
+| # | To show | If it does not hold |
+| --- | --- | --- |
+| 1 | A pod in `factory-exec-local` completes a TLS request to a listener on the Mac at the podman host-gateway address. Record the source address the listener sees and the address it had to bind. **Also from that pod, with no policy:** whether `<gateway>:55432` (the compose Postgres, `compose.yaml:11`) and `:57233` (Temporal, `:22`) accept a connection. | Run the listener as a container on the podman network (one more image, about a day). |
+| 2 | In a container with `runAsUser: 10002` and `fsGroup: 10001`, `id` lists group 10001; it can list a 0750 directory owned `10001:10001` on the claim. **Control:** it cannot list a 0700 one. | Give the supervisor `runAsGroup: 10001`. |
+| 3 | A projected volume with a `serviceAccountToken` source and a source for an **immutable** ConfigMap mounts, and uid 10002 reads both files. | A second, ConfigMap volume for the CA. |
+| 4 | When one container of a running pod exits, the pod status shows it `terminated` with its exit code within a few seconds, while its sibling runs (the pod is not Terminating). | The supervisor reports the harness's exit on a new route, from the launcher's hint. That lets a candidate end its own stage and nothing more; the stop record says the exit was reported, not observed. The route changes state, so by rule 4 its locked statement carries the lease clause, as renew's does. |
+| 5 | Under a default-deny egress policy with one allow rule for the listener's address **and port**: after the start-up window of SI-15, connects to the API service address, to `169.254.169.254:80`, and to the gateway's `:55432` and `:57233` all fail, and the listener stays reachable. Record whether a denied connect is refused or times out. | The gate is `disabled` at K, pods can then reach the Mac's services, and **W-077 does not start on this tier** until that is solved (D24). Either way the result goes into W-019's build-log line, so W-077's brief can cite it. |
+| 6 | A process that called `setsid` and ignores TERM in the harness container is gone when the pod object is gone (runtime view), about 15 s after the delete. | AC-15's K claim narrows to the process group. |
+| 7 | The runner's service account can `get` a node by name once the ClusterRole allows it, and a scheduled pod carries `spec.nodeName`. It can `get` the `kubernetes` Service in `default` under a Role that names only that Service. | The node check is fake-only and off by default; the gate's start-up check is skipped and the residual grows. |
+
+Recorded, not relied on: what the kubelet does to modes and group ownership when a second pod
+mounts the claim under `fsGroup` (it matters to W-020's read-only mount).
+
+### The parts, and where each runs
+
+| Part | Runs in | Touches |
+| --- | --- | --- |
+| `@factory/runner-protocol`: wire shapes, parsers, caps, denial codes, supervisor exit codes | Imported by the runner, the supervisor and, later, the worker | Nothing. Pure, no dependency. |
+| The listener | The runner process | The permit service and the stop-acknowledgement service. Never the database directly. |
+| Pod call guard (`authorizePodCall`) | The runner process | A token review, a pod read, the allocation and workspace rows. |
+| Proof, quarantine and disposition records | Written by the runner; types, `prepare`, `register` and readers in `packages/workspace`, so W-020 can read them without importing an app | Controller artifacts and `artifact_link`. |
+| Reconciler: the container-exit stops, the hold, the fenced-workspace stop, the proof-first order | The runner process | Postgres and the `KubeApi` port. |
+| Start-up checks | The runner process, before the first pass | One Service read, one node read. |
+| Supervisor (`apps/supervisor`, entry `main.ts`) | The supervisor container, uid 10002 | The listener, its token file, the local endpoint, one read-only look at the workspace before the harness starts. No database, no Kubernetes API. |
+| Launcher (`apps/supervisor`, entry `launcher.ts`) | The harness container, uid 10001, before any candidate code | The local endpoint, and the one child it starts. |
+| Scripted harness (A-33) | The harness container, as the launcher's child | The workspace, as a test asks. |
+| `FakeKube` nodes and Service, and the fake kubelet's token files, volumes and ports | The test process | Memory and local child processes. |
+
+### 19a: the runner side
+
+**Protocol package.** `packages/runner-protocol` holds, for the pod-facing API only: the three
+route names, request and answer types, `PermitDenialCode` (moved from `permit.ts`, which re-exports
+it), hand-written parsers, the caps (body 16 KiB, token 8 KiB, report 1 KiB), the status mapping
+and the supervisor's exit codes. The parsers accept a plain object's own keys only and refuse any
+key not listed, `__proto__` and `constructor` included. Committed vectors pin every shape.
+Boundaries: `allowWorkspace: []`, and the `denyExternal` list of `@factory/contracts`.
+
+**The listener** (`src/listener/pod-listener.ts`, `node:https`). `podListener` is optional in the
+configuration; absent means no listener, which is what W-017's process test runs.
+
+- Routes: `POST /pod/v1/permit/acquire`, `/pod/v1/permit/renew`, `/pod/v1/stop-ack`. The token travels in `Authorization: Bearer`; the body is JSON. Anything else is 404, 405, 413 or 415 with no detail.
+- Status: 200 granted; 400 `invalid_request`; 401 `unauthenticated`; 429 `throttled`; 503 `review_unavailable`; 409 every other typed denial. The body is the answer; the status is a hint.
+- **TLS, always** (D23). `createConfig` requires a certificate and key whatever the bind address, and refuses an unspecified address (`0.0.0.0`, `::`): the listener binds one named address. Plaintext exists only behind a flag that `createTestConfig` alone can set, for the fake tier's loopback. The k3s tier uses TLS.
+- **Admission, in this order.** Each step is there so that the one after it cannot be starved by someone who failed the one before. Steps 1 and 2 act on the plain socket, before any TLS work.
+  1. **New connections, per source.** A bucket checked on the server's `connection` event, before the handshake: 5 a second, burst 20. Over it the socket is destroyed, which costs nothing, and counted. A handshake is the dearest thing a peer with no token can ask for, and Node runs it on the event loop that also answers every renewal and runs the reconciler. A harness that replays a ClientHello and hangs up, or that reconnects each time it is refused, would otherwise be charged by nothing below. A supervisor keeps one connection alive and its gate opens about one a second while it waits.
+  2. **Open connections.** 512 in all and **4 per source**: a supervisor's one kept-alive connection and its gate probes. 5 s for the TLS handshake; 5 s for headers and body; 10 s per request; 16 KiB of headers. Configuration refuses `sourceConnections × (pools.authoring + pools.verifier) > 512`, so one organization's full pools cannot fill the listener.
+  3. **Source charge. Every request is charged to its source's bucket (10 a second, burst 50) unless its token verified locally.** That covers a malformed request; a wrong path, method or content type; a token that fails local verification; a token met again inside the failed-token memory, which is answered before any verification (`permit.ts:79-81`); and an unknown key id, which is answered `review_unavailable` and never remembered (`permit.ts:96`). A source with an empty bucket is answered 429 and its connection is closed; step 1 then bounds how fast it can come back. A request whose token verifies is never charged to, or refused by, the source bucket.
+  4. **Local verification** (`verifyTokenLocally`, W-017) runs on every request that parsed and was not answered from the failed-token memory. Its cost per request is bounded (4 KiB a part, `token.ts:7`; one algorithm per key; a single-flight key fetch at most once in 30 s, `token.ts:11`, `:43-50`), and steps 1 to 3 bound the requests.
+  5. **Per-pod bucket**, keyed by the pod UID in the token that has just verified: burst 5, then one every 2 s. Normal traffic is one every 10 s, and a transport retry is one every 2 s. Over it: `throttled`, with no review, no row and no audit. **This is what stops one pod's valid token from spending everyone's review budget.**
+  6. The shared TokenReview budget (`permit.ts:61-69`), sized as below.
+  7. The guard.
+- **The review budget is sized from what is running.** Today it is one bucket per runner, shared by every organization, and sized from one organization's pools (`config.ts:30-33`). From W-019 each pass hands the permit service the number of `running` and `suspect` allocations across all organizations, and the refill rate is `max(20, 2 × podRate × that number)`, up to `review.ceilingPerSecond` (default 200, to protect the API server). The burst is twice the refill, as `config.ts:32` sets it today. Every pod at its own cap then spends at most half the budget. When the ceiling binds it is counted and warned once a pass. Configuration refuses `2 × podRate × (pools.authoring + pools.verifier) > review.ceilingPerSecond`. The ceiling goes to P-14's load test with the other rates.
+- `admitSource` (`permit.ts:88`) therefore changes its meaning from "admit" to "charge", and the listener charges the same bucket for what never reaches the permit service.
+- **The failed-token memory becomes an insertion-ordered LRU** of 4,096 entries: a new entry evicts the oldest. Today a table full of unexpired entries is scanned on every failure and nothing is deleted (`permit.ts:84`).
+- Tables are bounded and evict the least recently used entry when full; they never refuse a new source or pod. Counters have fixed names: never a path, a source or a token. A token is never logged.
+- A source is `remoteAddress`. Loopback on macOS has one address, so the fake tier names its sources through an injectable `sourceOf` that only the test configuration can set.
+- **A route answers first and reconciles after.** The pass that `stop-ack` or a renewal sets off runs after the response is written, and is single-flight per allocation: a repeat while one is running starts nothing.
+- It is a separate port from anything W-023 adds: that route authenticates control-plane identities, this one authenticates pods.
+- `startRunnerProcess` starts it after the start-up checks and closes it before the loop stops.
+- **Deployment requirement** (README, "Deployment invariants"): the listener must see real pod addresses, so the runner runs in the cluster with no source NAT in front of it. Behind NAT the per-source limits mean nothing. This machine's k3s tier is behind NAT; A-32 records it as a development-only arrangement.
+
+**The pod call guard** (`src/pod-guard.ts`). `permit.ts`'s `#review` and `#pod` move here
+unchanged, and one function, `authorizePodCall(req, need)`, is the only way a pod-facing route
+reaches a row. In order: the review; the allocation by id; `owner_epoch` equal to the request's;
+the pod read (same UID, no deletion timestamp, our label, owned by `job_uid`); `pod_uid` equal to
+the reviewed UID, unless `need.writer` is `claimable` (acquire only); the state in `need.states`;
+the workspace clause of the route; and, for a route that grants or changes state, the lease, inside
+the statement that does it.
+
+| Route | States | Workspace clause | Lease clause | Changes |
+| --- | --- | --- | --- | --- |
+| acquire, first commit | `starting` | At this epoch; `allocated`, or `active` owned by this pod (a permit between its steps) | `starting → running` only while the start deadline in `controller_lease_until` has not passed | As W-017, plus the start record and the node read. |
+| acquire, wherever it finds the row already `running` for this pod: in the guard, or under the lock of its last transaction because a concurrent call of the same pod committed first (`permit.ts:188`) | `running`, `suspect` | As renew | **It is the renewal statement**: unexpired, and refreshed. No branch of acquire returns a grant it did not just write. | The grant it returns is a renewal's. |
+| renew | `running`, `suspect` | At this epoch, owned by this pod, `active`; in the same `UPDATE` | Unexpired, and refreshed | As W-017, plus the harness container's state in the answer. |
+| stop-ack | `stopping` only | At this epoch, owned by this pod, `active` or `quiescing` (the first pass has usually settled it) | None: it grants nothing and changes no state (`06:112`: cancellation "permits only scoped checkpoint/cleanup recording") | The acknowledgement record. |
+
+- **Renewal.** `renewAllocationLease` gains: `workspace_id IS NULL`, or a `workspace` row with this id, `owner_epoch`, `owner_pod_uid` and state `active`. It stays one statement on `clock_timestamp()`. A grant carries `harness: { state, exitCode? }`, taken from the `harness` container's status in the pod the call already read. That is the cluster's statement, not the pod's.
+- **Why a renewal was denied, in this order** (replacing `permit.ts:224`): the row is gone; another pod is the writer; the state is not `running` or `suspect`, which answers `not_renewable` with the state (**`stopping` is still how a supervisor learns of a stop**, whatever the workspace says); the workspace is not at this epoch, which answers `stale_epoch`; otherwise `lease_expired`.
+- **Denied calls are audited under a cap** (M1). After a good review a denial writes its audit row through a bucket keyed by the **reviewed pod UID**, with `refusalAudit`'s numbers (`core.ts:49-64`). Not the username: every supervisor has the same one (`config.ts:79`). Over the cap it is counted in memory.
+- **The `running` pass** stops an allocation whose workspace is no longer at its epoch (`workspace_fenced`). With the renewal change this closes C11.
+- `stop-ack` is reachable only during the hold: once the pod has a deletion timestamp the pod read refuses the call. A repeat inside the hold finds the record and starts no second pass.
+
+**Container exits** (D22, and the review's S9). The `running` pass already lists the allocation's
+pods. For the governing pod, while it is not Terminating:
+
+- the `harness` container is `terminated`: `→ stopping`, reason `harness_exited`;
+- the `supervisor` container is `terminated`: `→ stopping`, reason `supervisor_exited`, at once and without waiting for the lease.
+
+Neither waits for the hold, because the stage run has no cancel record. A renewal that sees either
+one in the pod it read sets off a pass after it has answered. The `starting` pass treats a pod
+whose supervisor has exited as a bad pod, so a duplicate that lost, or a gate that never passed,
+does not sit until the start deadline. The allocation ends `terminated` with a proof and the
+workspace `retained`; `getRun` answers `reconciling`. **That is the end of every successful stage
+until W-020 adds `finalizing`.**
+
+**Records, and where each lives.** No migration. Two kinds, by one rule: evidence that another
+package cites by `ArtifactRef` and that must be retained is a controller artifact, registered as
+W-018's receipt is (`service.ts:286-299`); a flag the reconciler reads by primary key on every pass
+is an `audit_event` row with a deterministic id, as D18's cancel record is.
+
+| Record | Kind | Key | Written | Read by |
+| --- | --- | --- | --- | --- |
+| Writer start | `audit_event`, id from `factory-writer-start/1`, organization, allocation | one per allocation | In the permit's last transaction (`starting → running`) | The proof (the writer's node), `describeRun` |
+| Stop acknowledgement | `audit_event`, `factory-stop-ack/1` | one per allocation | By `stop-ack` | The hold |
+| Cancel stop | `audit_event`, `factory-cancel-stop/1`, organization, allocation | one per allocation | By `cancel`, in the transaction in which **it** moves the allocation to `stopping`, and only then | The hold |
+| Urgent stop | `audit_event`, `factory-run-urgent-stop/1` | one per stage run | By `cancel` with `urgent`, under the stage run's lock | The hold |
+| `QuiescenceProof` | Controller artifact, purpose `quiescence_proof/<allocationId>` | one per allocation | On the caller's transaction, under the allocation's row lock, in `stopping` only | The `stopping` pass, the quarantine move, W-020, W-024, W-023 |
+| `QuarantineRecord` | Controller artifact, classification `restricted`, purpose `quarantine_record/<allocationId>` | one per allocation | In the same transaction as `→ quarantined` | `describeRun`, release, W-024, W-023's `cleanupObligationRefs` |
+
+- Every `audit_event` record follows D18 exactly: pinned `action`, `resource_kind`, `resource_id` and `outcome`; `ON CONFLICT DO NOTHING`, then read back; a row at that id with other fields is a hard error. `getAuditEvent` gains a variant that returns `details_ref`.
+- **Writer start** holds the pod's name and UID, its node's name and UID, and the supervisor's start report, marked as reported. **The node is read after the review and the pod read**, from the `spec.nodeName` of that pod, so a caller who is not authenticated never costs a Kubernetes call. With `nodeCheck: 'required'` (the default) a pod whose node cannot be read is `not_ready`.
+- **The two artifact records have the same three functions**, in `packages/workspace/src/quiescence-proof.ts` and `quarantine-record.ts`:
+  - `prepare(ctx, input)`: outside any transaction. It requires the runner identity, and a refusal is audited here, in its own transaction, so a later rollback cannot erase it. It validates the input, builds the canonical body, puts the object and returns a handle that only this module can mint.
+  - `register(tx, handle)`: **on the caller's transaction**, as `registerControllerArtifact` is (`service.ts:299`). The caller holds the allocation's row lock. It first reads for an existing link and answers `exists` if there is one.
+  - `read(tx, ...)`: counts only links whose artifact's `producer_id` is the configured runner identity and whose body names the allocation asked for. None: absent. One: the ref. **More than one is a hard error**: `artifact_link` has no unique key (`0003_tasks_execution.sql:232-244`), so "one per allocation" is the row lock and nothing else, and a second link means the lock was bypassed.
+  - This is "accepted only from the runner identity".
+
+**The proof** (`factory-quiescence-proof/1`, canonical JSON, capped at 64 KiB). It carries the
+organization, task, allocation, logical stage run, generation, epoch and workspace; the Job's name,
+recorded UID and `absent: true`; the writer (pod name, UID, node) or null; one entry per pod still
+listed, with phase and `ContainerObservation`s and no message or reason text;
+`writerPod: 'finished' | 'gone'`; the node check; the detachment observation; and the
+**observation time**, read from the Postgres clock in the unlocked phase, before the put.
+
+`evaluateQuiescence` keeps every W-017 condition and gains three:
+
+- **Node.** If the allocation has a **start record** and the writer's pod is absent from the list, the node recorded at start must still exist with the same UID (`getNode`). Otherwise `writer_node_missing`: not proved. This is the pod-garbage-collection hazard of section 5's residual risks. A pod under graceful deletion on an unreachable node stays listed, so it is already unproved today.
+  - **A claimed writer with no start record needs no node check** (`not_needed`, recorded as such). The start record is written in the transaction that makes the allocation `running`, and every grant is returned after that commit (`permit.ts:185-199`). No start record therefore means no supervisor was ever granted, no start gate opened and no candidate process ran. W-017's own test of a cancel between the claim and `markWriterStarted` (`w017-permit.test.ts:240-253`) is this case, and it still ends `terminated`.
+- **Claim.** With a workspace, the namespace's pods are listed **without a selector** (same page cap; a capped list is not proved), and none that is unfinished may name this generation's claim in its volumes. An unlabelled pod on the claim is exactly what the labelled lists miss.
+- **Detachment** is recorded as `{ method: 'no_consumer_pod', claim: { name, uid } }`, or `no_claim`. `VolumeAttachment` for a CSI volume is not read: that is D4, and the disposition function below says so (SI-30).
+
+**Order, and the one-way door.** The `stopping` pass becomes:
+
+1. Read the proof link. If one exists, go to step 5. The deletes still run for hygiene. **The hold is never consulted once a proof exists.**
+2. The hold (below). If it applies, the pass ends here and waits.
+3. As today: settle the first edge, delete, list, evaluate.
+4. Proved: `prepare` (the put, no transaction), then lock the allocation `FOR UPDATE`, re-check state and epoch, and `register`. A second controller gets `exists` under the lock and uses the first one's link. **Not proved by the stop deadline:** `prepare` the quarantine record, then `move(..., 'quarantined')`, which **under the same row lock reads the proof link first and refuses when one exists**; the pass then continues at step 5 with that proof. A put that fails ends the pass with the row unchanged: no proof, no quarantine, no transition.
+5. `settleWorkspace(a, 'proof')`, which refuses to call `markWriterStopped` unless the proof link exists.
+6. `terminateTx`, which answers `needs_proof` without the link.
+
+D17's two manager methods are not changed.
+
+**The quarantine record** (`factory-quarantine-record/1`). Written for all three sources that
+remain (`desired`, `starting`, `stopping`). It carries the identity fields, the reason code, the
+last observation in the proof's shape (**no container message or reason text**: the harness writes
+its own) and why it was not a proof, the claim's name and UID when one was read, the writer,
+`preserveUntil` and `escalateAfter`, and the obligation: kind `quarantined_allocation`, owner
+`quarantineOwner`, `needsOperator: true`. D25, decided:
+
+- `preserveUntil` is 30 days ahead (`quarantinePreserveDays`), the owner is `platform-operator`, and the artifact is `restricted` (`06:104`: "preserve restricted evidence").
+- **Alerting.** Every pass counts the quarantined allocations whose record is past `escalateAfter` (one day) and reports the count in `PassSummary` and a warning line. `describeRun` returns the record's ref. Routing that count to a person is INT-09's; the number exists from W-019 on.
+- **Early delete.** A quarantined volume may be deleted before `preserveUntil` only by a named operator action that writes its own audit row and a resolution record (erasure, tenant offboarding). The rule is fixed here. **The action is built in W-024**, with the only code that deletes a PVC.
+- Nothing in W-019 mounts or deletes a quarantined generation's PVC, and nothing here stops its pod again: the reconciler does not list `quarantined` rows, and `sweepJobs` deletes only unrecorded Jobs and those of `terminated` allocations (`reconcile.ts:334`). The Job's own deadline bounds the process; stopping it earlier is W-024's.
+- The allocate step's `runner.reallocate_after_quarantine` row (`start.ts:103`) gains the record's ref: that is "the quarantine record for a replaced generation".
+
+**What may be done with an old volume** (`volumeDisposition`, pure, in `packages/workspace`):
+
+| Allocation of that generation | Records | Answer | Who may act |
+| --- | --- | --- | --- |
+| Live | No proof | `in_use` | Nobody. |
+| `stopping` or `terminated` | A proof with `no_consumer_pod`, and the node check passed or not needed | `quiescent` | W-020's checkpoint child may mount it read-only, after listing the claim's consumers again. W-024 may delete it once the generation is replaced or the workspace released. |
+| `terminated` | No proof (a row from before W-019) | `unknown` | Treated as quarantined. |
+| `quarantined` | The quarantine record | `quarantined` | An operator, then W-024 after `preserveUntil`. |
+
+No answer permits a second writer (rule 7). The function takes a `storage` argument and answers
+`unknown` for anything but `pod_scoped_local`, so a CSI class cannot be called `quiescent` before
+D4 defines its observation. **`quiescent` is a statement about the moment of the observation.** A
+paused controller's late Job can still create a pod on the claim afterwards (section 5's residual).
+That pod is harmless only because its launcher never gets a start signal, its materializer answers
+`target_exists` (`materializer.ts:95`), and on a cluster the claim is `ReadWriteOncePod`.
+
+**The hold** (`06:90`). Step 2 of the pass. The pass waits, and deletes nothing, while all of these
+are true, each read in SQL:
+
+- **this stop was caused by the cancel**: the allocation has a cancel-stop record, which `cancel` writes only in the transaction where it makes the transition itself (`start.ts:174-177`);
+- the stage run has **no urgent stop record**;
+- the allocation has a start record (a supervisor was granted);
+- the last heartbeat fell within `suspectSeconds` of the moment the stop began (`last_heartbeat_at` against `updated_at`, which only the transition writes in this state);
+- no stop acknowledgement exists;
+- the row has been `stopping` for less than `cancelCheckpointWaitSeconds` (30).
+
+The supervisor learns of the stop from its next renewal (`not_renewable`, `stopping`) and sends
+`stop-ack`; the route answers and then runs the pass, which deletes. A supervisor that never
+answers costs 30 s inside the 180 s stop deadline. A stop for a lost lease, a lost pod, or a
+container exit never waits, and neither does a cancel that arrives after one of those has begun,
+even in the gap between that stop's transition and its first delete: such a cancel finds the row
+already `stopping`, makes no transition, and so writes no cancel-stop record.
+
+- **Why a record and not a comparison of times.** The cancel record's `created_at` against the row's `updated_at` gives the wrong answer in one interleaving: a cancel takes the stage run's lock and writes its record (`start.ts:168`), then waits for the allocation's row lock behind the pass that is moving the row to `stopping` for a dead supervisor (`start.ts:174`). The record is then older than the transition it did not cause, and the pass would wait 30 s for an acknowledgement that cannot come.
+- The round-1 condition "nothing has been deleted yet", which cost two cluster reads a pass, is gone: the cancel-stop record covers every case it was for.
+
+- **Urgent stop** (L3). `cancel` takes an optional fifth argument, `{ urgent: true }`, and stays assignable to the reference interface, as W-018's `materializeCandidate` did. It writes the urgent record under the stage run's lock, even when a cancel record already exists, so a second, urgent cancel shortens a hold in progress. W-119's emergency stop is its first real caller.
+
+**Start-up checks** (`startRunnerProcess`, after the storage class, before the listener and the first pass):
+
+- With `networkGate.mode: 'required'`: read the `kubernetes` Service in `default` and refuse to start unless the gate's deny list contains its cluster address and port. A mistyped address would otherwise pass every gate in the cluster.
+- With `nodeCheck: 'required'`: `getNode` on a name that cannot exist must answer 404. A 403 refuses to start; without this every permit would be `not_ready` until its start deadline.
+- A warning, never a refusal: the runner tries one connect to each deny target and logs any that does not accept as "probably mistyped". It proves nothing where the runner is itself under a policy, and the metadata address answers only on a cloud node; it is there to catch the typo the start-up check cannot.
+
+**Port and fake.**
+
+- `KubeApi` gains `getNode(name)`, returning name and UID, and `getApiService()`, returning the cluster address and port. `KubePod.spec` gains `nodeName`. `listPods('')` is documented as the whole namespace.
+- RBAC: the ClusterRole gains `get` on `nodes`; a Role in `default` grants `get` on the Service named `kubernetes` and nothing else. **The runner gains no right on ConfigMaps.**
+- `FakeKube` gains nodes (one by default), `nodeName` at scheduling, the Service, and `driver.loseNode`, which removes the node and its pod objects while the fake kubelet's processes run on, as pod garbage collection does. It is a fake-only fault and is never reported as cluster evidence.
+
+**Config added** (`src/config.ts`): `podListener` (optional), `sourceRate`, `sourceConnections` 4,
+`sourceNewConnections`, `podRate`, `review.ceilingPerSecond`, `cancelCheckpointWaitSeconds` 30,
+`quarantinePreserveDays` 30, `quarantineEscalateDays` 1, `quarantineOwner`, `nodeCheck`,
+`networkGate: { mode, denyTargets }`, `supervisor: { runnerUrl, caConfigMap, caSha256, localPort }`.
+Validation gains: `leaseSeconds > 2 * beatSeconds`; `suspectSeconds < leaseSeconds`; the per-pod
+interval at most half a beat; the two products above (connections against 512, the per-pod rate
+against the review ceiling); and every deny target a literal address and port. `createConfig` refuses, by key, the plaintext flag and the per-source relaxation, as it already refuses W-017's test switches (`config.ts:42`); a production JSON config cannot carry either. `sourceOf` is a function that only `createTestConfig` (in `@factory/runner/testing`) accepts; it is not a field of the exported `RunnerProcessOptions`. A structural test (`w019-testing-boundary`) fails if any file under `apps/*/src` other than `testing.ts` imports `@factory/runner/testing`, with a planted import as its control. The test
+configuration may exceed the per-source numbers, because in both local tiers every pod is one
+source (A-32).
+
+### 19b: the pod side
+
+**The supervisor** (`apps/supervisor/src`). One process, no dependency beyond the protocol package
+and `node:` modules. Its states:
+
+| State | Does | Leaves to |
+| --- | --- | --- |
+| `boot` | Parses its arguments. Paths are fixed in the production entry: `/var/run/factory-identity/token`, `runner-ca.crt` beside it, `/workspace`. It checks the runner URL and the CA (below). | `gating`; exit 64 |
+| `gating` (D11) | With the gate `required`: one round a second. In a round it tries a TCP connect to every deny target and to the listener. A round passes when **every** deny target fails **and** the listener accepts; the supervisor then completes **one** TLS handshake with the listener, and only that makes the gate pass. A waiting gate therefore costs the listener a plain connect a second, not a handshake. Bounded at 120 s. Nothing of the workspace is touched. | `acquiring`; exit 68 |
+| `acquiring` | `acquire`, with the gate's report. Retries the retryable denials (`not_ready`, `throttled`, `review_unavailable`, a transport error) from 2 s up to 5 s. The runner's start deadline is the bound. | `preparing`; exit 65 on `duplicate_writer`; 66 on any other final denial |
+| `preparing` | Starts the beat. Looks at the workspace through the view (below). Runs one more gate round. | `running`; exit 69 (workspace) or 68 (gate), fenced first |
+| `running` | Opens the start gate. Beats. Once a grant reports the harness `terminated` it closes the start gate and drops every hint; the runner is already stopping the pod. | `ending`, `fenced` |
+| `ending` | A renewal is denied with `stopping`: sets the stop flag, sends `stop-ack` once, waits for TERM. | exit 0 |
+| `fenced` | Any other final denial, or no renewal confirmed by the fence time: sets the stop flag, makes no further call. | exit 70 |
+| TERM, in any state | Sets the stop flag and exits within a second. | 0 from `ending`, else 143 |
+
+- **Order: gate, then permit, then workspace.** A gate that never passes then costs nothing: the workspace is still `allocated`, and release works without a checkpoint. A duplicate probes the network and never reads a file of the workspace.
+- **The runner URL and the CA** (M2, L1). The production entry refuses a runner URL that is not `https:`, or whose host is a loopback, link-local or unspecified address: inside a pod, loopback belongs to the harness as much as to the supervisor, and a port there can be taken after start. It takes `--runner-ca-sha256` and refuses a CA file with any other digest; the file is read once, at `boot`. It trusts that one CA and no system root, and checks the certificate's name.
+- **One connection.** The client keeps a single connection to the listener alive and reuses it for every call; it opens a new one only when that one is lost. The listener's per-source numbers are sized on this.
+- **The token** is read from its file on every call and never kept: the kubelet rotates it (`expirationSeconds: 600`, `job-manifest.ts:71`). One `unauthenticated` is retried once after a fresh read.
+- **The beat.** Every `beatSeconds` from the grant, with a 5 s request limit. The fence time is the **send** time of the last granted call plus `leaseSeconds - beatSeconds` (50 s), on the monotonic clock. Every grant refreshed the server's lease after that send (rule 4, the acquire retry included), so the supervisor always gives up first. Transport errors, `throttled` and `review_unavailable` are retried every 2 s until the fence time. `Date.now` is forbidden by lint here as in the runner.
+- **Hints are coalesced** (B1, H1). `POST /v1/exit` can cause at most **one** early renewal per beat interval, never while a renewal is in flight, and only in `running` before the harness has been reported `terminated`. In every other state it is dropped. A harness that loops on the hint therefore doubles its own pod's renewals at most, and the runner's per-pod bucket bounds even that.
+- **The gate's targets.** `--deny-target <address>:<port>`, one to eight, literal addresses only; a name is exit 64. The report lists each target's result. On this machine the list is the API service, `169.254.169.254:80`, and the gateway's Postgres and Temporal ports; W-021 sets the real one, and adds W-023's port when it exists. It shows those rules are active, and nothing about any other. Step 0 found `169.254.169.254:80` refused here even with no policy, so on this machine only three targets (the API service, `:55432`, `:57233`) show a difference; the metadata target is kept for real clusters, and no test claims it as evidence here.
+- **The workspace view** (`workspace-view.ts`).
+  - It can be built only from a grant, by the pattern of W-018's `FactoryOwnedRepo` (a private symbol only the permit client holds), and it is the only file allowed to import `node:fs` for a workspace path (lint rule and a structural test).
+  - **It works only in `preparing`.** Every method asserts the supervisor's state and throws in any other. Its walk is `lstat` by path and then a listing by path, which is safe only while no candidate code is running: after start, a component can be swapped for a symlink between the two calls, and the supervisor would follow it inside its own mount namespace, where the token is.
+  - In W-019 it does one thing: `lstat` each component from `/workspace/factory` down to `g<generation>/work/main`, require a real directory at each, and list `work/main`. Every call is logged. With no workspace it does nothing.
+  - The README states the rule for everyone after: any read of the workspace once the harness has started uses descriptor-relative, no-follow traversal, or a helper process with no credential (`06:108`).
+- **The local endpoint** (`--listen 127.0.0.1:8765`, as `examples/kubernetes-job.json`). Loopback peers only, eight connections, three routes and 404 for the rest:
+  - `GET /v1/start` (long poll): `{ start: true }` once the state is `running`; `{ start: false, reason }` once the supervisor is fenced or ending.
+  - `GET /v1/stop` (long poll): answers when the stop flag is set.
+  - `POST /v1/exit` (256 bytes): the hint. Nothing decides on it (rule 5).
+  - None of the three grants anything. The authenticated tool routes are W-075's.
+
+**The launcher** (`launcher.ts`, the harness container's entry): `harness --supervisor <url> -- <program> [args]`.
+
+- It polls `/v1/start` and starts nothing until the answer is `start: true`. On `start: false` it exits non-zero. If the supervisor never answers it waits for TERM; the runner stops the pod when it sees the supervisor's container exit, or at the start deadline.
+- Before the program starts nothing hostile is in the pod, so nothing can have taken port 8765 and `start: true` can be believed.
+- It sets umask 027, starts the program in a new process group, and exits with the program's code after the hint.
+- On TERM, or when `/v1/stop` answers, it sends TERM to the group and KILL to the group 10 s later.
+- **It never signals pid -1.** Under the fake kubelet that would reach every process of the developer's session. A lint rule forbids a negative literal pid outside the one group-kill helper, and a test checks it.
+- Once it has started the program, the launcher is as untrusted as the program (same uid, same container).
+
+**Scripted harness** (A-33; extends A-27, stands in for W-077). The image `factory-harness-scripted`
+is the launcher plus one script chosen at build time, as the stub's modes are: `idle`, `exit0`,
+`write-file` (writes into `work/main`, then exits 0), `spawn-tree` (a child in the group, and a
+grandchild that calls `setsid` and ignores TERM; pids go to `/tmp`), `ignore-term`, `hint-flood`
+(posts the exit hint in a tight loop). `spawn-tree` is for the k3s tier. No fake-tier file runs it;
+if one ever does, its teardown kills the recorded pids, because the fake kubelet's group kill does
+not reach a process that left the group (`fake-kubelet.ts:5`).
+
+**Manifest** (`job-manifest.ts`; still a pure function of rows and config, no `StageInput`):
+
+- Supervisor arguments: `serve --org --allocation --epoch --generation [--workspace] --runner <url> --runner-ca-sha256 <hex> --listen 127.0.0.1:<port> --network-gate <mode> [--deny-target ...]`.
+- Harness arguments: `harness --supervisor http://127.0.0.1:<port> -- <program>`.
+- The `factory-identity` projected volume gains a `configMap` source for the listener's CA (`runner-ca.crt`). The CA is public; the token stays the only secret in the volume (`06:110`). The digest in the arguments is what makes it tamper-evident: an attach compares the whole Job spec (`job-manifest.ts:120-124`), and the supervisor compares the file.
+- The committed `job.expected.json` changes with them. A Job rendered by W-017's code no longer equals the re-rendered one and would quarantine on attach; none exists outside tests.
+
+**Modes** (C1). In `packages/workspace`:
+
+- **No exported signature carries a mode.** `index.ts` re-exports everything in `paths.ts` and `materializer.ts` (`export *`), so a fourth argument on `ensureSafeChild`, or a mode option on `LocalMaterializer`'s constructor, would be public. Instead a new module, `src/internal/pod-mode.ts`, which the index does not re-export, holds a `PodMode` token that only it can mint (a private symbol, as `FactoryOwnedRepo` in `git.ts:16-28`), the child-directory helper that takes a mode, and `createPodMaterializer`. `@factory/workspace/pod` (`pod-exports.ts`) exports `createPodMaterializer` and nothing else of it.
+- `ensureSafeChild` keeps its three arguments and its 0700. `LocalMaterializer` accepts an optional `PodMode`; without one, which is every host caller, its three `mkdirSync` calls at `materializer.ts:98`, `:99` and `:156` stay 0700, and with one they and the two child levels are 0750. A caller outside the package cannot build the token. `assertSafeRoot` and the publisher are untouched.
+- The pod entry (`materialize-run.ts:91`) makes `/workspace/factory` at 0750, calls `createPodMaterializer`, and sets `process.umask(0o027)` before any Git runs, so `git/` and `work/main` come out 0750 with files 0640. `verifyCheckout` compares only the executable bit, so the umask cannot fail it.
+- Under `fsGroup` every level is group 10001 with the setgid bit (seen in 17b as `2700`), and the supervisor holds 10001 as a supplementary group (step 0 item 2). In the pod the change exposes nothing new: the harness owns the tree either way, and only the supervisor gains a read.
+- W-018's eleven test files pass unchanged, because the default is unchanged.
+
+**Images and script.**
+
+- `deploy/images/supervisor` and `deploy/images/harness-scripted`, built as the materializer image is: from a **staged context of named files**, Node, tini, a numeric user, apk removed, pinned by digest in production configuration. **No test entry is in any image.** A test asserts the staged contexts contain no path under `test/`.
+- `scripts/k3s.sh up` builds them and makes a throwaway CA and an **ECDSA P-256** listener certificate whose name is the address step 0 found (a handshake with it costs the listener a fraction of an RSA one; the choice is recorded for INT-05 in A-32). The keys are written outside `.k3s/ctx` (the build contexts), mode 0600, and the CA's key is deleted once the certificate is signed.
+- It creates the CA ConfigMap with `immutable: true`, writes its digest and the listener's address and port to `.k3s/env`, and **applies the local egress policy** (below). The script holds the admin certificate; the runner's account never writes a ConfigMap.
+- The stub images stay for W-017's tests.
+
+**The local egress policy** (`deploy/k8s/local/egress-listener-only.yaml`, a template the script
+fills). Default-deny egress for every pod of `factory-exec-local`, with one allow rule: the
+listener's address **and port**. It is applied on **every** `k3s.sh up`, so every k3s run, W-017's
+included, has it; their pods need no network. It is a local-tier file, marked as such, and W-021
+replaces it. Two reasons: the gate has something real to observe, and a pod cannot reach the
+Mac's Postgres, whose admin password is in `compose.yaml:8`, or Temporal (`09:77` forbids both).
+
+**Fake kubelet.**
+
+- `ProgramFactory`'s context (`fake-kubelet.ts:17`) gains the pod, a token file per pod that mounts the projected volume (written with `FakeKube.mintToken`, rewritten by `rotateToken`), and one loopback port per pod.
+- **Volumes are keyed by what they are.** A `persistentVolumeClaim` volume maps to one host directory per **claim name**, shared by every pod that names that claim. An `emptyDir` maps to a fresh directory per pod. Every generation's volume is called `workspace` (`job-manifest.ts:47`), so keying by volume name would put two generations in one directory, and keying by pod would hand a duplicate its own empty one.
+- The driver gains `pause` and `resume` for a container's process group (STOP and CONT).
+- The supervisor and the launcher run through **test entries** in `tests/recovery/test/entry`, which take their paths, port and a plaintext loopback runner URL from the environment. The production entries read no environment variable, as with A-31, and would refuse that URL.
+
+### Race and crash rules
+
+1. **Two supervisors, one permit.** Unchanged from W-017: the compare-and-swap on `pod_uid` picks the winner. The loser reads `duplicate_writer` and exits 65. It has probed the network and opened its token and CA files, and nothing else. The `starting` pass deletes it as a bad pod.
+2. **A supervisor dies.** `restartPolicy: Never`: nothing restarts it. The next `running` pass sees the container `terminated` and stops the pod, within one reconcile interval. If the status is late, the lease is the backstop: `suspect` at 30 s, `stopping` at 60 s. The harness holds no credential, and every remote write needs an epoch the runner checks.
+3. **A supervisor is paused and resumes after its lease has passed.** If its local fence time has passed it exits 70 and makes no call. If it has not (a short pause), its next renewal is judged by the server. Before either, it does nothing that carries authority: the start gate opens only while the local fence time has not passed. Node suspend can stop the monotonic clock; then the server's denial is the only fence, which the fourth rule already assumes.
+4. **The runner is unreachable.** Renewals are retried until the fence time. An outage shorter than 50 s costs nothing. A longer one fences every writer, and the returning runner finds every lease expired. That is the spec's 60 s, not a defect, but it is a product consequence: D27, P-28. The admission limits above exist so that a harness cannot cause this for others.
+5. **A late acquire retry, and a concurrent one.** The first acquire commits, its answer is lost, and the supervisor retries 58 s later. The retry is the renewal statement: it is granted only if the lease is unexpired, and it refreshes it, so the fence time the supervisor takes from that grant is one the server gave. After expiry it is denied and the supervisor exits 66 having started nothing. The same holds for two calls of one pod in flight together: the second reads `starting` in its guard and finds `running` under the lock of its last transaction (`permit.ts:188`). Returning the row there with no refresh would in fact be safe, because that call was sent before the first one's commit set the lease; but it is routed through the renewal statement as well, so that no reader has to make that argument again.
+6. **Proof against quarantine.** B judges "not proved" at the deadline while A, a moment later, sees the pod gone and registers a proof. B's quarantine move takes the row lock, finds the link and refuses; B's pass goes on to settle and terminate with A's proof. If B's move commits first, A's `register` finds the row `quarantined` under the lock and does not register; A's object is an orphan for the artifact sweep. The end state is never both.
+7. **A crash between storing a proof and `terminated`.** The next pass, of any controller, reads the link first and goes straight to settle and terminate. A proof without `terminated` is repaired; `terminated` without a proof cannot be written.
+8. **A crash between putting a quarantine object and the transition.** No link, no state change: the next pass does both again.
+9. **The object store is down.** No put, so no proof and no quarantine record, so no terminal transition: the allocation stays `stopping`, live, with its capacity row, and its stage run cannot be allocated again. That is the safe direction and it is an operational dependency the runner did not have before.
+10. **A permit races a cancel.** The hold needs a start record and a recent heartbeat, so an allocation whose permit has not committed is deleted at once, as today.
+11. **A late `stop-ack`.** After the delete has begun the pod read refuses it; after `terminated` or `quarantined` the state check does. Either way it writes nothing but its capped, audited denial.
+12. **A cancel after another stop has begun.** It finds the row `stopping`, makes no transition and writes no cancel-stop record, so nothing waits. That is true in the gap before the first delete, across a runner restart, and when the cancel was waiting on the row lock while the stop was being written.
+13. **The harness forges or floods.** It can reach the listener (`09:77`) and the local endpoint. It has no token: the listener charges its source, answers 401, and never reaches the per-pod bucket, the review budget or the database. Junk from one source does not slow a valid token from the same source. On the local endpoint it can ask for start (no effect) or send the hint, which is coalesced to one renewal a beat and capped again at the runner.
+14. **Token rotation mid-call.** The file is read per call. A token that expired between read and review is one retry.
+15. **A harness that exits when nobody is told.** The launcher's hint is not needed: the `running` pass and the next renewal both read the container's state from the cluster.
+
+### Files
+
+| File | Content |
+| --- | --- |
+| `packages/runner-protocol/{package.json,README.md,src/pod-api.ts,src/exit-codes.ts,test/vectors.json}` | The wire contract (19a). |
+| Entries in `tools/boundaries.json` | `@factory/runner-protocol`; `@factory/supervisor` (`allowWorkspace`: runner-protocol only; `denyExternal`: `pg`, `@temporalio/`, `fastify`); `importableApps` for `@factory/recovery-tests`: runner and supervisor. |
+| `apps/runner/src/listener/pod-listener.ts`, `src/listener/buckets.ts`, `src/pod-guard.ts`, `src/stop-ack.ts`, `src/startup-checks.ts` | The listener and its four limits (new connections, open connections, source charge, per pod), the guard, the acknowledgement, the two checks (19a). |
+| `apps/runner/src/records.ts`, `src/quiescence.ts`, `src/reconcile.ts`, `src/permit.ts`, `src/start.ts`, `src/core.ts`, `src/config.ts`, `src/main.ts`, `src/runner.ts` | Record ids and bodies; the three new proof conditions; the container-exit stops, the hold, the fenced-workspace stop, the proof-first order, the proof read in the quarantine move, the open-quarantine count; the start record, the lease clause, the retry through the renewal, the denial order, the harness state; `urgent` in cancel; `artifacts` required; the new settings and their validation; the checks and the listener; `watchEvents`' message names W-023 (19a). |
+| `apps/runner/src/kube/api.ts`, `https-client.ts`, `fake.ts`, `fake-kubelet.ts` | `getNode`, `getApiService`, `nodeName`; nodes, the Service and `loseNode` (19a); token files, claim-keyed volumes, ports, pause (19b). |
+| `packages/workspace/src/quiescence-proof.ts`, `src/quarantine-record.ts`, `src/volume-disposition.ts`, `src/index.ts`, `README.md` | Record types, `prepare`, `register`, readers; the disposition function (19a). |
+| `packages/workspace/src/internal/pod-mode.ts`, `src/materializer.ts`, `src/pod-exports.ts` | `src/internal/pod-mode.ts` (new): the token, the helper and `createPodMaterializer`; the materializer's optional token; the pod export (19b). |
+| `packages/database/src/allocation.ts` | The workspace condition in the renewal; the lease guard on `starting → running`; the audit read with details; the open-quarantine count (19a). |
+| `packages/test-support/src/faults.ts` | `runner.after_proof_put`, `after_proof_registered`, `before_quarantine_move`, `before_terminate_tx`, `after_quarantine_put`, `after_stop_ack`, `before_cancel_allocation_lock`, `before_permit_last_tx`. |
+| `apps/supervisor/{package.json,README.md}`, `src/main.ts`, `src/args.ts`, `src/runner-client.ts`, `src/token-file.ts`, `src/network-gate.ts`, `src/heartbeat.ts`, `src/state.ts`, `src/local-endpoint.ts`, `src/workspace-view.ts`, `src/launcher.ts`, `src/scripts/*.ts` | The supervisor, the launcher, the scripted harness (19b). |
+| `apps/runner/src/job-manifest.ts`, `src/pod/materialize-run.ts`, `test/fixtures/job.expected.json` | Arguments, the CA source and digest; 0750 and the umask (19b). |
+| `tests/recovery/{package.json,test/*,test/entry/*}` | The cross-app fake-tier tests and the two test entries (19b). The directory is W-079's module; its framework is still not built, and AC-103 is not claimed. |
+| `deploy/images/supervisor`, `deploy/images/harness-scripted`, `deploy/k8s/runner-rbac.yaml`, `deploy/k8s/local/egress-listener-only.yaml`, `scripts/k3s.sh` | Images; `get nodes` and the one Service; the local policy; the CA, its ConfigMap and the listener address (19b). |
+| `eslint.config.js` | `Date.now` and negative pids in `apps/supervisor/src`; outside `src/scripts`, `node:fs` only in `workspace-view.ts` and `token-file.ts`. |
+
+Not changed: anything under `apps/worker`; any migration; D17's two manager methods; the
+publisher; `w017-states.test.ts`; `w017-main.test.ts` (the listener is optional).
+
+**Every edit to a W-017 file**, so that none is a surprise:
+
+| File | Edit | Commit |
+| --- | --- | --- |
+| `apps/runner/test/harness.ts` | One line pinning `cancelCheckpointWaitSeconds` to 0 for W-017's files, and `nodeCheck` to `off`. No W-017 assertion changes because of either. | 19a |
+| `apps/runner/test/w017-permit.test.ts:270-281` | It calls `terminateTx` directly; it now stores a proof before its last call and gains the `needs_proof` case as its control. | 19a |
+| `apps/runner/test/conformance/suite.ts`, `kube-conformance.fake.test.ts`, `kube-conformance.k8s.test.ts`, `test/k8s/cluster.ts` | Rows 16 to 21 and the driver calls they need. | 19a, 19b |
+| `apps/runner/test/w017-names-manifest.test.ts`, `test/fixtures/job.expected.json` | The new committed document. | 19b |
+| `apps/runner/test/w017-pod-materializer.test.ts` | Two added cases (the root's mode, the umask). | 19b |
+| `apps/runner/test/w017-run.k8s.test.ts` | No edit expected. It now runs under the local egress policy; its pods use no network. | 19b |
+
+No W-017 test asserts a stop reason for a pod whose container exited (checked: the only
+`stopReason` assertion is `every_pod_bad`, `ac-10-duplicate-run-start.test.ts:199`). If the first
+run of 19a shows another edit is needed, it is added to this table before the review, not after.
+
+### Tests
+
+Real Postgres everywhere a row is involved. Time is moved by backdating row timestamps and running
+one pass; the only real waits are single beats, with `beatSeconds: 1`, `suspectSeconds: 5`,
+`leaseSeconds: 10` and a per-pod interval of 250 ms in the cross-app files. **Every refusal has, in
+the same setup, the accepted case.** A cross-app file keeps at most two pods alive at once and
+closes its kubelet in `afterEach`; each pod is three Node processes.
+
+**19a: fake tier, callers are tests.**
+
+| Test file | Shows |
+| --- | --- |
+| `packages/runner-protocol/test/w019-pod-api.test.ts` | Every request and answer round-trips through the committed vectors. Unknown key, `__proto__`, `constructor`, oversized body, oversized token, non-integer epoch: each refused. **Control:** the vector itself parses. The exit-code table has no duplicate. |
+| `apps/runner/test/w019-listener.test.ts` | With a throwaway CA: the three routes reach their service; wrong method, path, content type and a 17 KiB body are 405, 404, 415 and 413 with nothing written. `createConfig` refuses a listener with no certificate on **any** address, loopback included, and refuses `0.0.0.0`. **Control:** `createTestConfig` with its flag accepts plaintext on `127.0.0.1`. A handshake that stalls is cut at 5 s; a slow body at 5 s. **Connections:** the fifth open connection from one source is refused while a second source connects; configuration refuses a per-source cap whose product with the pools exceeds 512, and a per-pod rate above the review ceiling's share. **Charging:** junk tokens from one source empty its bucket (the burst is 50) and the next one is 429 with the connection closed; a request with a **valid** token from that same source, sent next, is granted. The same emptying happens with **one failed token repeated** (the failed-token memory's fast path), with **tokens carrying random key ids**, and with requests to a wrong path, each on one kept-alive connection. The failed-token memory holds 4,096 entries after 5,000 distinct failures, the oldest gone, and no failure scans it (a counter on the test double). **Control:** with the old order (charge before verification, a test switch) the same valid request is 429. A full table evicts its oldest entry and still admits a new source. No counter name and no log line contains a path, a source or a token. The response is written before the pass starts (a fault holds the pass; the client already has its answer). |
+| `apps/runner/test/w019-listener-churn.test.ts` | **The churn flood.** Source A opens connections as fast as it can for three seconds, in two shapes: a ClientHello and a hang-up, and a full handshake with a junk request. The server begins at most the burst plus the refill (20 + 5 a second) handshakes for A; the rest are destroyed before any TLS work and counted. Source B's renewals, one a beat throughout, are all granted inside the 5 s request limit. **Control:** with the new-connection bucket off (a test switch) every one of A's connections reaches the handshake (the server's handshake counter equals A's attempts). The control asserts the count and not a delay, which this machine's load would make a coin toss; B's latency is recorded in both runs. The listener's certificate in this file is ECDSA P-256, and a test asserts `k3s.sh` asks for the same curve. **Review budget:** with 100 live writers reported by a pass the refill is 100 a second, with 2 it is the floor of 20, and with 1,000 it is the ceiling and the counter moves. |
+| `apps/runner/test/w019-pod-rate.test.ts` | **The flood.** 200 renewals with pod A's valid token in one burst: five reach the review, the rest are `throttled`, and the fake's call log shows no `reviewToken` and no `getPod` for them, no row and no audit row. Pod B's renewal, sent in the middle, is granted. **Control:** with the per-pod bucket off (a test switch) the same burst empties the shared budget and B is `throttled`. **Audit cap:** 100 denied renewals for a `stopping` allocation, spaced to pass the bucket, write at most the cap's rows; the rest are counted. **Control:** the first denial is audited. |
+| `apps/runner/test/w019-pod-guard.test.ts` | For each route: a token for another allocation, another pod's token, a pod with a deletion timestamp, a wrong epoch, each state outside the route's. Each is its own denial. **Fenced writer:** `replaceWriter` is called directly while the allocation is `running`; the next renewal is `stale_epoch` (not `lease_expired`), the lease is not extended, and the next pass stops the allocation with `workspace_fenced`. **Control:** the same renewal a moment before the fence is granted. **Lease, retry:** the first acquire is granted; the lease is backdated past expiry; the same pod's acquire retry is denied and nothing is extended. **Control:** the retry with a fresh lease is granted and `controller_lease_until` moved forward. **Two acquires of one pod at once:** the second is held after its guard read until the first commits; its grant comes from the renewal statement and the lease moved again. **Lease, first commit:** with the start deadline backdated the acquire is `not_startable` and the row stays `starting`. **Stopping:** a renewal for a `stopping` allocation whose workspace is already `quiescing` answers `not_renewable`, `stopping`. `stop-ack` is accepted there, with the workspace `active` and with it `quiescing`, and refused in `running`. A request with no token writes nothing. |
+| `apps/runner/test/w019-start-record.test.ts` | A grant writes the start record with the reviewed pod and the node read from the port; a pod-supplied report is stored as reported, capped at 1 KiB. A retry by the same pod writes no second row. A foreign row at the pinned id is a hard error. **A request that fails the review causes no `getNode`** (the call log). With `nodeCheck: 'required'` and an unreadable node the permit is `not_ready`. **Control:** with the node readable it is granted. A renewal request that carries a `harness` field is refused as an unknown key. **Control:** the same request without it is granted, and its answer's `harness` field follows the fake's container status. |
+| `apps/runner/test/w019-quiescence-proof.test.ts` | After a cancel with the fake kubelet: one artifact with the pinned purpose and schema, the allocation `terminated`, the workspace `retained`; the body's observation time is earlier than the link's creation. **Order:** with a fault at `after_proof_put` and at `after_proof_registered`, A dies; B's pass ends at `terminated` using the link, and exactly one link exists. `terminateTx` answers `needs_proof` and `settleWorkspace('proof')` refuses without the link. **One-way door:** proof stored, then a foreign labelled pod appears; the allocation still terminates. **Control:** the same pod before the proof keeps it open and it is quarantined at the deadline. **Node:** `loseNode` while the writer's processes live: not proved (`writer_node_missing`), then quarantined; the process is shown alive first. **Control:** the same stop with the node present is proved. **No start record:** a cancel between the writer claim and the last commit is proved with the node check `not_needed`, though the node is gone. **Claim:** an unlabelled, unfinished pod naming the claim keeps the proof open. **Control:** the same pod naming another claim does not. A capped namespace list is not proved. A pod that finished on its own is recorded `finished` with exit codes; a deleted one `gone`; no message text is in the body. **Store down:** with a store that fails every put, a proved stop stays `stopping` past the stop deadline, is never quarantined and never terminated, and keeps its capacity row; when the store returns the next pass terminates it. |
+| `packages/workspace/test/w019-proof-records.test.ts` | `prepare` refuses any identity but the runner's, and the audit row is there although the caller then rolled back its own transaction. `register` on a transaction that rolls back leaves no link. A second `register` under the lock answers `exists`. The reader ignores a link whose artifact has another producer and one whose body names another allocation; **two runner-produced links are a hard error**. A body over 64 KiB is refused. A handle cannot be built outside the module. **Control:** the runner's record is read back equal. The same cases for the quarantine record. |
+| `apps/runner/test/w019-quarantine-record.test.ts` | Each of the three sources writes the record in the transition's transaction: a fault at `after_quarantine_put` leaves neither, and the retry leaves both. The body has no message or reason text, and the artifact is `restricted`. `describeRun` returns the ref and `needsOperator`; a pass reports the open quarantine in its summary once its `escalateAfter` is backdated. Release is refused, and the PVC's UID is the same before and after. The next `startOrAttach` lands on generation 2 with a new claim name; the audit row cites the record; generation 1's claim is in no manifest and no delete request (the fake's call log). **Forced interleaving (B3):** B evaluates "not proved" past the deadline and is held at `before_quarantine_move`; A sees the pod gone and registers a proof; B is released: the allocation is **not** quarantined, no quarantine link exists, and B's pass ends `terminated` with the workspace `retained`. **Control:** the same hold with no proof registered ends `quarantined` with the workspace `quiescing`. The mirror: B's move commits first and A's `register` writes no link. |
+| `apps/runner/test/w019-volume-disposition.test.ts` | The table above, row by row, plus `unknown` for any storage kind but `pod_scoped_local`. Property: for every allocation the suite's helpers can build, `renderJob` names exactly `pvcName(org, workspace, allocation.generation)` or no claim. |
+| `apps/runner/test/w019-container-exit.test.ts` | With the fake kubelet: the harness container exits 0 while the supervisor stub runs; the next pass moves `running → stopping` with `harness_exited`, deletes without a hold, stores the proof, and ends `terminated` with the workspace `retained`; `getRun` answers `reconciling`. The supervisor container exits while the harness runs: `supervisor_exited` on the next pass, with the lease still fresh. **Control:** with both running, ten passes change nothing. In `starting`, a pod whose supervisor has exited is deleted as a bad pod, and a lone one stops the allocation. A renewal that sees the exited container answers and then sets off one pass; a second renewal while that pass runs sets off none. **A `finalizing` row is unchanged by a pass** (W-017's assertion, kept). |
+| `apps/runner/test/w019-cancel-window.test.ts` | With the window at 30: after a cancel, a pass sends **no** delete while every condition holds; the renewal answers `not_renewable`, `stopping`; `stop-ack` is recorded and its pass deletes; a repeat of `stop-ack` writes nothing and starts no pass. Backdated 31 s with no acknowledgement: deleted. Each condition removed in turn deletes on the first pass: no start record, a stale heartbeat, a stop for a lost lease, **an urgent cancel**. **A pod already Terminating from outside the runner** (active deadline, eviction, manual delete) during a hold: `stop-ack` is refused, the pass sends no delete, and the hold ends at 30 s, well inside the 180 s stop deadline; the proof decides the outcome. A second, urgent cancel during a hold ends it. **A cancel after a container-exit stop:** a `supervisor_exited` stop is written and the test cancels before any pass deletes; the next pass deletes at once and there is no cancel-stop record. The same with the cancel **held on the row lock** while the stop is written, which is the case a comparison of timestamps gets wrong. **Control:** a cancel that itself moves a `running` allocation writes the record and the pass holds. **Control:** with the window at 0 the first pass deletes, as in W-017. |
+| `apps/runner/test/w019-startup-checks.test.ts` | With the gate `required` and a deny list that lacks the fake's API-service address, the process refuses to start; with a node read answering 403 and `nodeCheck: 'required'`, the same. **Controls:** the correct list starts; a 404 on the probe name starts. A deny target that nothing listens on is logged as probably mistyped and does not stop the start. With no `podListener` no port is opened. Config: `leaseSeconds` equal to twice the beat, `suspectSeconds` equal to the lease, and a deny target given as a name are each refused. |
+| `apps/runner/test/kube-conformance.fake.test.ts` (rows 16 to 18, 21) | See the conformance additions below. |
+
+**19b: units.**
+
+| Test file | Shows |
+| --- | --- |
+| `apps/supervisor/test/w019-runner-client.test.ts` | Against a local `node:https` server: the CA is pinned and system roots are not used; **a certificate from the right CA with the wrong name is refused**; **a CA file whose digest is not the argument's is refused at boot** (exit 64). The production argument parser refuses `http:`, `https://127.0.0.1`, `https://[::1]`, `https://169.254.1.1` and `https://0.0.0.0`. **Control:** an `https:` URL with a routable host and the right digest connects. The token file is read once per call (the server sees the rotated token on the next call); one `unauthenticated` is retried once and a second is final; the request limit is 5 s. Each final denial maps to its exit code. |
+| `apps/supervisor/test/w019-heartbeat.test.ts` | Injected clock and transport. Beats at 10 s. With every renewal failing in transport, the fence fires at send time plus 50 s, never later; with one success at 40 s it moves. `not_renewable`/`stopping` takes the `ending` path and sends one `stop-ack`; any other final denial is fenced at once. **Hints:** 1,000 hints inside one beat cause exactly one extra renewal; a hint while a renewal is in flight causes none; a hint in `preparing`, `ending`, `fenced`, or after a grant reported the harness `terminated`, causes none. **Control:** a single hint in `running` causes one, and a run of grants never fences. |
+| `apps/supervisor/test/w019-network-gate.test.ts` | Three local ports stand in for the deny targets and one for the listener. The gate holds while **any** deny target accepts, and while the listener does not answer; it passes within one round of the last one closing; each target's result, the wait and the rounds are in the report. Never closing: exit 68 at the bound, and no acquire was sent. A target given as a name is exit 64. `disabled` sends the acquire at once and reports `disabled`. The round after the grant, finding a target open again, fences and exits 68. |
+| `apps/supervisor/test/w019-local-endpoint.test.ts` | `/v1/start` holds until `running`, then answers; after a fence it answers `start: false`. A non-loopback peer, a ninth connection, an unknown route and a 1 KiB exit hint are refused. A hint changes no state. |
+| `apps/supervisor/test/w019-launcher.test.ts` | No program starts before `start: true` (a marker file is absent while the poll is held; **control:** it appears after). `start: false` exits non-zero with no program. TERM reaches the program's group, and KILL follows for a program that ignores it. The program's umask is 027. Structural: no negative pid but the group helper. |
+| `apps/supervisor/test/w019-workspace-view.test.ts` | The view cannot be built without a grant (it does not compile, and the runtime guard throws). **Every method throws in any state but `preparing`**, `running` included. A symlink at any component, a file where a directory should be, and an unreadable `work` each fail the check with their own reason. **Control:** in `preparing`, a materialized tree passes. Structural: only the two allowed files import `node:fs`. |
+| `packages/workspace/test/w019-modes.test.ts` | Through the package index and through `LocalWorkspaceHost` every level is 0700, as today, and neither offers a way to ask for another mode. Structural, over the package index's own export list: no `createPodMaterializer`, no `PodMode`, nothing from `internal/`; `ensureSafeChild` still takes three arguments; a `PodMode` built by hand outside the module throws, and `LocalMaterializer` given one refuses it. Through `createPodMaterializer`: the organization, workspace, generation and `work` levels are 0750, and nothing is group- or world-writable. The publisher's scratch levels, its staging directory and its bundle are 0700, 0700 and 0600 in both cases. A 0770 root is still `unsafe_root`. |
+| `apps/runner/test/w019-fake-kubelet.test.ts` | Two pods that name the same claim see one directory: a file written by the first is read by the second. **Control:** two pods naming different claims do not, and two pods with an `emptyDir` do not. A rotated token file has new contents and both tokens review as the fake says. `pause` stops a container's beats and `resume` restarts them. |
+| `apps/runner/test/w019-images.test.ts` | The staged build contexts for the two new images list only named source files, none under a `test/` directory, and neither test entry. |
+| `apps/runner/test/w017-pod-materializer.test.ts` (extended), `w017-names-manifest.test.ts` (fixture) | The entry's root is 0750, and files written under the entry's umask are 0640. The rendered Job equals the new committed document, with the CA digest in the supervisor's arguments; the builder still takes no `StageInput`. |
+
+**19b: cross-app, fake tier** (`tests/recovery/test`; the real runner, listener, `FakeKube` and
+fake kubelet; the real supervisor and launcher as processes).
+
+| Test file | Shows |
+| --- | --- |
+| `ac-10-duplicate-supervisor.test.ts` | The fake injects a second pod for the Job with an identical receipt; both name the same claim, so both see the same directory, and both run the real supervisor. Exactly one is granted. The other exits 65; its log has no workspace-view event; a snapshot of the shared tree (paths, modes, sizes, hashes, as W-018's tests take one) is equal before and after its run; its launcher started no program. The winner's launcher started one, once. **Control:** the winner's log has the view event, and in a fresh setup the second pod alone is granted. The next pass deletes the loser and only the loser. **What this does not show:** that the loser made no read at all at the system-call level. That rests on the view's construction rule and its structural test, and on `ReadWriteOncePod` at K. |
+| `ac-12-stale-live-writer.test.ts` | A writer runs. Its supervisor's group is **paused**, and the lease is backdated past expiry. The pass moves it to `stopping`; the fake holds the pod's delete (the process is shown alive); the stop deadline is backdated: `quarantined`, with the record, the workspace `quiescing`, the claim untouched. A replacement is requested: generation 2, epoch 2, a new claim and so a new directory, a new supervisor granted. Then two assertions, kept apart. **The server half:** the test itself calls the renewal route with the old pod's token and epoch; it is denied, no lease moves, and nothing is written but the denial's audit row. **The supervisor half:** the old supervisor is resumed after its local fence time; it exits 70, and the listener's log shows no request from that pod after the resume. Its launcher is told to stop, and generation 2's tree snapshot is unchanged throughout. A publish with epoch 1 is `stale_epoch` (W-018's publisher, called here). **Control:** the same sequence with the delete not held ends `terminated` with a proof and no quarantine record. In both, no manifest names generation 1's claim. |
+| `ac-15-process-cancellation.test.ts` | The harness script starts a long-lived child. Cancel: the hold; the supervisor's next beat is denied; it sets the stop flag and sends `stop-ack`; the launcher's TERM reaches the group; the pod delete follows; the child's pid is gone; the allocation is `terminated`, with the proof stored, the workspace `retained`, the capacity row `released` and the stop reason recorded. `getRun` answers `cancelled`. With a child that ignores TERM the same ends after KILL. With an urgent cancel the delete does not wait for the beat. **Control:** before the cancel the child is alive, and a renewal is granted. **Protocol only:** a child that leaves the process group is not claimed here. |
+| `w019-hint-flood.test.ts` | Pod A runs `hint-flood`; pod B runs `idle`. Over ten beats the listener's log shows at most two renewals a beat from A, every one of B's renewals granted, and both allocations `running` at the end. **Control:** the same two pods with A's supervisor started by a test entry that does not coalesce: most of A's renewals are answered `throttled` by the per-pod bucket, the fake's count of token reviews stays under the shared budget, and B is still granted every time. |
+| `w019-lifecycle.test.ts` | Start to end with `exit0`: gate (ports the test closes), permit, view, start, the harness exits, the pass sees it, `stopping` with `harness_exited`, pod stopped, proof, `terminated`, `retained`. With `write-file`: the file is in the tree and the view listed the directory. A supervisor killed mid-run is stopped by the next pass as `supervisor_exited`, before its lease expires. **Runner outage:** the listener is closed for less than the fence time and reopened; the writer survives. **Control:** closed past it, the supervisor exits 70 and the pass stops the allocation. A rotated token file is used by the next beat. **A late acquire retry:** the first grant's answer is dropped by a proxy and the lease backdated; the retry is denied and no program started. |
+
+**Conformance additions** (`apps/runner/test/conformance/suite.ts`, both tiers unless marked):
+
+| # | Behaviour asserted | k3s status |
+| --- | --- | --- |
+| 16 | `getNode` returns the name and UID of the node a scheduled pod names; a missing node is 404. | To confirm (step 0, item 7) |
+| 17 | A list with no selector returns an unlabelled pod that mounts a claim, with the claim's name in its volumes. | To confirm |
+| 18 | In a pod of two containers, when one exits the status shows it `terminated` with its code while the other runs. | To confirm (step 0, item 4) |
+| 19 | Cluster only, RBAC: the runner's account can `get` a node and cannot list, patch or delete one. | To confirm |
+| 20 | Cluster only, RBAC: neither the runner's nor the supervisor's account can create, update, patch or delete a ConfigMap in the execution namespace, and the CA ConfigMap refuses an update because it is immutable. | To confirm |
+| 21 | `getApiService` returns the `kubernetes` Service's cluster address and port. Cluster only: the runner's account cannot read another Service in `default`. | To confirm (step 0, item 7) |
+
+**k3s tier, opt-in.** Run once at the end of 19b and at its review, on AC power, never beside the
+full suite. **Every run is under the local egress policy and TLS**, and the gate is `required` in
+every W-019 file. The build-log line gives the date, the image digest and the result.
+
+| Test file | Shows |
+| --- | --- |
+| `apps/runner/test/w019-supervised-run.k8s.test.ts` | The real controller, the listener on the host, the real images. The supervisor verifies the CA's digest, passes the gate, reads its own projected token, is granted, and beats; the allocation is `running` with a fresh heartbeat. **uid 10002 lists `work/main`** (the view's log line), and the backing directory's levels are `2750 10001:10001` by `stat` in the node. The `write-file` harness writes through its read-write mount. The harness exits; the pass stops the pod; the proof names the node and the claim; the PVC survives; the allocation is `terminated`. A hand-made second pod on the claim stays `Pending` (W-017's case, now with the supervisor image). |
+| `apps/runner/test/ac-15-tree-stop.k8s.test.ts` | `spawn-tree` at production timings. Cancel. The supervisor acknowledges within one beat. **Every process of the tree, including the one that called `setsid` and ignores TERM, is gone when the pod object is gone**, by the runtime view of conformance row 4. The times from cancel to delete and from delete to gone are recorded and asserted under 30 s and 20 s. **Control:** before the cancel all three pids are alive. Then `terminated`, the proof, `retained`. |
+| `apps/runner/test/w019-network-gate.k8s.test.ts` | Under the standing policy, with this machine's four deny targets: the start record lists every target as failed, and the harness's start is later than the gate's last round. **A probe pod in the namespace cannot connect to the gateway's `:55432` or `:57233`**, and can complete a handshake with the listener. **Control:** a run whose deny list also names the listener's own address and port never passes: the supervisor exits 68, no permit was requested, and the workspace is still `allocated`. This shows those rules active on this CNI, as D11 says, and nothing about any other rule. |
+
+### Which tier proves what
+
+| Claim | F | K | Needs R |
+| --- | --- | --- | --- |
+| One permit winner between two real supervisors; the loser exits | Yes | A second pod cannot mount the claim (W-017) | Duplicate pods from node loss |
+| The loser does not touch the workspace | By construction, log and snapshot of the shared directory | By `ReadWriteOncePod` | |
+| A fenced or expired writer is refused and stops itself | Yes, the two halves separately | The beat and the grant only | Partition |
+| One pod cannot starve another's renewals | Yes (the four limits, the request flood and the connection churn) | Not shown: behind NAT here | Real pod addresses |
+| Quarantine record, isolated replacement, no claim of another generation ever mounted | Yes | Proof and PVC survival on the happy path | |
+| The node check | Yes (fake fault) | The positive read only | Node loss |
+| Detachment | `no_consumer_pod` | The same; `local-path` is a host directory | CSI `VolumeAttachment` |
+| Cancel protocol, records, cleanup recorded | Yes | Yes | |
+| **Tree stop, including a process that left its group** | No (protocol only) | **Yes** | A sandboxed runtime |
+| uid 10002 reads the checkout | No (one uid on the Mac) | Yes | |
+| Network gate | Mechanism, several targets | Four rules, one CNI | The real CNI and W-021's policy (D11, AC-56) |
+| TLS, the pinned CA and its digest | Client and listener units | End to end | Issue and rotation (INT-05, INT-06) |
+
+### What W-019 claims, and what it does not
+
+- **AC-10.** A real duplicate supervisor exits and launches nothing; one writer launches: fake tier. With W-017's lines this completes AC-10 at the runner. Not claimed: the same through the Activity (W-023); duplicate pods on a real cluster.
+- **AC-12, the quarantine half.** A lease expires while the old process still runs; the old writer's pod-facing calls are refused and it stops itself; without a proof the generation is quarantined on record and the replacement is isolated; no volume is reused without a proof, because none is reused by a writer at all (D19): fake tier. Not claimed: stale-epoch denial of artifact finalization and result publication (W-020, W-023) and of tool operations (W-075); isolated restore (W-020); detachment on attachable storage (R).
+- **AC-15.** The protocol, the reconciled side effects and the recorded cleanup: fake tier. **The child tree stops within the bound: k3s only.** The bound is the hold (at most 30 s, in practice one beat, none for an urgent stop) plus the 15 s grace. Not claimed: through the Activity (W-023); a real harness's tree (W-077).
+- Built here, claimed elsewhere: scoped runner-API authorization and the harness's forged calls, for **AC-236** (W-134); TERM with 15 s grace under a real supervisor, for **AC-233** (W-134); the obligation refs **AC-43** and W-023's cleanup rule need (W-024, W-023); token placement for **AC-100** (W-075).
+- Not built: checkpoints, `finalizing`, the checkpoint child and `→ completed` (W-020); result envelopes and their acceptance; log chunks and `watchEvents` (D26); factory tools and the authenticated local endpoint (W-075); a stored `StageInput` (W-023); production NetworkPolicy and admission manifests (W-021); deletion of any old or quarantined PVC, and the operator's early delete (W-024); writer reuse of a volume (D19); any real harness (W-077); anything on a real cluster (D4).
+- Residual risks, for the READMEs:
+  - A runner outage longer than the fence time stops every writer (race rule 4, D27).
+  - **Behind NAT the per-source limits protect nothing**, and one source address is everyone. That is this machine's k3s tier, and it is not a deployment.
+  - **The object store is now needed to finish any stop** (race rule 9).
+  - **Every proof lists the whole namespace**, under the port's cap of 500 pods (`api.ts:60-62`). A namespace above that, or a pass deadline that cuts the paging, proves no stop, and every stop then ends in quarantine. The capacity defaults (20 allocations) are far below it; it is a cliff to know about before they are raised.
+  - The gate fails closed on a wrong API-service entry only. Any other deny target that is mistyped fails to connect and so passes; and a gate shows that its listed rules are active, not that the policy is complete.
+  - Node suspend stops the supervisor's clock; only the server's denial fences it then.
+  - The node check excludes a deleted node. It does not cover an operator's out-of-service taint or a force delete, which stay with D4 and with W-021's admission rule.
+  - A quarantined allocation's process is not stopped again by anything in W-019; the Job's deadline bounds it.
+  - **Until W-024 ships, a quarantined volume can be removed early only by hand, with `kubectl delete`, and nothing audits that.** There is no real tenant in M2; an erasure request before W-024 would be met that way and recorded by the operator.
+  - The new-connection and source limits protect the event loop from one source. They do nothing against many sources, and nothing behind NAT. Moving the listener to a worker thread, so that the reconciler's timing is not shared with it at all, is not built (P-29).
+  - The start gate is enforced by the launcher, which is trusted because it comes from the harness image. A harness image that does not start through it is not gated; image admission is W-021's and W-090's.
+  - `local-path` does not enforce a claim's size, so a harness can fill the node's disk. That predates W-019 (W-021, W-024).
+  - The scripted harness shows nothing about Claude in a restricted pod (W-077).
+
+### Hand-offs
+
+- **W-020:**
+  - **`finalizing` is yours** (D22): the supervisor's finalisation request, `running → finalizing`, the intent record, and the pass. The request is a route that changes state, so by rule 4 its locked statement carries `controller_lease_until > clock_timestamp()`; a finalize on an expired lease would be result acceptance on expired authority (`06:112`). The proof steps and the quarantine move are reusable as they stand; `register` must then also accept `finalizing`.
+  - Require `volumeDisposition` to be `quiescent`, and **list the claim's consumers again when the child is admitted**: the proof is a past observation.
+  - Decide what the stop acknowledgement means for a checkpoint at cancel (SI-29).
+  - **Inferred, not tested:** under `fsGroup` the kubelet may rewrite group and mode on every file when a second pod mounts the claim; a trusted read-only mount should not change the tree it is about to hash (step 0 records what this cluster does).
+  - Any read of a workspace a harness has run in uses descriptor-relative, no-follow traversal (the view's rule).
+- **W-021:** the production policy, with an allow rule for the listener's **port**, not the runner's host (W-023's control-plane port lives there too); the real deny-target list; an admission rule against grace 0; `get nodes` and the one Service read are new rights. The local policy file is replaced. `capability-proxy.ts:59` still treats `starting` as live (section 5's hand-off stands).
+- **W-023:** persist the stage input, bound as SI-21 decides (D26). After a harness exit the run reports `reconciling` until W-020. Carry the quarantine record's ref in `cleanupObligationRefs`. The worker-facing route is a second listener and its wire types go in `@factory/runner-protocol`. `watchEvents`. `cancel` has an `urgent` option.
+- **W-024:** delete a replaced generation's claim only when `volumeDisposition` is `quiescent`; a `quarantined` one only after `preserveUntil`, or earlier through the audited operator action D25 defines, **which W-024 builds**, with its resolution record; `unknown` never. Stop the pod of a quarantined allocation. Route the open-quarantine count to its owner (INT-09).
+- **W-030:** when the publisher gets a credential it must not sit under `scratchRoot`, and the publisher's scratch root and any materializer root must be disjoint; both use `<org>/<workspaceId>` (`publish.ts:113`, `materializer.ts:92`). Both READMEs say so from W-019 on. **W-030 owns the check and its test**, not only the sentence: the publisher refuses to start on a scratch root that equals, contains or lies inside a materializer root it is told about. **Control:** two disjoint roots start.
+- **W-075:** the tool routes join the local endpoint with their own authentication; every one checks the fence flag first, goes through the listener's guard for anything remote, and reads the workspace only by the view's rule.
+- **W-077:** replace the scripted program behind the same launcher; the harness's umask; whether a real harness's tree needs more than the pod delete. **It does not start on the k3s tier unless step 0 item 5 held** (D24).
+- **W-119:** the urgent stop is the per-run half of an emergency stop.
+- **W-134:** the guard's denials, the lease tests and the forged-call tests are the material for AC-236's runner-API half.
+
+### To confirm in the k3s tier
+
+The seven step 0 items, each confirmed or answered by its fallback, and five more that nothing
+rests on: the source address the listener sees for pod traffic; whether a denied connect is refused
+or times out on this CNI; the time between a container's exit and its status; whether the kubelet
+rewrites modes on a second mount (measured in step 0, item 2: under fsGroup a second mount turned 0750 and 0700 directories into 2770 and a 0640 file into 660, so the 0700 control holds only on the first mount; W-020 must not rely on modes across mounts); the size and import time of the two new images inside the
+1,800 MB node.
+
+### Owner decisions, assumptions, spec issues and plan additions
+
+All nine were **decided provisionally by the coordinator on 2026-11-18, after the two reviews; the
+owner can override any of them.** D26 and D27 were decided as this brief's defaults. None blocks
+the start.
+
+| # | Decision | Status and answer |
+| --- | --- | --- |
+| D19 | What "volume reuse" means in M2 (C2). | **Decided (provisional): no writer reuse.** A replacement always gets a new claim. The proof decides only what may happen to the old one: a read-only checkpoint mount (W-020) or reclaim (W-024). Not taken: reusing the storage with a trusted wipe (2 to 3 days, and unclaimable before D4); reuse with contents (the spec has no flow that reads them). |
+| D20 | W-019 is larger than its estimate: 10 to 12 days against 4–6. | **Decided (provisional): step 0, then 19a, then 19b**, each commit with an independent review; one build-log line after the second. |
+| D21 | A package outside the spec's module list for the wire contract (C13, P-27). | **Decided (provisional): accept `packages/runner-protocol`.** |
+| D22 | Whether W-019 enters `finalizing`. | **Decided (provisional): it does not.** A harness exit goes `running → stopping` (`harness_exited`) and ends `terminated`. W-020 adds `finalizing` where the checkpoint child uses it. |
+| D23 | TLS on the listener, and the CA. A security call. | **Decided (provisional): accept, with the security review's changes.** TLS on every address; plaintext only behind a flag the test configuration alone can set; one pinned CA, no system roots; the CA's digest in the supervisor's arguments and an immutable ConfigMap; the supervisor refuses a runner URL that is not `https:` or is loopback; an ECDSA P-256 listener certificate. Certificate issue and rotation on a real cluster belong to INT-05 and INT-06. |
+| D24 | The network gate before W-021 ships a policy (C8). | **Decided (provisional): `required` in production**, so a cluster without the policy starts no harness. **Every local k3s run applies the listener-only egress policy** and runs with the gate `required`. `disabled` remains only in the fake tier, which has no network to gate, and as step 0 item 5's fallback; in that fallback it must be gone before W-077. |
+| D25 | How long a quarantined volume is kept, and who owns the obligation. A security call. | **Decided (provisional): 30 days, owner `platform-operator`**, the record `restricted`; an open-quarantine count on every pass for alerting; deletion before `preserveUntil` only by an audited operator action. The action is built in W-024 (A-34). |
+| D26 | Who stores the `StageInput`, and who builds `watchEvents` and log chunks (C5, C6). | **Decided (provisional), the brief's default:** W-023 stores the input. Events and log chunks wait for a harness adapter and for storage the schema does not have: W-023 with W-077. W-019 builds neither. |
+| D27 | A runner API outage longer than 50 s stops every running writer, and each loses its unacknowledged work. | **Decided (provisional), the brief's default:** accept; it is the spec's lease. On a real cluster run two runner replicas (rule 2 of section 5 already allows it). P-28 records a possible grace rule; it is not built. The rate limits of this brief are what keep a harness from causing the same thing. |
+
+Assumptions W-019 writes to `docs/assumptions.md`:
+
+- **A-32** (INT-05): in the k3s tier the listener runs in the test process on the Mac with TLS from a throwaway CA, and pods reach it at the podman host-gateway address `192.168.127.254` (`host.containers.internal`); gvproxy delivers that traffic to the Mac's loopback, so the listener binds `127.0.0.1`, sees every pod as source `127.0.0.1`, and its certificate names the gateway address (measured in step 0, item 1). That arrangement is for development only: every pod shares one source address there, so the per-source limits mean nothing, and a deployment must show the listener real pod addresses. The local tiers' configuration raises the per-source numbers for the same reason. The listener's certificate is ECDSA P-256, here and as the recommendation to INT-05. In the fake tier the listener is plaintext on loopback behind a test-only flag.
+- **A-33** (W-077, INT-08; extends A-27): the harness container is the launcher plus a scripted program. No Claude, no gateway, no model call.
+- **A-34** (INT-07 retention obligations; `06-runner-workspaces.md:104`): a quarantined volume is preserved for 30 days under the obligation owner `platform-operator`, as restricted evidence, and is escalated after one day.
+- **A-35** (INT-05, W-021): the local tier's egress policy allows only the listener's address and port, and the gate's deny targets there are the API service, the metadata address and the Mac's Postgres and Temporal ports. A target counts as denied when a connect is refused or times out.
+
+Spec issues W-019 records in `docs/spec-issues.md`:
+
+| ID | Location | Problem | Proposed choice |
+| --- | --- | --- | --- |
+| SI-27 | `06-runner-workspaces.md:17`, `:108`, `:116`; `examples/kubernetes-job.json` | The winning supervisor "may launch the harness", but the two are separate containers with no shared process namespace, and nothing says how the start is withheld or how the supervisor stops anything. | A launcher in the harness image waits for a start signal on the supervisor's loopback endpoint. Stopping is the pod delete; a cooperative stop is best effort. |
+| SI-28 | `06-runner-workspaces.md:25` against `:76`, `:82` | A writable volume may be reused once termination and detachment are confirmed, but recovery replays from the last acknowledged boundary into a new empty allocation, so no flow uses a reused volume's contents. | No writer reuse in M2 (D19). The proof gates the checkpoint mount and reclaim only. |
+| SI-29 | `06-runner-workspaces.md:90`, `:112`; `contracts/interfaces.ts:84` | Cancel allows 30 s for "a safe checkpoint request", with no statement of who waits, how the supervisor learns of the cancel, or what is recorded; and `cancel` has no way to say that a stop must not wait. | The runner holds the delete for up to 30 s while a recently live writer has not acknowledged. The acknowledgement is a record. An optional `urgent` argument skips the hold. A checkpoint at cancel is W-020's to define. |
+| SI-30 | `06-runner-workspaces.md:25`, `:112`; `11-platform-operations.md:27` | "Storage detachment/revocation" must be confirmed, with no definition of the observation for storage that has no attachment object, and nothing about pods removed with their node. | No unfinished pod names the claim (an unfiltered list), and the writer's node still exists. `VolumeAttachment` waits for D4. |
+| SI-31 | `06-runner-workspaces.md:23` | Heartbeat, suspect and expiry are given; what the supervisor does when it cannot renew, and on whose clock, is not. | The Postgres clock decides, in the statement of every route that grants. The supervisor stops itself at lease minus one beat on its own monotonic clock, measured from the send. |
+| SI-32 | `contracts/interfaces.ts:83`; `06-runner-workspaces.md:88`; `schema.sql` | `watchEvents` and sequenced log chunks are required, and no table stores a harness event or a log chunk. | Not built in W-019 (D26). |
+| SI-33 | `06-runner-workspaces.md:25`, `:102`, `:104`; `domain.schema.json` `cleanupObligationRefs` | A quiescence proof, a quarantine record and an operator obligation are required or referenced, and none has a schema or a table. | Two local artifact schemas, `factory-quiescence-proof/1` and `factory-quarantine-record/1`, linked by purpose. |
+
+Plan additions for `docs/plan-additions.md`:
+
+- **P-27**: `packages/runner-protocol`, the wire contract between the runner and its callers, outside the module list of `01-scope-architecture.md:84-99`. Built in W-019; W-023 adds the worker-facing half.
+- **P-28**: a grace rule for leases after a runner API outage, so that a restart of the only runner does not stop every stage. Open; needs a design that survives two controllers.
+- **P-29**: run the pod-facing listener in a worker thread, so that TLS work and the reconciler do not share an event loop. Open; the admission limits are what W-019 builds.
+
+### Definition of done
+
+- **Step 0:** the seven items run, each confirmed or answered by its fallback, with the script and output kept as W-017's were. If item 5 fails, the owner is told before 19b starts.
+- **19a:** the thirteen new 19a files and conformance rows 16 to 18 and 21 pass on the fake; W-017's nineteen files pass with the 19a edits of the table under "Files" and no other; W-018's eleven pass unchanged; `pnpm check` is green. Independent review.
+- **19b:** the nine new unit files, the two extended W-017 files and the five cross-app files pass, and `pnpm check` is green. `pnpm test:k8s` passes once on this machine on AC power, under the local egress policy: W-017's files, conformance rows 16 to 21 and the three new files. Independent review.
+- AC-10, AC-12 and AC-15 are logged with the exact halves above and the tier of each, naming W-020, W-023, W-075 and W-134 for the rest. The k3s run's date and image digest are in the same line, **and so is the result of step 0 item 5**.
+- No file under `apps/worker` changes; no migration; no dependency. The diff in `packages/workspace` is the three record files, the internal mode argument and its pod export, the index exports and the README.
+- `docs/assumptions.md` has A-32 to A-35; `docs/spec-issues.md` has SI-27 to SI-33; `docs/plan-additions.md` has P-27, P-28 and P-29.
+- The READMEs state the seven rules, the admission order and its four limits, the route table with its lease clauses, the supervisor's states and exit codes, the record table, the proof's conditions, the disposition table, the hold, the view's before-start rule, the deployment invariants, the residual risks and what is not built. `packages/workspace/README.md` drops "volume reuse on proof of quiescence" from "Not built", states D19, and states that the publisher's and the materializer's roots must be disjoint.
+- Nothing is left behind by either tier: each test file checks its process groups, its listener port and its namespace at teardown, and no key of the throwaway CA is left on disk.
+
+### Confidence
+
+- **Verified by reading today:** every file and line cited; that `materializer.ts:156` is a fourth 0700 level; that no code sets a umask; that the renewal and the `running` pass do not read the workspace; that the acquire retry on a `running` row has no lease condition; that the review budget is one bucket per permit service; that `move` checks state and `pod_uid` and no link; that `artifact_link` has no unique key and that `registerControllerArtifact` takes the caller's transaction; that every edge used here is already in `states.ts`; that `audit_event` and `artifact_link` can hold the six records under the runtime grants; that `restricted` is an artifact classification; that `cleanupObligationRefs` are `ArtifactRef`s; that no table stores harness events; that W-017's harness already passes `artifacts` and that its only stop-reason assertion is `every_pod_bad`; the backlog entry and the three acceptance criteria.
+- **Taken from the reviews and checked:** both blockers on the lease and the quarantine path reproduce from the code as cited; the flood follows from `config.ts:30-33` and `permit.ts:98`.
+- **Inferred, not run:** all seven step 0 items. The one I trust least is item 1 (a pod reaching the Mac through two layers of NAT); the ones with the widest effect if wrong are item 4 (container status, which the harness-exit stop and the supervisor-exit stop both read) and item 5 (which decides whether this tier is fit for W-077).
+- **Inferred from Kubernetes documentation:** supplementary groups under `fsGroup`; the kubelet's ownership pass on a later mount; that a pod under graceful deletion on an unreachable node stays listed; that a projected ConfigMap source may be immutable.
+- **Judgement:** the 10-to-12-day estimate; the 30-day window; the rates (5 new connections a second and 4 open per source, 10 a second per source for requests that did not verify, one every 2 s per pod, a review ceiling of 200 a second). They are sized against one renewal every 10 s, the handshake costs behind them are the security review's estimates and were not measured, and all of them go to P-14's load test before they are trusted.
+- **Where I would point the next review:** the admission order (whether anything a harness can cause still reaches a shared budget), and the interleavings of race rules 5 and 6.
+
+## 7. Risks
 
 ### Temporal replay, and the W-023 design constraints
 
@@ -940,9 +1612,16 @@ SI-19 to SI-26, all in the table in section 6.
 | SI-23 | `StageInput.workspaceId`; `execution_allocation.workspace_id`; `contracts/interfaces.ts:95-96` | An allocation and a stage input each name one workspace, while `materializeCandidate` returns one per repository. Nothing says the allocation's generation and epoch are the workspace's. | One workspace per allocation, which takes the workspace's generation and epoch when it is allocated. A multi-repository verifier run needs an answer in W-022. |
 | SI-24 | `06-runner-workspaces.md:16`, `:110`; `examples/kubernetes-job.json`; `execution_allocation.supervisor_identity` | The writer claim must be "pod-specific" and the identity "allocation-specific", but the example uses one fixed audience, and no chapter says how the runner learns which pod is calling or what `supervisor_identity` holds. | A projected token with the audience `factory-allocation:<org id>:<allocation id>`, checked by token review on every call; the review must list that audience; pod name and UID come from the token's binding and from nowhere else; the pod is then read, and must exist and be owned by the allocation's Job. The column holds the expected service-account subject. Probed on k3s (section 2, third session): it holds, except that a review stays valid for some seconds after the pod is deleted, hence the pod read. |
 | SI-25 | `06-runner-workspaces.md:13-14`, `:59`; SI-17 | SI-17's trusted first step has no stated way to return its result: pods cannot reach the database, and the step holds no identity. | The init container's termination message under `terminationMessagePolicy: File`, read by the runner from pod status and accepted in a second phase: a receipt only with exit code 0. Probed on k3s (section 2, third session): it holds. |
-| SI-26 | `StageInput.workspaceId`; `06-runner-workspaces.md:5`; `contracts/interfaces.ts:88-91` | A stage input names a workspace, but no chapter says who allocates the row or where its repository, base commit, branch and setup profile come from. W-018's `allocateOrAttach` accepts only the runner identity. The full `StageInput` is also stored nowhere, though a supervisor will need it. | The runner exposes `allocateOrAttach` and `release` to control-plane callers and calls the manager with its own identity. W-023's Activity allocates the workspace before it starts the run. Persisting the stage input is W-019's or W-023's. |
+| SI-26 | `StageInput.workspaceId`; `06-runner-workspaces.md:5`; `contracts/interfaces.ts:88-91` | A stage input names a workspace, but no chapter says who allocates the row or where its repository, base commit, branch and setup profile come from. W-018's `allocateOrAttach` accepts only the runner identity. The full `StageInput` is also stored nowhere, though a supervisor will need it. | The runner exposes `allocateOrAttach` and `release` to control-plane callers and calls the manager with its own identity. W-023's Activity allocates the workspace before it starts the run. Persisting the stage input is W-023's (D26). |
+| SI-27 | `06-runner-workspaces.md:17`, `:108`, `:116`; `examples/kubernetes-job.json` | The winning supervisor "may launch the harness", but the two are separate containers with no shared process namespace, and nothing says how the start is withheld or how the supervisor stops anything. | A launcher in the harness image waits for a start signal on the supervisor's loopback endpoint. Stopping is the pod delete; a cooperative stop is best effort. |
+| SI-28 | `06-runner-workspaces.md:25` against `:76`, `:82` | A writable volume may be reused once termination and detachment are confirmed, but recovery replays from the last acknowledged boundary into a new empty allocation, so no flow uses a reused volume's contents. | No writer reuse in M2 (D19). The proof gates the checkpoint mount and reclaim only. |
+| SI-29 | `06-runner-workspaces.md:90`, `:112`; `contracts/interfaces.ts:84` | Cancel allows 30 s for "a safe checkpoint request", with no statement of who waits, how the supervisor learns of the cancel, or what is recorded; and `cancel` has no way to say that a stop must not wait. | The runner holds the delete for up to 30 s while a recently live writer has not acknowledged. The acknowledgement is a record. An optional `urgent` argument skips the hold. A checkpoint at cancel is W-020's to define. |
+| SI-30 | `06-runner-workspaces.md:25`, `:112`; `11-platform-operations.md:27` | "Storage detachment/revocation" must be confirmed, with no definition of the observation for storage that has no attachment object, and nothing about pods removed with their node. | No unfinished pod names the claim (an unfiltered list), and the writer's node still exists. `VolumeAttachment` waits for D4. |
+| SI-31 | `06-runner-workspaces.md:23` | Heartbeat, suspect and expiry are given; what the supervisor does when it cannot renew, and on whose clock, is not. | The Postgres clock decides, in the statement of every route that grants. The supervisor stops itself at lease minus one beat on its own monotonic clock, measured from the send. |
+| SI-32 | `contracts/interfaces.ts:83`; `06-runner-workspaces.md:88`; `schema.sql` | `watchEvents` and sequenced log chunks are required, and no table stores a harness event or a log chunk. | Not built in W-019 (D26). |
+| SI-33 | `06-runner-workspaces.md:25`, `:102`, `:104`; `domain.schema.json` `cleanupObligationRefs` | A quiescence proof, a quarantine record and an operator obligation are required or referenced, and none has a schema or a table. | Two local artifact schemas, `factory-quiescence-proof/1` and `factory-quarantine-record/1`, linked by purpose. |
 
-## 7. Response to the adversarial review
+## 8. Response to the adversarial review
 
 All high and medium items were checked against the spec, the code and, for Kubernetes and Git
 behaviour, by running them. All are taken, with these differences:
@@ -1001,6 +1680,64 @@ Round 4 (the revised W-017 brief; verdict go for 17a after edits). All are made 
 | N6: `updated_at` | Confirmed at `packages/database/src/workspace.ts:84`. Taken: the allocation helper writes `clock_timestamp()`. |
 | N7: the facade's role | Confirmed at `manager.ts:205`, `:216-217`. Taken: a mismatch with `stage_run.role` is refused. |
 | Small items | All taken: `retained` counts as done for `markWriterQuiescing`; `generation_limit` before the fence; a cancel after a result writes nothing; the W-023 hand-off; canonical comparison of limits. |
+Round 5 (the W-019 brief, section 6). Three rounds of an adversarial review and a security review. Round 3 of both gave GO. The tables below are the responses, in the order they were applied.
+
+**After the first review (adversarial: no-go, blockers B1 to B3; security: H1, H2, M1 to M5, L1 to L4).**
+
+Two reviews of the first draft: the adversarial review (no-go; blockers B1 to B3, should-fix S1 to
+S10, small items) and the security review (H1, H2, M1 to M5, L1 to L4). Every item was checked
+against the code before it was taken. "Where" names the part of the brief in section 6.
+
+| Finding | Disposition | Where |
+| --- | --- | --- |
+| B1 and H1: the exit hint drains the shared review budget | Taken, both halves: the supervisor coalesces hints, and the runner has a per-pod bucket after local verification and before the shared budget. | "The listener", admission order; "The supervisor", hints; `w019-pod-rate`, `w019-heartbeat`, `w019-hint-flood` |
+| H2: pre-auth caps are shared | Taken: the source bucket is charged only by requests that fail; per-source connection cap; handshake timeout; real pod addresses are a deployment requirement. | "The listener"; A-32; residual risks |
+| B2: the guard never checks the lease | Taken as one clause for every route that grants or changes state. The acquire retry goes through the renewal statement, and the first commit checks the start deadline. `finalize` no longer exists in W-019 (D22); its lease clause goes to W-020 in the hand-off. | Rule 4; "The pod call guard"; `w019-pod-guard` |
+| B3: the one-way door is open on the quarantine path | Taken: the quarantine move reads the proof link under the row lock and refuses. Forced-interleaving test. | "Order, and the one-way door"; race rule 6; `w019-quarantine-record` |
+| S1: a claimed writer with no start record | Taken, with the argument. W-017's test is the control. | "The proof", node condition |
+| S2: the proof writer must use the caller's transaction | Taken: `prepare` outside, `register` on the caller's transaction; two links are a hard error; the refusal is audited before any lock. | "Records" |
+| S3: fake-kubelet volume keying | Taken: by claim name; `emptyDir` per pod; a control test. | "Fake kubelet"; `w019-fake-kubelet` |
+| S4: `ac-12` does not pin which fence fires | Taken: the server half and the supervisor half are asserted separately. | `ac-12-stale-live-writer` |
+| S5 and M4: the gate fails open on a wrong target, and proves one rule | Taken as far as it can be: a list of literal addresses, all must fail and the listener must answer; the runner verifies the API-service entry against the cluster at start. A wrong extra target still passes vacuously, and the residual says so. | "The supervisor", gating; "Start-up checks"; residual risks |
+| S6: the object store is on the path of every terminal transition | Taken: stated, and tested. | Residual risks; `w019-quiescence-proof` |
+| S7: `finalizing` has no consumer here | Taken (D22, decided). A harness exit goes `running → stopping`. | "Container exits"; D22; hand-off to W-020 |
+| S8: ordering in the pass and the guard | Taken: the workspace clause per route, the order of renewal denials, and the hold after the proof check and only before any delete (that last condition was replaced by the cancel-stop record in round 2). | "The pod call guard"; "The hold" |
+| S9: a supervisor that exits leaves the harness running for a minute | Taken: the `running` pass stops at once on either container's exit. | "Container exits" |
+| S10: the proof is a past observation | Taken in the hand-off: W-020 lists the claim's consumers again at admission. | Hand-offs |
+| Small (adversarial): observation time; config validation; answer before the pass; step 0 item 4's fallback; the full list of W-017 edits and an optional listener; the 500-pod cliff; the node permission at start; `spawn-tree` strays; who stops a quarantined pod; two vacuous asserts | All taken. The "idempotent repeat of `finalize`" item falls away with D22; the same point is stated for `stop_ack`. | Throughout; "Files"; residual risks |
+| M1: denials after a good review are audited without a cap | Taken: a bucket keyed by the reviewed pod UID. | "The pod call guard" |
+| M2: plaintext by bind address; a loopback runner URL | Taken, all four parts. | "The listener"; "The supervisor"; "Images" |
+| M3: pods may reach the Mac's Postgres | Taken: step 0 probes it, every k3s run applies the listener-only egress policy, and the local `disabled` is gone from the k3s tier (D24). | Step 0 item 1; "k3s tier"; D24 |
+| M5: the view is safe only before start | Taken: a runtime assertion, and the rule for later reads. | "The workspace view" |
+| L1: the CA's integrity | Taken: digest in the arguments, immutable ConfigMap, RBAC row, key handling, wrong-SAN test. | "Manifest"; "Images and script"; conformance row 20 |
+| L2: `dirMode` is a general option; the publisher reason was overstated | Taken in part. The reason in C1 is corrected, and 0750 is reachable only through the pod export. **Not taken in code:** a runtime check that the publisher's scratch root and a materializer root are disjoint. W-019 constructs no publisher, and in pod mode the two never share a process; it is written into both READMEs and handed to W-030 with the credential rule. | C1; "Modes"; hand-offs |
+| L3: the hold applies to emergency stops | Taken: an urgent stop record that skips the hold. | "The hold" |
+| L4: hygiene | All five taken. | "The listener"; "Records"; "The quarantine record" |
+| D25 additions (alerting, audited early delete) | Decided. The record carries what both need and the runner reports open quarantines on every pass. **The early delete itself is built in W-024**, with the only code that deletes a PVC; W-019 deletes none. | "The quarantine record"; D25; hand-offs |
+
+**After the second review.**
+
+Round 2 closed every round-1 item and accepted the five deviations. Both reviewers found one new
+blocker, in the listener's admission; the security review added two findings for the same edit.
+
+| Finding | Disposition | Where |
+| --- | --- | --- |
+| Adversarial R2-1 and security R2-1: handshake churn; nothing limits new connections | Taken: a per-source new-connection bucket on the plain socket, before the handshake; an ECDSA P-256 listener certificate; the gate waits on a plain connect and makes one handshake; a churn-flood test with a second source still renewing. **One change to the control:** it asserts how many handshakes the server began, not a delay. A delay on this machine depends on what else is running, and a control that sometimes passes for the wrong reason is worse than none. | "The listener", admission steps 1 and 2; "The supervisor", gating; `w019-listener-churn` |
+| Security R2-3: some requests are neither charged nor verified | Taken: the rule is inverted. Every request is charged to its source unless its token verified locally, which covers the failed-token fast path, an unknown key id and wrong routes. The failed-token memory becomes an LRU with no scan. | Admission step 3; `w019-listener` |
+| Security R2-2: 32 connections per source | Taken: 4, and a configuration check against the global 512. | Admission step 2; "Config added" |
+| Adversarial should-fix 1: the hold catches a cancel that lands after a container-exit stop | Taken, **with a different mechanism from the one proposed.** Comparing the cancel record's `created_at` with the row's `updated_at` is wrong when the cancel waits on the row lock behind the pass that writes the stop: its record is then older than a transition it did not cause. The hold instead requires a cancel-stop record, which `cancel` writes only in the transaction where it makes the transition itself. The "nothing deleted yet" condition and its two cluster reads are dropped; the record covers what they were for. | "The hold"; "Records"; race rule 12; `w019-cancel-window` |
+| Adversarial should-fix 2: the concurrent claimant under the lock (`permit.ts:188`) | Taken both ways: that branch goes through the renewal statement, and race rule 5 says why the old behaviour would have been safe. | Route table; race rule 5; `w019-pod-guard` |
+| Adversarial should-fix 3: the step 0 item 4 fallback route | Taken: it carries the lease clause. | Step 0, item 4 |
+| Adversarial should-fix 4: the mode leaks through `export *` | Taken: no exported signature carries a mode; a token minted in a module the index does not re-export. The structural test reads the index's own export list. | "Modes"; `w019-modes` |
+| Adversarial should-fix 5 and security R2-4: the review budget's size | Taken: sized each pass from live writers across organizations, with a floor, a ceiling and a configuration check that the per-pod rate fits. The numbers go to P-14. | "The listener"; "Config added"; `w019-listener-churn` |
+| Deviation (d): disjoint roots need an owner with a test | Taken: the W-030 hand-off owns the check and its test. | Hand-offs |
+| Security: D25 wording; the manual delete; item 5 in the build log | Taken, all three. | Hand-off to W-024; residual risks; step 0 item 5; definition of done |
+| Security, optional: a start-up probe of each deny target | Taken as a warning only. | "Start-up checks" |
+| Security, optional: the listener in a worker thread | Not taken in W-019. The bucket is the necessary part; the thread is recorded as P-29. | Residual risks; plan additions |
+
+**After the third review (applied by Tony).**
+
+Both reviewers gave GO. Applied from round 3: the `w019-cancel-window` row now treats a pod already Terminating from outside the runner as a hold of at most 30 s with `stop-ack` refused (adversarial review); the review burst is twice the refill; `createConfig` refuses the test-only keys; `sourceOf` lives only in the test configuration; and the `w019-testing-boundary` structural test (security review).
 
 ## Confidence
 
