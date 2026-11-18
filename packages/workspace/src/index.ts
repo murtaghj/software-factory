@@ -13,3 +13,8 @@ export * from './local-host.ts';
 export * from './publish.ts';
 export { GitRunner, MIN_GIT_VERSION } from './git.ts';
 export type { GitVersion, GitRunnerOptions } from './git.ts';
+export { MAX_RECORD_BYTES } from './controller-record.ts';
+export type { RecordDeps, RecordHandle, Registered, ReadResult } from './controller-record.ts';
+export * from './quiescence-proof.ts';
+export * from './quarantine-record.ts';
+export * from './volume-disposition.ts';

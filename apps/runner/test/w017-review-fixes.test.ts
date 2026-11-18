@@ -225,7 +225,7 @@ describe('review fixes', () => {
     const tampers: Array<[string, (j: JobManifest) => void]> = [
       ['another service account', (j) => { j.spec.template.spec.serviceAccountName = 'cluster-admin-sa'; }],
       ['a privileged container', (j) => { (containers(j)[0]?.['securityContext'] as Rec)['privileged'] = true; }],
-      ['a host path volume', (j) => { j.spec.template.spec.volumes.push({ name: 'host', hostPath: { path: '/' } } as never); }],
+      ['a host path volume', (j) => { (j.spec.template.spec.volumes ?? []).push({ name: 'host', hostPath: { path: '/' } } as never); }],
       ['host networking', (j) => { pod(j)['hostNetwork'] = true; }],
       ['a manual selector (the server writes false; k3s 1.36.6, measured)', (j) => { spec(j)['manualSelector'] = true; }],
       ['another image', (j) => { (containers(j)[1] as Rec)['image'] = 'evil:latest'; }],

@@ -7,7 +7,7 @@ import {
   lockAllocation, lockRunnerStageRun, lockWorkspace, transitionAllocation, type AllocationRow, type RunnerStageRun, type WorkspaceRow,
 } from '@factory/database';
 import { canonicalHash, canonicalJson } from '@factory/domain';
-import { WorkspaceError } from '@factory/workspace';
+import { WorkspaceError, quarantineRecord } from '@factory/workspace';
 import { reserveCapacity } from './capacity-standin.ts';
 import { supervisorSubject } from './config.ts';
 import {
@@ -15,14 +15,15 @@ import {
 } from './core.ts';
 import { RunnerError } from './errors.ts';
 import { allocationId, jobName } from './names.ts';
-import { auditAllocation, reconcileOne } from './reconcile.ts';
+import { auditAllocation, reconcileOne, recordDeps } from './reconcile.ts';
+import { writeCancelStop, writeUrgentStop } from './records.ts';
 import { handleState, type RunHandle } from './states.ts';
 
 const MAX_INPUT_BYTES = 256 * 1024;
 const MAX_REASON_BYTES = 1024;
 const MAX_LOGICAL_ID = 256;
 
-export type DescribedRun = { handle: RunHandle; allocationId?: string; state?: AllocationRow['state']; needsOperator: boolean; stopReason?: string; cancelled: boolean };
+export type DescribedRun = { handle: RunHandle; allocationId?: string; state?: AllocationRow['state']; needsOperator: boolean; stopReason?: string; cancelled: boolean; quarantineRecord?: ArtifactRef };
 
 // ---------------------------------------------------------------- wire validation
 
@@ -100,7 +101,13 @@ async function allocateOnce(d: RunnerDeps, ctx: AuthContext, input: StageInput, 
     const created = await insertAllocation(tx, {
       orgId: org, id: allocationId(org, stage.logicalId, generation), stageRunId: stage.id, workspaceId: ws ? ws.id : null, generation, ownerEpoch: epoch, specHash,
       jobName: jobName(org, stage.logicalId, generation), namespace: d.config.namespace, supervisorIdentity: supervisorSubject(d.config), startDeadlineSeconds: d.config.startDeadlineSeconds });
-    if (all.some((a) => a.state === 'quarantined')) await auditAllocation(tx, d, created, 'runner.reallocate_after_quarantine', 'a new generation follows a quarantined one (06-runner-workspaces.md:25)');
+    const quarantined = all.filter((a) => a.state === 'quarantined');
+    if (quarantined.length > 0) {
+      // The audit row cites the quarantine record of the replaced generation.
+      const refs: string[] = [];
+      for (const q of quarantined) { const r = await quarantineRecord.read(tx, recordDeps(d), org, q.id); if (r.kind === 'present') refs.push(r.ref.artifactId); }
+      await auditAllocation(tx, d, created, 'runner.reallocate_after_quarantine', 'a new generation follows a quarantined one (06-runner-workspaces.md:25)', { quarantineRecords: refs });
+    }
     return { kind: 'created', allocation: created };
   });
 }
@@ -150,7 +157,8 @@ export async function startOrAttach(d: RunnerDeps, ctx: AuthContext, input: Stag
   }
 }
 
-export async function cancel(d: RunnerDeps, ctx: AuthContext, stageRunId: string, commandId: string, reason: string): Promise<RunHandle> {
+// `urgent` skips the hold (SI-29): an emergency stop is not allowed to wait for an acknowledgement. W-119's emergency stop is its first real caller.
+export async function cancel(d: RunnerDeps, ctx: AuthContext, stageRunId: string, commandId: string, reason: string, opts: { urgent?: boolean } = {}): Promise<RunHandle> {
   const taskId = await authorizeCaller(d, ctx, 'runner.cancel', typeof stageRunId === 'string' ? stageRunId : 'unknown');
   if (typeof stageRunId !== 'string' || stageRunId === '' || stageRunId.length > MAX_LOGICAL_ID) throw new RunnerError('invalid_request', 'stageRunId is empty or too long');
   if (typeof commandId !== 'string' || !UUID.test(commandId)) throw new RunnerError('invalid_request', 'commandId must be a UUID');
@@ -166,15 +174,22 @@ export async function cancel(d: RunnerDeps, ctx: AuthContext, stageRunId: string
     // A cancel after a terminal result writes nothing.
     if (stage.resultRef === null) {
       await writeCancelRecord(tx, d, ctx.orgId, stageRunId, commandId, reason);
+      // Written under the stage run's lock even when a cancel record exists already, so a second, urgent cancel shortens a hold in progress.
+      if (opts.urgent === true) await writeUrgentStop(tx, d, ctx.orgId, stageRunId);
       // Under the stage run's lock no allocation can be inserted, so the live one (if any) is stable; but its state is
       // not: a reconcile pass or a permit moves it under its own row lock. So lock the row first and decide on the
       // locked row's state, never on a read made before the lock.
       const live = await liveAllocation(tx, ctx.orgId, stage.id);
       if (live) {
+        await faultsOf(d).hit('runner.before_cancel_allocation_lock');
         const locked = await lockAllocation(tx, ctx.orgId, live.id);
         if (locked && ['desired', 'starting', 'running', 'suspect'].includes(locked.state)) {
           const next = await transitionAllocation(tx, { orgId: ctx.orgId, id: locked.id, ownerEpoch: locked.ownerEpoch, from: [locked.state], to: 'stopping', leaseSeconds: d.config.stopDeadlineSeconds });
-          if (next) await auditAllocation(tx, d, locked, 'runner.allocation_stopping', 'cancel');
+          if (next) {
+            await auditAllocation(tx, d, locked, 'runner.allocation_stopping', 'cancel');
+            // The cancel-stop record: written only in the transaction where THIS cancel makes the transition. A stop another cause began has none, so nothing holds for it.
+            await writeCancelStop(tx, d, ctx.orgId, locked.id);
+          }
         }
       }
     }
@@ -214,14 +229,15 @@ export async function describeRun(d: RunnerDeps, ctx: AuthContext, stageRunId: s
     if (!view) throw new RunnerError('not_found', 'the stage run has no allocation yet');
     const a = view.allocation;
     const reason = a ? await latestAllocationReason(tx, ctx.orgId, a.id) : undefined;
-    return { handle: view.handle, ...(a ? { allocationId: a.id, state: a.state } : {}), needsOperator: a?.state === 'quarantined', ...(reason === undefined ? {} : { stopReason: reason }), cancelled: view.cancelled };
+    let qref: ArtifactRef | undefined;
+    if (a?.state === 'quarantined') { const r = await quarantineRecord.read(tx, recordDeps(d), ctx.orgId, a.id); if (r.kind === 'present') qref = r.ref; }
+    return { handle: view.handle, ...(a ? { allocationId: a.id, state: a.state } : {}), needsOperator: a?.state === 'quarantined', ...(reason === undefined ? {} : { stopReason: reason }), cancelled: view.cancelled, ...(qref ? { quarantineRecord: qref } : {}) };
   });
 }
 
 export async function getResult(d: RunnerDeps, ctx: AuthContext, stageRunId: string): Promise<StageResult | null> {
   const stage = await loadStage(d, ctx, stageRunId, 'runner.get_result');
   if (stage.resultRef === null) return null;
-  if (!d.artifacts) throw new RunnerError('not_supported', 'no artifact service is configured');
   // Read under the caller's own scope; the runner never builds a result.
   const body = await d.artifacts.readVerified(ctx, stage.resultRef as unknown as ArtifactRef);
   const parsed = validateContract('StageResult', JSON.parse(body.toString('utf8')) as unknown);

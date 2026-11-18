@@ -5,6 +5,9 @@
 export const RUNNER_FAULT_POINTS = [
   'runner.in_allocate_tx', 'runner.after_allocate_commit', 'runner.after_pvc_create', 'runner.after_job_create', 'runner.after_job_bind',
   'runner.after_permit_claim', 'runner.before_writer_started', 'runner.after_writer_started', 'runner.before_permit_commit', 'runner.after_job_delete', 'runner.after_pvc_delete',
+  // W-019
+  'runner.after_proof_put', 'runner.after_proof_registered', 'runner.before_quarantine_move', 'runner.before_terminate_tx', 'runner.after_quarantine_put',
+  'runner.after_stop_ack', 'runner.before_cancel_allocation_lock', 'runner.before_permit_last_tx',
 ] as const;
 export type RunnerFaultPoint = (typeof RUNNER_FAULT_POINTS)[number];
 

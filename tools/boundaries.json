@@ -86,7 +86,8 @@
         "@factory/database",
         "@factory/artifacts",
         "@factory/workspace",
-        "@factory/test-support"
+        "@factory/test-support",
+        "@factory/runner-protocol"
       ],
       "denyExternal": [
         "@temporalio/",
@@ -204,6 +205,19 @@
         "pg",
         "@temporalio/",
         "fastify"
+      ]
+    },
+    "@factory/runner-protocol": {
+      "allowWorkspace": [],
+      "denyExternal": [
+        "pg",
+        "@temporalio/",
+        "fastify",
+        "node:fs",
+        "node:net",
+        "node:http",
+        "node:https",
+        "node:child_process"
       ]
     }
   },

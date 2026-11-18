@@ -12,6 +12,7 @@
     "@factory/contracts": "workspace:*",
     "@factory/database": "workspace:*",
     "@factory/domain": "workspace:*",
+    "@factory/runner-protocol": "workspace:*",
     "@factory/workspace": "workspace:*"
   },
   "devDependencies": {

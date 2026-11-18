@@ -5,7 +5,7 @@
 // grace period (a lint rule enforces it).
 import { request } from 'node:https';
 import { KubeError, GRACE_SECONDS, LIST_MAX_PAGES, LIST_PAGE_SIZE, PROPAGATION,
-  type JobManifest, type KubeApi, type KubeJob, type KubePod, type Jwks, type KubePvc, type KubeReason, type ListOptions, type ListResult, type PvcManifest, type StorageClassInfo, type TokenReviewResult } from './api.ts';
+  type ApiServiceInfo, type JobManifest, type KubeApi, type KubeNode, type KubeJob, type KubePod, type Jwks, type KubePvc, type KubeReason, type ListOptions, type ListResult, type PvcManifest, type StorageClassInfo, type TokenReviewResult } from './api.ts';
 
 export type HttpsKubeOptions = {
   server: string;            // https://host:port
@@ -20,6 +20,19 @@ export type HttpsKubeOptions = {
 const REASONS: readonly KubeReason[] = ['AlreadyExists', 'Conflict', 'NotFound', 'Invalid', 'Timeout', 'Forbidden', 'InternalError', 'Unauthorized'];
 type Json = Record<string, unknown>;
 type ApiList<T> = { items?: T[]; metadata?: { continue?: string } };
+
+// The API omits an empty `labels` and `annotations`, as it omits an empty `volumes`: the objects the rest of the runner reads always have both maps.
+function withMeta(j: Json): Json {
+  const fix = (o: unknown): void => {
+    if (typeof o !== 'object' || o === null) return;
+    const m = (o as { metadata?: unknown }).metadata;
+    if (typeof m === 'object' && m !== null) { const mm = m as { labels?: unknown; annotations?: unknown }; mm.labels ??= {}; mm.annotations ??= {}; }
+  };
+  fix(j);
+  const items = (j as { items?: unknown }).items;
+  if (Array.isArray(items)) for (const i of items) fix(i);
+  return j;
+}
 
 export class HttpsKube implements KubeApi {
   readonly #o: Required<Pick<HttpsKubeOptions, 'requestTimeoutMs' | 'maxResponseBytes'>> & HttpsKubeOptions;
@@ -55,7 +68,7 @@ export class HttpsKube implements KubeApi {
           if (status >= 300 && status < 400) { reject(new KubeError(status, 'Unknown', 'redirects are not followed')); return; }
           let json: Json = {};
           try { json = chunks.length === 0 ? {} : (JSON.parse(Buffer.concat(chunks).toString('utf8')) as Json); } catch { if (status < 300) { reject(new KubeError(status, 'Unknown', 'response is not JSON')); return; } }
-          if (status >= 200 && status < 300) { resolve(json); return; }
+          if (status >= 200 && status < 300) { resolve(withMeta(json)); return; }
           const reason = typeof json['reason'] === 'string' && (REASONS as readonly string[]).includes(json['reason']) ? (json['reason'] as KubeReason) : 'Unknown';
           reject(new KubeError(status, reason, typeof json['message'] === 'string' ? json['message'] : `HTTP ${String(status)}`));
         }); });
@@ -116,6 +129,19 @@ export class HttpsKube implements KubeApi {
   async getStorageClass(name: string): Promise<StorageClassInfo> {
     const r = await this.#call('GET', `/apis/storage.k8s.io/v1/storageclasses/${encodeURIComponent(name)}`);
     return { name, reclaimPolicy: typeof r['reclaimPolicy'] === 'string' ? r['reclaimPolicy'] : 'Delete', volumeBindingMode: typeof r['volumeBindingMode'] === 'string' ? r['volumeBindingMode'] : 'Immediate' };
+  }
+  async getNode(name: string): Promise<KubeNode> {
+    const r = await this.#call('GET', `/api/v1/nodes/${encodeURIComponent(name)}`);
+    const m = (r['metadata'] ?? {}) as { name?: string; uid?: string };
+    if (typeof m.uid !== 'string' || m.uid === '') throw new KubeError(0, 'Unknown', 'the node answer carries no uid');
+    return { name: m.name ?? name, uid: m.uid };
+  }
+  async getApiService(): Promise<ApiServiceInfo> {
+    const r = await this.#call('GET', '/api/v1/namespaces/default/services/kubernetes');
+    const spec = (r['spec'] ?? {}) as { clusterIP?: string; ports?: Array<{ port?: number }> };
+    const port = spec.ports?.[0]?.port;
+    if (typeof spec.clusterIP !== 'string' || spec.clusterIP === '' || typeof port !== 'number') throw new KubeError(0, 'Unknown', 'the kubernetes Service answer carries no cluster address');
+    return { address: spec.clusterIP, port };
   }
   // At start: the workspace claims' storage class must reclaim with Delete, or the runner refuses to start (D15).
   async assertStorageClass(name: string): Promise<void> {

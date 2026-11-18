@@ -16,9 +16,21 @@ export type QuiescenceInput = {
   jobUidRecorded: boolean;
   stoppingForMs: number;          // measured in SQL from updated_at, which the transition stamped
   requestDeadlineMs: number;
+  // ---- W-019. Absent in W-017's own calls of this function: then none of the three conditions below applies.
+  writerPodUid?: string | null;
+  // The node condition: with a start record, a writer pod that is absent from the list needs its node to still exist with the same UID.
+  startRecord?: { nodeName: string | null; nodeUid: string | null } | undefined;
+  nodeNow?: { name: string; uid: string } | 'absent' | 'unreadable' | undefined; // what getNode answered, when it was asked
+  nodeCheck?: 'required' | 'off';
+  // The claim condition: the namespace's pods listed WITHOUT a selector; none that is unfinished may name this generation's claim.
+  claim?: { name: string; uid: string | null } | undefined;
+  namespacePods?: readonly KubePod[];
+  namespaceTruncated?: boolean;
 };
-export type NotProvedReason = 'job_present' | 'pods_truncated' | 'pod_not_finished' | 'pod_container_running' | 'too_many_containers' | 'create_may_be_in_flight';
-export type Quiescence = { proved: true; observation: PodObservation[] } | { proved: false; reason: NotProvedReason; observation: PodObservation[] };
+export type NotProvedReason = 'job_present' | 'pods_truncated' | 'pod_not_finished' | 'pod_container_running' | 'too_many_containers' | 'create_may_be_in_flight' | 'writer_node_missing' | 'writer_node_unreadable' | 'claim_in_use' | 'claim_list_truncated';
+export type Detachment = { method: 'no_consumer_pod'; claim: { name: string; uid: string } } | { method: 'no_claim' };
+export type Facts = { writerPod: 'finished' | 'gone' | 'none'; nodeCheck: 'passed' | 'not_needed' | 'off'; detachment: Detachment };
+export type Quiescence = ({ proved: true; observation: PodObservation[] } | { proved: false; reason: NotProvedReason; observation: PodObservation[] }) & { facts: Facts };
 
 function observeContainers(statuses: readonly ContainerStatus[] | undefined, kind: 'init' | 'app', out: ContainerObservation[]): void {
   for (const s of statuses ?? []) {
@@ -46,5 +58,32 @@ export function evaluateQuiescence(i: QuiescenceInput): Quiescence {
     if (p.status.phase !== 'Succeeded' && p.status.phase !== 'Failed') { fail('pod_not_finished'); continue; }
     if (containers.some((c) => c.state === 'running')) fail('pod_container_running');
   }
-  return notProved === undefined ? { proved: true, observation } : { proved: false, reason: notProved, observation };
+  // The node: a start record means a supervisor was granted, and a writer pod that the list no longer shows may have been garbage-collected with its node.
+  // A claimed writer with no start record needs no node check: the record is written in the transaction that makes the allocation `running`.
+  const writerListed = typeof i.writerPodUid === 'string' && i.pods.some((p) => p.metadata.uid === i.writerPodUid);
+  let nodeCheck: Facts['nodeCheck'] = 'not_needed';
+  if (i.nodeCheck === 'off') nodeCheck = 'off';
+  else if (i.startRecord !== undefined && typeof i.writerPodUid === 'string' && !writerListed) {
+    const n = i.nodeNow;
+    // A writer WAS granted but its node is unknown (the start record was written with the node check off): the pod-GC hazard is unchecked, so say `off`
+    // (the disposition then answers `unknown`), never `not_needed`, which means no grant at all.
+    if (i.startRecord.nodeUid === null || i.startRecord.nodeName === null) nodeCheck = 'off';
+    else if (typeof n === 'object' && n.name === i.startRecord.nodeName && n.uid === i.startRecord.nodeUid) nodeCheck = 'passed';
+    // A node that cannot be read is "not yet", never "gone": only a 404 or a changed UID is.
+    else if (n === 'unreadable' || n === undefined) { fail('writer_node_unreadable'); nodeCheck = 'not_needed'; }
+    else { fail('writer_node_missing'); nodeCheck = 'not_needed'; }
+  }
+  // The claim: an unlabelled pod on the claim is exactly what the labelled lists miss.
+  let detachment: Detachment = { method: 'no_claim' };
+  if (i.claim !== undefined) {
+    if (i.namespaceTruncated === true) fail('claim_list_truncated');
+    for (const p of i.namespacePods ?? []) {
+      const names = (p.spec.volumes ?? []).some((v) => v.persistentVolumeClaim?.claimName === i.claim?.name);
+      if (names && p.status.phase !== 'Succeeded' && p.status.phase !== 'Failed') fail('claim_in_use');
+    }
+    if (i.claim.uid !== null) detachment = { method: 'no_consumer_pod', claim: { name: i.claim.name, uid: i.claim.uid } };
+  }
+  const writerPod: Facts['writerPod'] = typeof i.writerPodUid !== 'string' ? 'none' : writerListed ? 'finished' : 'gone';
+  const facts: Facts = { writerPod, nodeCheck, detachment };
+  return notProved === undefined ? { proved: true, observation, facts } : { proved: false, reason: notProved, observation, facts };
 }

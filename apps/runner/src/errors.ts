@@ -1,7 +1,7 @@
 export type RunnerErrorCode =
   | 'forbidden' | 'invalid_request' | 'conflict' | 'unknown_stage_run' | 'task_not_running' | 'stage_run_not_current' | 'run_cancelled'
   | 'budget_not_reserved' | 'budget_settled' | 'workspace_unavailable' | 'generation_limit' | 'restore_unavailable' | 'capacity_unavailable'
-  | 'limits_exceed_cap' | 'allocation_contended' | 'stage_run_busy' | 'workspace_busy' | 'allocation_live' | 'not_supported' | 'not_found' | 'cancel_record_conflict' | 'allocation_quarantined';
+  | 'limits_exceed_cap' | 'allocation_contended' | 'stage_run_busy' | 'workspace_busy' | 'allocation_live' | 'not_supported' | 'not_found' | 'cancel_record_conflict' | 'record_conflict' | 'allocation_quarantined';
 
 const RETRYABLE: ReadonlySet<RunnerErrorCode> = new Set(['allocation_contended', 'stage_run_busy', 'workspace_busy', 'allocation_live', 'allocation_quarantined']);
 

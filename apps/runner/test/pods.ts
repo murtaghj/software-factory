@@ -16,7 +16,7 @@ export function receiptStatusFor(kube: FakeKube, policy: 'File' | 'FallbackToLog
 export function foreignPod(kube: FakeKube, allocationId: string, o: { name: string; owner?: { kind: string; name: string; uid: string }; phase?: 'Running' | 'Succeeded' }): KubePod {
   const pod: KubePod = {
     metadata: { name: o.name, namespace: kube.namespace, uid: `foreign-${o.name}`, labels: { 'factory.local/allocation': allocationId }, annotations: {}, ...(o.owner ? { ownerReferences: [o.owner] } : {}) },
-    spec: { restartPolicy: 'Never', terminationGracePeriodSeconds: 15, serviceAccountName: 'x', automountServiceAccountToken: false, shareProcessNamespace: false, securityContext: {}, containers: [{ name: 'c', image: 'x' }], volumes: [] },
+    spec: { restartPolicy: 'Never', terminationGracePeriodSeconds: 15, serviceAccountName: 'x', automountServiceAccountToken: false, shareProcessNamespace: false, securityContext: {}, containers: [{ name: 'c', image: 'x' }] },
     status: { phase: o.phase ?? 'Running', containerStatuses: [{ name: 'c', state: o.phase === 'Succeeded' ? { terminated: { exitCode: 0 } } : { running: {} } }] },
   };
   kube.pods.set(o.name, pod);

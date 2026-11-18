@@ -3,7 +3,7 @@ export { FakeKube, FakeDriver, parseSelector, TERMINATION_MESSAGE_CAP, REVIEW_ME
 export type { PodRuntime } from './kube/fake.ts';
 export { FakeKubelet, STUB_PROGRAMS } from './kube/fake-kubelet.ts';
 export type { Program, ProgramFactory } from './kube/fake-kubelet.ts';
-export { passOnce, toStopping, toQuarantined, move, terminateTx } from './reconcile.ts';
+export { passOnce, toStopping, toQuarantined, quarantine, move, terminateTx, recordDeps } from './reconcile.ts';
 export { settleWorkspace } from './workspaces.ts';
 export { poolKey } from './capacity-standin.ts';
 import { buildConfig, type ConfigInput, type RunnerConfig } from './config.ts';

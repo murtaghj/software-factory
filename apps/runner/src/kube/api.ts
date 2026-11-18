@@ -18,8 +18,10 @@ export type ContainerSpec = {
 export type VolumeSpec = { name: string; persistentVolumeClaim?: { claimName: string }; emptyDir?: { sizeLimit?: string }; projected?: Record<string, unknown> };
 export type PodSpec = {
   restartPolicy: 'Never'; terminationGracePeriodSeconds: number; serviceAccountName: string; automountServiceAccountToken: boolean;
-  enableServiceLinks?: boolean; shareProcessNamespace: boolean; securityContext: Record<string, unknown>;
-  initContainers?: ContainerSpec[]; containers: ContainerSpec[]; volumes: VolumeSpec[];
+  enableServiceLinks?: boolean; nodeName?: string; shareProcessNamespace: boolean; securityContext: Record<string, unknown>;
+  initContainers?: ContainerSpec[]; containers: ContainerSpec[];
+  // The API omits an empty `volumes` (a pod that mounts nothing has none): every reader says `?? []`.
+  volumes?: VolumeSpec[];
 };
 export type JobManifest = {
   apiVersion: 'batch/v1'; kind: 'Job';
@@ -56,6 +58,9 @@ export type TokenReviewResult = {
 export type Jwk = { kty: string; kid?: string; alg?: string; use?: string; [k: string]: unknown };
 export type Jwks = { keys: Jwk[] };
 export type StorageClassInfo = { name: string; reclaimPolicy: string; volumeBindingMode: string };
+// A node by name (its UID tells a node that was deleted and recreated from the one a writer ran on), and the `kubernetes` Service in `default` (the API server's cluster address).
+export type KubeNode = { name: string; uid: string };
+export type ApiServiceInfo = { address: string; port: number };
 
 // A list is paged at 50 and read for at most 10 pages. `truncated` says it stopped at the cap with more to read.
 export const LIST_PAGE_SIZE = 50;
@@ -97,6 +102,8 @@ export interface KubeApi {
   reviewToken(token: string, audiences: readonly string[]): Promise<TokenReviewResult>;
   getServiceAccountJwks(): Promise<Jwks>;
   getStorageClass(name: string): Promise<StorageClassInfo>;
+  getNode(name: string): Promise<KubeNode>;
+  getApiService(): Promise<ApiServiceInfo>;
 }
 
 export const GRACE_SECONDS = 15;

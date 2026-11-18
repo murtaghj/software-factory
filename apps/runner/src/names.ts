@@ -38,6 +38,10 @@ export function v8Uuid(parts: readonly string[]): string {
 }
 export const allocationId = (orgId: string, logicalId: string, generation: number): string => v8Uuid(['factory-allocation/1', capped('org id', orgId), capped('logical id', logicalId), gen(generation)]);
 export const cancelRecordId = (orgId: string, logicalId: string): string => v8Uuid(['factory-run-cancel/1', capped('org id', orgId), capped('logical id', logicalId)]);
+export const writerStartId = (orgId: string, allocationId: string): string => v8Uuid(['factory-writer-start/1', capped('org id', orgId), capped('allocation id', allocationId)]);
+export const stopAckId = (orgId: string, allocationId: string): string => v8Uuid(['factory-stop-ack/1', capped('org id', orgId), capped('allocation id', allocationId)]);
+export const cancelStopId = (orgId: string, allocationId: string): string => v8Uuid(['factory-cancel-stop/1', capped('org id', orgId), capped('allocation id', allocationId)]);
+export const urgentStopId = (orgId: string, logicalId: string): string => v8Uuid(['factory-run-urgent-stop/1', capped('org id', orgId), capped('logical id', logicalId)]);
 export const tokenAudience = (orgId: string, allocId: string): string => `factory-allocation:${orgId}:${allocId}`;
 
 // Label values: the first 32 hex characters of a SHA-256 of the full value (the full one is an annotation).

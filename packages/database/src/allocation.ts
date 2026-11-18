@@ -19,12 +19,14 @@ export type AllocationRow = {
   namespace: string; supervisorIdentity: string; state: AllocationState;
   // Judgements made in SQL on clock_timestamp(), after the row lock (when one was taken).
   leaseExpired: boolean; leaseRemainingMs: number | null; heartbeatAgeMs: number | null; sinceUpdateMs: number; terminated: boolean;
+  // How long before the last transition the last heartbeat fell (null: no heartbeat ever). `updated_at` is written only by a transition in the stopping state.
+  heartbeatBeforeUpdateMs: number | null;
 };
 
 type RawAllocation = {
   org_id: string; id: string; stage_run_id: string; logical_id: string; task_id: string; workspace_id: string | null; generation: number; owner_epoch: string;
   spec_hash: string; job_name: string; job_uid: string | null; pod_uid: string | null; namespace: string; supervisor_identity: string; state: AllocationState;
-  lease_expired: boolean; lease_remaining_ms: string | null; heartbeat_age_ms: string | null; since_update_ms: string; terminated: boolean;
+  lease_expired: boolean; lease_remaining_ms: string | null; heartbeat_age_ms: string | null; since_update_ms: string; terminated: boolean; hb_before_update_ms: string | null;
 };
 
 const SELECT = `SELECT a.org_id, a.id, a.stage_run_id, s.logical_id, s.task_id, a.workspace_id, a.generation, a.owner_epoch, a.spec_hash, a.job_name, a.job_uid, a.pod_uid,
@@ -33,7 +35,8 @@ const SELECT = `SELECT a.org_id, a.id, a.stage_run_id, s.logical_id, s.task_id, 
   floor(extract(epoch FROM (a.controller_lease_until - clock_timestamp())) * 1000)::bigint AS lease_remaining_ms,
   floor(extract(epoch FROM (clock_timestamp() - a.last_heartbeat_at)) * 1000)::bigint AS heartbeat_age_ms,
   floor(extract(epoch FROM (clock_timestamp() - a.updated_at)) * 1000)::bigint AS since_update_ms,
-  (a.terminated_at IS NOT NULL) AS terminated
+  (a.terminated_at IS NOT NULL) AS terminated,
+  floor(extract(epoch FROM (a.updated_at - a.last_heartbeat_at)) * 1000)::bigint AS hb_before_update_ms
   FROM factory.execution_allocation a JOIN factory.stage_run s ON s.org_id = a.org_id AND s.id = a.stage_run_id`;
 
 const num = (v: string | null): number | null => (v === null ? null : Number(v));
@@ -42,6 +45,7 @@ const toRow = (r: RawAllocation): AllocationRow => ({
   generation: r.generation, ownerEpoch: Number(r.owner_epoch), specHash: r.spec_hash, jobName: r.job_name, jobUid: r.job_uid, podUid: r.pod_uid,
   namespace: r.namespace, supervisorIdentity: r.supervisor_identity, state: r.state,
   leaseExpired: r.lease_expired, leaseRemainingMs: num(r.lease_remaining_ms), heartbeatAgeMs: num(r.heartbeat_age_ms), sinceUpdateMs: Number(r.since_update_ms), terminated: r.terminated,
+  heartbeatBeforeUpdateMs: num(r.hb_before_update_ms),
 });
 
 export const UNIQUE_VIOLATION = '23505';
@@ -137,6 +141,8 @@ export type AllocationTransition = {
   heartbeat?: boolean;
   jobUid?: string;      // set only while job_uid is still null
   terminated?: boolean; // terminated_at = clock_timestamp()
+  // The row's deadline must not have passed, judged in this statement on clock_timestamp() (the lease clause of `starting → running`).
+  leaseUnexpired?: boolean;
 };
 
 // Guarded transition: compare-and-swap on id, owner_epoch and the expected states. The caller holds the
@@ -150,6 +156,7 @@ export async function transitionAllocation(tx: Tx, t: AllocationTransition): Pro
   if (t.heartbeat === true) sets.push('last_heartbeat_at = clock_timestamp()');
   if (t.terminated === true) sets.push('terminated_at = clock_timestamp()');
   if (t.jobUid !== undefined) { params.push(t.jobUid); sets.push(`job_uid = $${String(params.length)}`); guard = ' AND job_uid IS NULL'; }
+  if (t.leaseUnexpired === true) guard += ' AND controller_lease_until IS NOT NULL AND controller_lease_until > clock_timestamp()';
   const r = await tx.query(`UPDATE factory.execution_allocation SET ${sets.join(', ')} WHERE org_id = $1 AND id = $2 AND owner_epoch = $3 AND state = ANY($4)${guard}`, params);
   if ((r.rowCount ?? 0) === 0) return undefined;
   return getAllocation(tx, t.orgId, t.id);
@@ -163,14 +170,41 @@ export async function claimWriterPod(tx: Tx, input: { orgId: string; id: string;
   return getAllocation(tx, input.orgId, input.id);
 }
 
-// One UPDATE: epoch and writer pod equal, state running or suspect, lease not passed on clock_timestamp().
+// One UPDATE: epoch and writer pod equal, state running or suspect, lease not passed on clock_timestamp(), and the
+// workspace (when there is one) still at this epoch, owned by this pod and `active`. A fenced writer is therefore never renewed (C11).
 export async function renewAllocationLease(tx: Tx, input: { orgId: string; id: string; ownerEpoch: number; podUid: string; leaseSeconds: number }): Promise<AllocationRow | undefined> {
   const r = await tx.query(`UPDATE factory.execution_allocation SET last_heartbeat_at = clock_timestamp(), updated_at = clock_timestamp(), state = 'running',
     controller_lease_until = clock_timestamp() + make_interval(secs => $5::double precision)
     WHERE org_id = $1 AND id = $2 AND owner_epoch = $3 AND pod_uid = $4 AND state IN ('running','suspect')
-    AND controller_lease_until IS NOT NULL AND controller_lease_until > clock_timestamp()`, [input.orgId, input.id, input.ownerEpoch, input.podUid, input.leaseSeconds]);
+    AND controller_lease_until IS NOT NULL AND controller_lease_until > clock_timestamp()
+    AND (workspace_id IS NULL OR EXISTS (SELECT 1 FROM factory.workspace w WHERE w.org_id = execution_allocation.org_id AND w.id = execution_allocation.workspace_id
+      AND w.owner_epoch = execution_allocation.owner_epoch AND w.owner_pod_uid = $4 AND w.state = 'active'))`, [input.orgId, input.id, input.ownerEpoch, input.podUid, input.leaseSeconds]);
   if ((r.rowCount ?? 0) === 0) return undefined;
   return getAllocation(tx, input.orgId, input.id);
+}
+
+// Allocations the pass should stop because their workspace is no longer at the allocation's epoch with this pod as owner (a fenced writer).
+export async function workspaceFenced(tx: Tx, orgId: string, id: string): Promise<boolean> {
+  const r = await tx.query<{ ok: boolean }>(`SELECT (a.workspace_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM factory.workspace w WHERE w.org_id = a.org_id AND w.id = a.workspace_id
+    AND w.owner_epoch = a.owner_epoch AND w.owner_pod_uid = a.pod_uid AND w.state = 'active')) AS ok FROM factory.execution_allocation a WHERE a.org_id = $1 AND a.id = $2`, [orgId, id]);
+  return r.rows[0]?.ok === true;
+}
+
+// Writers the review budget is sized from (running and suspect), and quarantines that waited too long, for one organization.
+export async function countLiveWriters(tx: Tx, orgId: string): Promise<number> {
+  const r = await tx.query<{ n: string }>("SELECT count(*) AS n FROM factory.execution_allocation WHERE org_id = $1 AND state IN ('running','suspect')", [orgId]);
+  return Number(r.rows[0]?.n ?? 0);
+}
+export async function countQuarantinedOlderThan(tx: Tx, orgId: string, seconds: number): Promise<number> {
+  const r = await tx.query<{ n: string }>(`SELECT count(*) AS n FROM factory.execution_allocation WHERE org_id = $1 AND state = 'quarantined'
+    AND updated_at <= clock_timestamp() - make_interval(secs => $2::double precision)`, [orgId, seconds]);
+  return Number(r.rows[0]?.n ?? 0);
+}
+
+// The Postgres clock, as ISO text: the observation time of a proof is read here, in the unlocked phase, before the object is put.
+export async function readDbClock(tx: Tx): Promise<string> {
+  const r = await tx.query<{ t: string }>("SELECT to_char(clock_timestamp() AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"') AS t");
+  return r.rows[0]?.t ?? '';
 }
 
 // ---------------------------------------------------------------- capacity (A-30)
@@ -215,6 +249,24 @@ export async function getAuditEvent(tx: Tx, orgId: string, id: string): Promise<
     'SELECT actor_id, action, resource_kind, resource_id, outcome FROM factory.audit_event WHERE org_id = $1 AND id = $2', [orgId, id]);
   const row = r.rows[0];
   return row ? { actorId: row.actor_id, action: row.action, resourceKind: row.resource_kind, resourceId: row.resource_id, outcome: row.outcome } : undefined;
+}
+
+export type AuditLookupWithDetails = AuditLookup & { details: Record<string, unknown> | null };
+export async function getAuditEventWithDetails(tx: Tx, orgId: string, id: string): Promise<AuditLookupWithDetails | undefined> {
+  const r = await tx.query<{ actor_id: string; action: string; resource_kind: string; resource_id: string; outcome: string; details_ref: Record<string, unknown> | null }>(
+    'SELECT actor_id, action, resource_kind, resource_id, outcome, details_ref FROM factory.audit_event WHERE org_id = $1 AND id = $2', [orgId, id]);
+  const row = r.rows[0];
+  return row ? { actorId: row.actor_id, action: row.action, resourceKind: row.resource_kind, resourceId: row.resource_id, outcome: row.outcome, details: row.details_ref } : undefined;
+}
+
+// ---------------------------------------------------------------- controller-artifact links (the proof and the quarantine record)
+export type ControllerLink = { artifactId: string; producerId: string; sha256: string; mediaType: string; schemaVersion: string; sizeBytes: number; classification: string };
+// Every link with this purpose; with `producerId`, only that producer's (filtered in SQL, so a foreign link cannot crowd the runner's out of the page). `artifact_link` has no unique key, so more than one is possible.
+export async function listLinksByPurpose(tx: Tx, orgId: string, purpose: string, producerId?: string): Promise<ControllerLink[]> {
+  const r = await tx.query<{ artifact_id: string; producer_id: string; sha256: string; media_type: string; schema_version: string; size_bytes: string; classification: string }>(
+    `SELECT l.artifact_id, a.producer_id, a.sha256, a.media_type, a.schema_version, a.size_bytes, a.classification FROM factory.artifact_link l
+     JOIN factory.artifact a ON a.org_id = l.org_id AND a.id = l.artifact_id WHERE l.org_id = $1 AND l.purpose = $2 AND ($3::text IS NULL OR a.producer_id = $3) ORDER BY l.created_at, l.id LIMIT 8`, [orgId, purpose, producerId ?? null]);
+  return r.rows.map((x) => ({ artifactId: x.artifact_id, producerId: x.producer_id, sha256: x.sha256, mediaType: x.media_type, schemaVersion: x.schema_version, sizeBytes: Number(x.size_bytes), classification: x.classification }));
 }
 
 // The latest diagnostic stop or quarantine reason recorded for an allocation, if any.

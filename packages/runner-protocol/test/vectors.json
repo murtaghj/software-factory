@@ -1,0 +1,18 @@
+{
+  "$comment": "Committed vectors for the pod-facing wire shapes (W-019). Each entry is parsed by the named parser and must come out as expected.",
+  "vectors": [
+    { "name": "acquire, minimal", "parser": "acquire", "input": { "orgId": "11111111-1111-4111-8111-111111111111", "allocationId": "22222222-2222-4222-8222-222222222222", "epoch": 1 }, "ok": true },
+    { "name": "acquire, with a report", "parser": "acquire", "input": { "orgId": "11111111-1111-4111-8111-111111111111", "allocationId": "22222222-2222-4222-8222-222222222222", "epoch": 3, "report": "{\"gate\":\"passed\"}" }, "ok": true },
+    { "name": "renew", "parser": "renew", "input": { "orgId": "11111111-1111-4111-8111-111111111111", "allocationId": "22222222-2222-4222-8222-222222222222", "epoch": 2 }, "ok": true },
+    { "name": "stop-ack", "parser": "stopAck", "input": { "orgId": "11111111-1111-4111-8111-111111111111", "allocationId": "22222222-2222-4222-8222-222222222222", "epoch": 2 }, "ok": true },
+    { "name": "grant with a harness state", "parser": "answer", "input": { "granted": true, "allocationId": "22222222-2222-4222-8222-222222222222", "generation": 1, "epoch": 1, "podUid": "pod-uid-1", "leaseSeconds": 60, "beatSeconds": 10, "harness": { "state": "terminated", "exitCode": 3 } }, "ok": true },
+    { "name": "denial", "parser": "answer", "input": { "granted": false, "code": "not_renewable", "retryable": false, "reason": "stopping" }, "ok": true },
+    { "name": "stop acknowledged", "parser": "stopAnswer", "input": { "acknowledged": true }, "ok": true },
+    { "name": "renew with a harness field", "parser": "renew", "input": { "orgId": "11111111-1111-4111-8111-111111111111", "allocationId": "22222222-2222-4222-8222-222222222222", "epoch": 1, "harness": "x" }, "ok": false },
+    { "name": "acquire with a non-integer epoch", "parser": "acquire", "input": { "orgId": "11111111-1111-4111-8111-111111111111", "allocationId": "22222222-2222-4222-8222-222222222222", "epoch": 1.5 }, "ok": false },
+    { "name": "renew with a negative epoch", "parser": "renew", "input": { "orgId": "11111111-1111-4111-8111-111111111111", "allocationId": "22222222-2222-4222-8222-222222222222", "epoch": -1 }, "ok": false },
+    { "name": "acquire with a bad org id", "parser": "acquire", "input": { "orgId": "not-a-uuid", "allocationId": "22222222-2222-4222-8222-222222222222", "epoch": 1 }, "ok": false },
+    { "name": "grant with an unknown key", "parser": "answer", "input": { "granted": true, "allocationId": "22222222-2222-4222-8222-222222222222", "generation": 1, "epoch": 1, "podUid": "p", "leaseSeconds": 60, "beatSeconds": 10, "token": "x" }, "ok": false },
+    { "name": "denial with an unknown code", "parser": "answer", "input": { "granted": false, "code": "teapot", "retryable": false }, "ok": false }
+  ]
+}

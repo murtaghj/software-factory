@@ -139,6 +139,72 @@ candidate is deleted, after it `pod_uid` governs and every other pod is deleted.
 
 Pool `verifier` or `authoring` by role, 10 each, one row per allocation keyed `<pool>/g<generation>`; see A-30.
 
+## W-019, 19a: the pod-facing side
+
+The supervisor, the launcher, the manifests' new arguments, the images and the k3s files are 19b. This commit is the runner's side, built and
+tested in the fake tier with tests as the callers. Section 6 of `docs/m2-plan.md` is the brief.
+
+**Seven rules.** W-017's three stand; the first gains "no object-store call inside a transaction either". Four more. (4) Authority is the
+runner's answer to this call, checked against the lease: every route that grants or changes state carries `controller_lease_until > clock_timestamp()`
+in its own locked statement and every grant refreshes it. (5) Only the pod delete stops a writer; nothing reported from inside the pod decides
+anything. (6) A stored proof is a one-way door: once an allocation has a proof it can only become `terminated`, and every move to `quarantined` reads the
+proof link under the row lock and refuses when one exists. (7) One generation, one claim, one writer (D19).
+
+**Admission, in this order** (`src/listener/pod-listener.ts`, `src/pod-guard.ts`), each step so that the next cannot be starved by someone who failed the
+one before: (1) new connections per source, 5 a second, burst 20, on the plain socket before any TLS work; (2) open connections, 512 in all and 4 per source,
+5 s handshake, 5 s headers and body, 10 s per request, 16 KiB of headers; (3) source charge: every request is charged to its source (10 a second, burst 50)
+**unless its token verified locally**; (4) local verification; (5) the per-pod bucket, keyed by the pod UID in the token that just verified (burst 5, then one
+every 2 s); (6) the shared review budget, sized each pass from the running and suspect writers (`max(20, 2 x podRate x writers)`, to a ceiling of 200);
+(7) the guard. TLS is always on (D23); the only plaintext is the test configuration's flag.
+
+**The route table.**
+
+| Route | States | Workspace clause | Lease clause |
+| --- | --- | --- | --- |
+| acquire, first commit | `starting` | at this epoch; `allocated`, or `active` owned by this pod | `starting -> running` only while the start deadline has not passed |
+| acquire, wherever it finds the row `running` for this pod | `running`, `suspect` | as renew | it is the renewal statement |
+| renew | `running`, `suspect` | at this epoch, owned by this pod, `active`, in the same `UPDATE` | unexpired, and refreshed |
+| stop-ack | `stopping` | at this epoch, owned by this pod, `active` or `quiescing` | none: it grants nothing and changes no state |
+
+**Records.** Audit rows with deterministic ids (D18): writer start (`factory-writer-start/1`), stop acknowledgement, cancel stop (written only in the
+transaction where `cancel` itself makes the transition), urgent stop (per stage run). Controller artifacts, through `prepare`, `register` and `read` in
+`packages/workspace`: the `QuiescenceProof` (`quiescence_proof/<allocationId>`) and the `QuarantineRecord` (restricted, `quarantine_record/<allocationId>`).
+
+**The proof's conditions** are W-017's plus: the writer's node still exists with the recorded UID when the allocation has a start record and the writer's pod is no
+longer listed; no unfinished pod, labelled or not, names this generation's claim (a namespace list with no selector, and a capped list is not proved). The
+body keeps the writer's pod and at most 99 others, with their count and a digest of all of them.
+
+**The hold** (`06:90`): a stop caused by a cancel waits, and deletes nothing, while the allocation has a cancel-stop record, the stage run has no urgent stop,
+a start record exists, the last heartbeat was within `suspectSeconds` of the stop, no acknowledgement exists and the row has been `stopping` for under
+`cancelCheckpointWaitSeconds` (30). A stop for a lost lease, a lost pod or a container exit never waits.
+
+**`volumeDisposition`** (`packages/workspace`): `in_use` (live, no proof); `quiescent` (`stopping` or `terminated`, a `no_consumer_pod` proof, node check passed or not
+needed); `quarantined` (with its record); `unknown` otherwise, and for any storage but `pod_scoped_local`. No answer permits a second writer.
+
+**Configuration fails closed.** Outside the test configuration `review.ceilingPerSecond` is a safe integer of at least 20 (default 200) and the budget is sized from
+the writers on every pass, with the tokens it has left carried over; a token bucket refuses a rate or burst that is not a finite number above zero; the listener's key
+must be ECDSA P-256 and pair with its certificate, and its host a literal, specified IP address, all checked when the configuration is built; `buildConfig` refuses
+`test` unless it is the test configuration, and a built configuration is frozen. A pass reads the API's objects as it sends them: an empty `volumes`, `labels` or
+`annotations` is omitted, and every reader says `?? []`. An unreadable writer node is retried, not quarantined, until `nodeReadGraceSeconds` (60) past the stop
+deadline; only a 404 or a changed UID is "gone".
+
+**The writer start record's `report` is untrusted text**: it is whatever the supervisor sent, capped at 1 KiB and stored as reported. Anything that later displays
+it must treat it as untrusted.
+
+**19b hand-off.** The production entry (`runnerProcessFromEnv`) must read the network gate and the pod listener from the environment, with a test that starts the env
+entry against the fake. Until then it fails closed (the gate is `required` with no deny target).
+
+**Deployment invariants (added).** The listener must see real pod addresses: run the runner in the cluster with no source NAT in front of it. Behind NAT the
+per-source limits mean nothing (step 0 on k3s: every pod arrives as `127.0.0.1`).
+
+**Residual risks (added).** The object store is now needed to finish any stop. A runner outage longer than the fence time stops every writer (D27, P-28).
+Every proof lists the whole namespace, under the port's cap of 500 pods. Moving the listener to a worker thread is not built (P-29). The node check excludes a
+deleted node, not an operator's out-of-service taint. A quarantined allocation's process is not stopped again by anything here; its Job's deadline bounds it.
+Until W-024 ships a quarantined volume can be removed early only by hand.
+
+**Not built in 19a.** The supervisor, the launcher, the scripted harness, the CA and the manifest arguments, the images and `scripts/k3s.sh` changes, the 0750
+modes, the fake kubelet's token files, volumes and ports, and the k3s files (19b); `finalizing` (W-020, D22); `watchEvents` and log chunks (D26).
+
 ## Known limits
 
 - `reconcileOne`'s inline budget is a deadline that list calls (and the checks between passes) see; the other Kubernetes calls

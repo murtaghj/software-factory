@@ -166,12 +166,20 @@ error leaves (`sessionLostSignal` in `@factory/database`).
   **That list is advisory only** and is easy to get around (`find -exec`, `awk system()`, `script -c`,
   `flock`, unlisted shells and interpreters). The executor's sandbox is the control.
 
+## Records and the disposition of an old volume (W-019)
+
+`quiescence-proof.ts` and `quarantine-record.ts` define the two controller artifacts (`factory-quiescence-proof/1`, and the restricted
+`factory-quarantine-record/1`), each with `prepare` (outside any transaction: the runner identity is required, a refusal is audited in its own transaction,
+the body is validated and put), `register` (on the caller's transaction, under the allocation's row lock) and `read` (counts only links the runner identity
+produced; two are a hard error, because `artifact_link` has no unique key and the row lock is the only thing making it "one"). `volume-disposition.ts` is pure.
+The publisher's scratch root and any materializer's root must be disjoint (both use `<org>/<workspaceId>`); W-030 owns the check.
+
 ## Not built
 
 Git cache, submodules, LFS, shell recipes, experiment worktrees (and any `git worktree remove`),
-checkpoint and restore (`not_supported` until W-020), volume reuse on proof of quiescence, the
-`QuiescenceProof` and quarantine records (W-019), and reclaiming a fenced generation directory
-(W-019, W-024). The setup profile validates and drives an executor you must supply; no local
+checkpoint and restore (`not_supported` until W-020), and reclaiming a fenced generation directory
+(W-024). There is no writer reuse of a volume at all (D19): `volumeDisposition` says what may be done with an old
+generation's volume, and a replacement always gets a new claim. The setup profile validates and drives an executor you must supply; no local
 executor is exported because setup scripts are candidate code that run only in the sandbox.
 
 ## Tests

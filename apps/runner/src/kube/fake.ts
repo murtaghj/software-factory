@@ -10,7 +10,7 @@
 import { generateKeyPairSync, randomUUID, sign as cryptoSign, type KeyObject } from 'node:crypto';
 import {
   KubeError, LIST_MAX_PAGES, LIST_PAGE_SIZE,
-  type ContainerStatus, type Jwks, type JobManifest, type KubeApi, type ListOptions, type KubeJob, type KubePod, type KubePvc, type ListResult, type PodPhase, type PvcManifest, type StorageClassInfo, type TokenReviewResult,
+  type ContainerStatus, type Jwks, type JobManifest, type KubeApi, type ListOptions, type KubeJob, type KubePod, type KubePvc, type ListResult, type PodPhase, type PvcManifest, type StorageClassInfo, type KubeNode, type ApiServiceInfo, type TokenReviewResult,
 } from './api.ts';
 
 export const TERMINATION_MESSAGE_CAP = 4096;
@@ -68,6 +68,9 @@ export class FakeKube implements KubeApi {
   readonly pvcs = new Map<string, KubePvc>();
   readonly storageClasses = new Map<string, StorageClassInfo>([['local-path', { name: 'local-path', reclaimPolicy: 'Delete', volumeBindingMode: 'WaitForFirstConsumer' }]]);
   readonly tokens = new Map<string, TokenBinding>();
+  // One node by default; a pod is given its name when it is scheduled. `driver.loseNode` removes one with its pod objects.
+  readonly nodes = new Map<string, KubeNode>([['fake-node-1', { name: 'fake-node-1', uid: 'fake-node-uid-1' }]]);
+  apiService: ApiServiceInfo = { address: '10.96.0.1', port: 443 };
   readonly scheduled = new Set<string>(); // pod uids that hold a node
   readonly created = { jobs: 0, pvcs: 0 };  // successful creates (a create that answered AlreadyExists is not one)
   jwksCalls = 0;
@@ -262,6 +265,18 @@ export class FakeKube implements KubeApi {
     });
   }
 
+  getNode(name: string): Promise<KubeNode> {
+    return this.#run(() => {
+      this.#enter('getNode', name, false);
+      const n = this.nodes.get(name);
+      if (!n) throw new KubeError(404, 'NotFound', `nodes "${name}" not found`);
+      return clone(n);
+    });
+  }
+  getApiService(): Promise<ApiServiceInfo> {
+    return this.#run(() => { this.#enter('getApiService', 'kubernetes', false); return clone(this.apiService); });
+  }
+
   // ---------------------------------------------------------------- helpers
   // A service-account token as the kubelet projects it: a JWT signed by the cluster's key, bound to the pod.
   mintToken(pod: KubePod, audience: string, o: { expiresInSeconds?: number; serviceAccount?: string; namespace?: string } = {}): string {
@@ -327,6 +342,8 @@ export class FakeDriver {
       spec: clone(t.spec),
       status: { phase: 'Pending', initContainerStatuses: (t.spec.initContainers ?? []).map((c) => waiting(c.name)), containerStatuses: t.spec.containers.map((c) => waiting(c.name)) },
     };
+    // The API omits an empty `volumes`: a Job whose template mounts nothing gets pods with the field absent, as on a cluster.
+    if ((pod.spec.volumes ?? []).length === 0) delete pod.spec.volumes;
     this.kube.pods.set(pod.metadata.name, pod);
     this.schedule();
     return clone(pod);
@@ -345,7 +362,7 @@ export class FakeDriver {
   schedule(): void {
     for (const pod of this.kube.pods.values()) {
       if (this.kube.scheduled.has(pod.metadata.uid) || pod.metadata.deletionTimestamp !== undefined) continue;
-      const claims = pod.spec.volumes.flatMap((v) => (v.persistentVolumeClaim ? [v.persistentVolumeClaim.claimName] : []));
+      const claims = (pod.spec.volumes ?? []).flatMap((v) => (v.persistentVolumeClaim ? [v.persistentVolumeClaim.claimName] : []));
       const blocked = claims.some((c) => {
         const pvc = this.kube.pvcs.get(c);
         if (!pvc) return true; // no claim yet: the pod waits
@@ -354,6 +371,8 @@ export class FakeDriver {
       });
       if (blocked) continue;
       this.kube.scheduled.add(pod.metadata.uid);
+      const node = this.kube.nodes.values().next().value;
+      if (node) pod.spec.nodeName = node.name;
       for (const c of claims) { const pvc = this.kube.pvcs.get(c); if (pvc) pvc.status.phase = 'Bound'; }
       this.kube.runtime?.onPodScheduled(clone(pod));
     }
@@ -361,7 +380,7 @@ export class FakeDriver {
   }
   holders(claim: string): KubePod[] {
     return [...this.kube.pods.values()].filter((p) => this.kube.scheduled.has(p.metadata.uid) && p.status.phase !== 'Succeeded' && p.status.phase !== 'Failed'
-      && p.spec.volumes.some((v) => v.persistentVolumeClaim?.claimName === claim));
+      && (p.spec.volumes ?? []).some((v) => v.persistentVolumeClaim?.claimName === claim));
   }
   // pvc-protection: a terminating claim goes when no pod uses it.
   sweepClaims(): void {
@@ -466,6 +485,12 @@ export class FakeDriver {
     if (!job) throw new KubeError(404, 'NotFound', `jobs.batch "${name}" not found`);
     this.kube.jobs.delete(name);
     for (const p of this.kube.pods.values()) if (p.metadata.ownerReferences?.some((o) => o.uid === job.metadata.uid)) delete p.metadata.ownerReferences;
+  }
+  // Pod garbage collection after a node is deleted: the node and the pod objects that named it go, and nothing stops the processes the
+  // kubelet started (the fake kubelet's children run on). A fake-only fault, never reported as cluster evidence.
+  loseNode(name: string): void {
+    this.kube.nodes.delete(name);
+    for (const p of [...this.kube.pods.values()]) if (p.spec.nodeName === name) this.removePod(p.metadata.name);
   }
   // A force delete (grace 0): the pod object is gone at once and its processes are still on the node.
   forceDeletePod(name: string): void { this.removePod(name); }

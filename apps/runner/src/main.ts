@@ -13,6 +13,8 @@ import { RunnerError } from './errors.ts';
 import type { KubeApi } from './kube/api.ts';
 import { HttpsKube } from './kube/https-client.ts';
 import { createPodVolumeMaterializer } from './pod-volume-materializer.ts';
+import { startPodListener, type PodListener } from './listener/pod-listener.ts';
+import { runStartupChecks, type ChecksOptions } from './startup-checks.ts';
 import { createRunner, type RunnerService } from './runner.ts';
 import type { LoopHandle, PassSummary } from './reconcile.ts';
 
@@ -23,17 +25,22 @@ export type RunnerProcessOptions = {
   artifacts: ArtifactService;
   onPass?: (s: PassSummary) => void;
   onError?: (e: unknown) => void;
+  onWarning?: (message: string) => void;
+  probe?: ChecksOptions['probe']; // a test double for the deny-target connects
 };
-export type RunnerProcess = { runner: RunnerService; loop: LoopHandle; stop: () => Promise<void> };
+export type RunnerProcess = { runner: RunnerService; loop: LoopHandle; listener?: PodListener; stop: () => Promise<void> };
 
 export async function startRunnerProcess(o: RunnerProcessOptions): Promise<RunnerProcess> {
   // First, before anything is built or any pass runs.
   await o.kube.assertStorageClass(o.config.storageClass);
+  await runStartupChecks({ kube: o.kube, config: o.config, ...(o.probe ? { probe: o.probe } : {}), ...(o.onWarning ? { onWarning: o.onWarning } : {}) });
   const materializer = createPodVolumeMaterializer({ kube: o.kube, config: o.config, db: o.db });
   const workspaces = createWorkspaceManager({ db: o.db, artifacts: o.artifacts, runnerIdentity: o.config.runnerIdentity, materializer });
-  const runner = createRunner({ db: o.db, kube: o.kube, workspaces, config: o.config, artifacts: o.artifacts, ...(o.onError ? { onError: o.onError } : {}) });
+  const runner = createRunner({ db: o.db, kube: o.kube, workspaces, config: o.config, artifacts: o.artifacts, ...(o.onError ? { onError: o.onError } : {}), ...(o.onWarning ? { onWarning: o.onWarning } : {}) });
+  // The listener starts after the checks and closes before the loop stops.
+  const listener = o.config.podListener ? await startPodListener({ runner, config: o.config, ...(o.onError ? { onError: o.onError } : {}) }) : undefined;
   const loop = runner.startLoop(o.onPass);
-  return { runner, loop, stop: () => loop.stop() };
+  return { runner, loop, ...(listener ? { listener } : {}), stop: async () => { await listener?.close(); await loop.stop(); } };
 }
 
 const need = (env: NodeJS.ProcessEnv, name: string): string => {

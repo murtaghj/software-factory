@@ -316,6 +316,9 @@ importers:
       '@factory/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@factory/runner-protocol':
+        specifier: workspace:*
+        version: link:../../packages/runner-protocol
       '@factory/workspace':
         specifier: workspace:*
         version: link:../../packages/workspace
@@ -471,6 +474,8 @@ importers:
       '@factory/domain':
         specifier: workspace:*
         version: link:../domain
+
+  packages/runner-protocol: {}
 
   packages/test-support:
     dependencies:

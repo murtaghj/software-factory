@@ -17,7 +17,7 @@ import { handleState, isLive, type RunHandle } from './states.ts';
 
 export type RunnerDeps = {
   db: Database; kube: KubeApi; workspaces: WorkspaceManagerService; config: RunnerConfig;
-  artifacts?: ArtifactService; // getResult only
+  artifacts: ArtifactService; // getResult, and the proof and the quarantine record (W-019)
   faults?: FaultHook;
   // A monotonic millisecond clock for the review rate cap and the failed-token memory only. Every age and
   // deadline that decides an allocation is computed in SQL on clock_timestamp().
@@ -31,8 +31,12 @@ export type RunnerDeps = {
   deadline?: AbortSignal;
   // Refusals counted in memory by reason (callers that are not configured never reach the database).
   counters?: Map<string, number>;
-  // A per-source cap hook for the permit listener (W-019): return false to refuse before any review budget is spent.
+  // The source charge of the pod listener (W-019): called for every pod-facing request whose token did NOT verify locally; return false when the source's bucket is empty.
   admitSource?: (source: string | undefined) => boolean;
+  // A warning that is not an error (the review ceiling binding); defaults to console.warn.
+  onWarning?: (message: string) => void;
+  // Called by each reconcile pass with the number of running and suspect writers across organizations, to size the review budget.
+  onLiveWriters?: (n: number) => void;
 };
 export const reportError = (d: RunnerDeps, e: unknown): void => { (d.onError ?? ((x: unknown): void => { console.warn('[runner] an error after a commit did not fail the call:', x); }))(e); };
 export const countRefusal = (d: RunnerDeps, reason: string): void => { const c = d.counters; if (c) c.set(reason, (c.get(reason) ?? 0) + 1); };

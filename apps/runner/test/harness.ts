@@ -10,7 +10,7 @@ import type { ArtifactRef, StageInput } from '@factory/contracts';
 import { Database, createMigratedDatabase, openBudgetAccount, provisionOrganization, reserveBudget, type AllocationRow, type MigratedDatabase, getAllocation, type WorkspaceRow, getWorkspace } from '@factory/database';
 import { canonicalHash } from '@factory/domain';
 import { Faults } from '@factory/test-support';
-import { createWorkspaceManager, type GitMaterializer, type WorkspaceManagerService } from '@factory/workspace';
+import { QUIESCENCE_PROOF_SCHEMA, createWorkspaceManager, quiescenceProof, type GitMaterializer, type WorkspaceManagerService } from '@factory/workspace';
 import { createPodVolumeMaterializer, createRunner, encodeReceiptMessage, tokenAudience, type KubeApi, type RunnerConfig, type RunnerService } from '../src/index.ts';
 import type { RunnerDeps } from '../src/core.ts';
 import { FakeKube, createTestConfig } from '../src/testing.ts';
@@ -51,7 +51,7 @@ export async function createEnv(prefix: string, opts: { config?: ConfigOver; clo
   const base = mkdtempSync(join(tmpdir(), 'w017-'));
   const store = new FileObjectStore(join(base, 'store'));
   const artifacts = new ArtifactService({ db, store, signingKey: Buffer.alloc(32, 7), downloadOrigin: 'http://127.0.0.1:1' });
-  const config = createTestConfig({ runnerIdentity: RUNNER_ID, controlPlaneIdentities: [CALLER], pools: { authoring: 500, verifier: 500 }, ...opts.config });
+  const config = createTestConfig({ runnerIdentity: RUNNER_ID, controlPlaneIdentities: [CALLER], pools: { authoring: 500, verifier: 500 }, cancelCheckpointWaitSeconds: 0, nodeCheck: 'off', ...opts.config });
   let n = 0;
 
   async function seedTenant(orgId: string): Promise<Tenant> {
@@ -114,7 +114,7 @@ export async function createEnv(prefix: string, opts: { config?: ConfigOver; clo
     if (o.ownPool) extraPools.push(idb);
     const kube = o.kube;
     const faults = o.faults ?? new Faults();
-    const cfg = o.config ? createTestConfig({ runnerIdentity: RUNNER_ID, controlPlaneIdentities: [CALLER], pools: { authoring: 500, verifier: 500 }, ...opts.config, ...o.config }) : config;
+    const cfg = o.config ? createTestConfig({ runnerIdentity: RUNNER_ID, controlPlaneIdentities: [CALLER], pools: { authoring: 500, verifier: 500 }, cancelCheckpointWaitSeconds: 0, nodeCheck: 'off', ...opts.config, ...o.config }) : config;
     const workspaces = createWorkspaceManager({ db: idb, artifacts: new ArtifactService({ db: idb, store, signingKey: Buffer.alloc(32, 7), downloadOrigin: 'http://127.0.0.1:1' }), runnerIdentity: RUNNER_ID, materializer: o.pod ? createPodVolumeMaterializer({ kube, config: cfg, db: idb, ...o.pod }) : absentMaterializer });
     const deps: RunnerDeps = { db: idb, kube, workspaces, config: cfg, faults, artifacts, ...(o.nowMs ? { monotonicNowMs: o.nowMs } : {}) };
     return { runner: createRunner(deps), deps, kube, faults, db: idb, workspaces, config: cfg };
@@ -174,11 +174,20 @@ export async function createEnv(prefix: string, opts: { config?: ConfigOver; clo
     return { allocationId: alloc.id, podName: pod.metadata.name, podUid: pod.metadata.uid, token, workspaceId, jobName: alloc.jobName };
   }
 
+  // A proof as the reconciler would store it, for tests that drive `terminateTx` or `settleWorkspace` by hand.
+  async function storeProof(inst: Pick<Instance, 'deps' | 'db'>, t: Tenant, a: AllocationRow): Promise<void> {
+    const rd = { db: inst.db, artifacts, runnerIdentity: RUNNER_ID };
+    const body = { schema: QUIESCENCE_PROOF_SCHEMA, organizationId: t.orgId, taskId: t.taskId, allocationId: a.id, stageRunId: a.stageRunLogicalId, generation: a.generation, epoch: a.ownerEpoch, workspaceId: a.workspaceId,
+      job: { name: a.jobName, uid: a.jobUid, absent: true }, writer: null, pods: [], podCount: 0, observationDigest: sha256('[]'), writerPod: 'none', nodeCheck: 'not_needed', detachment: { method: 'no_claim' }, storage: 'pod_scoped_local', observedAt: new Date().toISOString() };
+    const handle = await quiescenceProof.prepare(rd, RUNNER_ID, { orgId: t.orgId, taskId: t.taskId, allocationId: a.id, body });
+    await inst.db.withTenant({ orgId: t.orgId }, (tx) => quiescenceProof.register(tx, rd, handle));
+  }
+
   const receiptFor = (): { generation: number; headCommit: string; treeDigest: string; gitVersion: string } => ({ generation: 1, headCommit: 'c'.repeat(40), treeDigest: 'ab'.repeat(32), gitVersion: 'git version 2.50.1 (Apple Git-155)' });
   const receiptMessage = (generation = 1): string => encodeReceiptMessage({ ...receiptFor(), generation });
 
   return {
-    m, db, a, b, config, artifacts, ctx, runnerCtx, newStage, input, putArtifact, newRunner, newClusterRunner, newWorkspace, q, allocations, allocation, workspace, backdate, auditCount, tables, receiptFor, receiptMessage, runningAllocation, waiters,
+    m, db, a, b, config, artifacts, ctx, runnerCtx, newStage, input, putArtifact, newRunner, newClusterRunner, newWorkspace, q, allocations, allocation, workspace, backdate, auditCount, tables, receiptFor, receiptMessage, runningAllocation, waiters, storeProof,
     async close(): Promise<void> {
       for (const x of extraPools) await x.close().catch(() => undefined); // a test may have closed it already ("controller A dies")
       await db.close();

@@ -1,7 +1,7 @@
 // The workspace facade (SI-26) and `settleWorkspace`, the one helper that calls D17's two transitions.
 import type { AuthContext } from '@factory/artifacts';
 import { getRunnerStageRun, getWorkspace, listAllocationsOfWorkspace, type AllocationRow } from '@factory/database';
-import { WorkspaceError, type ReleaseOutcome, type WorkspaceSpec } from '@factory/workspace';
+import { WorkspaceError, quiescenceProof, type ReleaseOutcome, type WorkspaceSpec } from '@factory/workspace';
 import type { WorkspaceRecord } from '@factory/contracts';
 import { authorizeCaller, refuseScope, runnerCtx, type RunnerDeps } from './core.ts';
 import { RunnerError } from './errors.ts';
@@ -20,7 +20,8 @@ export async function settleWorkspace(d: RunnerDeps, a: AllocationRow, phase: Se
   const ctx = runnerCtx(d, a.orgId, a.taskId);
   try {
     if (ws.state === 'active') await d.workspaces.markWriterQuiescing(ctx, ws.id, a.ownerEpoch, a.podUid);
-    if (phase === 'proof') await d.workspaces.markWriterStopped(ctx, ws.id, a.ownerEpoch, a.podUid);
+    // `markWriterStopped` is the one call that says the writer is gone, so it is never called without the stored proof.
+    if (phase === 'proof' && (await d.db.withTenant({ orgId: a.orgId }, (tx) => quiescenceProof.read(tx, { runnerIdentity: d.config.runnerIdentity }, a.orgId, a.id))).kind === 'present') await d.workspaces.markWriterStopped(ctx, ws.id, a.ownerEpoch, a.podUid);
   } catch (e) {
     if (e instanceof WorkspaceError && e.code === 'stale_epoch') return; // moved to a later epoch: not ours any more
     throw e;

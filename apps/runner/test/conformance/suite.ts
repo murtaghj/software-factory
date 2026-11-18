@@ -259,6 +259,52 @@ export function registerConformance(tier: string, make: () => Promise<{ kube: Ku
       await driver.waitFor('the pod ended', async () => (await podsOf(kube, run, name)).every((p) => p.status.phase !== 'Running'), driver.graceMs + 30_000);
     }));
 
+    // ---- W-019 rows. 16, 17, 18 and 21 run on both tiers; 19 and 20 (RBAC) are in the cluster block of the k3s tier.
+    it('16. getNode returns the name and UID of the node a scheduled pod names; a missing node is 404', () => withSubject(async ({ kube, driver, run }) => {
+      const name = `conf-${run}-16`;
+      await kube.createJob(job(driver.namespace, name, run, [container('c', driver.images.exitOnTerm)]));
+      await onePod(kube, driver, run, name);
+      await driver.waitFor('the pod is scheduled', async () => (await podsOf(kube, run, name))[0]?.spec.nodeName !== undefined, 60_000);
+      const pod = (await podsOf(kube, run, name))[0] as KubePod;
+      const node = await kube.getNode(pod.spec.nodeName as string);
+      expect(node.name).toBe(pod.spec.nodeName);
+      expect(node.uid).not.toBe('');
+      driver.record('row16.node', node.name);
+      await expect(kube.getNode(`no-such-node-${run}`)).rejects.toMatchObject({ status: 404 });
+    }));
+
+    it('17. a list with no selector returns an unlabelled pod that mounts a claim, with the claim\'s name in its volumes; the labelled list does not', () => withSubject(async ({ kube, driver, run }) => {
+      const name = `conf-${run}-17`;
+      const claim = `conf-${run}-17-c`;
+      await kube.createPvc(pvc(driver.namespace, claim, run, 'ReadWriteOncePod'));
+      const manifest = job(driver.namespace, name, run, [container('c', driver.images.exitOnTerm)], { claim });
+      manifest.spec.template.metadata.labels = {}; // none of ours (the Job controller still adds its own)
+      await kube.createJob(manifest);
+      const mounts = async (): Promise<KubePod[]> => (await kube.listPods('')).items.filter((p) => (p.spec.volumes ?? []).some((v) => v.persistentVolumeClaim?.claimName === claim));
+      await driver.waitFor('the pod that mounts the claim is listed', async () => (await mounts()).length > 0, 60_000);
+      expect((await mounts())[0]?.metadata.labels['conf/run']).toBeUndefined();
+      expect((await kube.listPods(SEL('conf/run', run))).items).toHaveLength(0); // the labelled lists miss it
+    }));
+
+    it('18. in a pod of two containers, when one exits the status shows it terminated with its code while the other runs, and the pod is not Terminating', () => withSubject(async ({ kube, driver, run }) => {
+      const name = `conf-${run}-18`;
+      await kube.createJob(job(driver.namespace, name, run, [container('keeper', driver.images.exitOnTerm), container('leaver', driver.images.exitZero)]));
+      await onePod(kube, driver, run, name);
+      const exited = (p: KubePod): boolean => p.status.containerStatuses?.find((x) => x.name === 'leaver')?.state.terminated !== undefined;
+      await driver.waitFor('the leaver terminated', async () => (await podsOf(kube, run, name)).some(exited), 60_000);
+      const pod = (await podsOf(kube, run, name)).find(exited) as KubePod;
+      expect(pod.status.containerStatuses?.find((x) => x.name === 'leaver')?.state.terminated?.exitCode).toBe(0);
+      expect(running('keeper')(pod)).toBe(true);
+      expect(pod.metadata.deletionTimestamp).toBeUndefined();
+      expect(pod.status.phase).toBe('Running');
+    }));
+
+    it('21. getApiService returns the kubernetes Service\'s cluster address and port', () => withSubject(async ({ kube }) => {
+      const svc = await kube.getApiService();
+      expect(svc.address).toMatch(/^[0-9a-f:.]+$/i);
+      expect(svc.port).toBeGreaterThan(0);
+    }));
+
     it('14. (driver only) a force delete removes the pod object at once while its process is still alive; this is why the port has no grace parameter', () => withSubject(async ({ kube, driver, run }) => {
       const name = `conf-${run}-14`;
       await kube.createJob(job(driver.namespace, name, run, [container('c', driver.images.ignoreTerm)]));
@@ -301,6 +347,13 @@ export function registerConformance(tier: string, make: () => Promise<{ kube: Ku
         expect(await can(driver.runnerServiceAccount, 'create', 'pods')).toBe(false); // the runner creates Jobs; the Job controller creates their pods
         expect(await can(driver.runnerServiceAccount, 'create', 'serviceaccounts/token')).toBe(false);
         expect(await can(driver.runnerServiceAccount, 'create', 'jobs')).toBe(true);
+      }));
+
+      it('21 (cluster). the runner\'s account can read the kubernetes Service and no other Service in default', () => withSubject(async ({ driver }) => {
+        const can = driver.canI?.bind(driver);
+        if (!can || !driver.runnerServiceAccount) throw new Error('a cluster driver supplies canI and the runner service account name');
+        expect(await can(driver.runnerServiceAccount, 'get', 'services@kubernetes')).toBe(true);
+        expect(await can(driver.runnerServiceAccount, 'get', 'services@some-other-service')).toBe(false);
       }));
     }
   });

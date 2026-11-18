@@ -71,7 +71,7 @@ describe('W-017 permits', () => {
 
   it('a flood of unique junk tokens does not spend the review budget: a real renewal still goes through, and the cluster saw no review for the junk', async () => {
     const now = 0;
-    const inst = e.newRunner({ nowMs: () => now, config: { review: { perSecond: 20, burst: 40 } } });
+    const inst = e.newRunner({ nowMs: () => now, config: { review: { perSecond: 20, burst: 40 }, podRate: { burst: 1000, intervalMs: 1 } } }); // the per-pod bucket (W-019) is out of the way: this is the shared budget's test
     const x = await started(inst);
     await inst.runner.acquireStartPermit(req(x.token, x.a.id));
     const reviews = () => inst.kube.calls.filter((c) => c.startsWith('reviewToken')).length;
@@ -91,15 +91,17 @@ describe('W-017 permits', () => {
   it('a per-source cap hook refuses before any budget is spent', async () => {
     const inst = e.newRunner();
     const x = await started(inst);
+    // W-019: the hook CHARGES a source for a request whose token did not verify locally; a token that verifies is never refused by it.
     inst.deps.admitSource = (src) => src !== 'noisy';
-    expect(await inst.runner.acquireStartPermit({ ...req(x.token, x.a.id), source: 'noisy' })).toMatchObject({ code: 'throttled', reason: 'source_capped' });
+    expect(await inst.runner.acquireStartPermit({ ...req('junk.token.value', x.a.id), source: 'noisy' })).toMatchObject({ code: 'throttled', reason: 'source_capped' });
     expect(inst.kube.calls.filter((c) => c.startsWith('reviewToken'))).toHaveLength(0);
-    expect(await inst.runner.acquireStartPermit({ ...req(x.token, x.a.id), source: 'quiet' })).toMatchObject({ granted: true });
+    expect(await inst.runner.acquireStartPermit({ ...req('junk.token.value', x.a.id), source: 'quiet' })).toMatchObject({ code: 'unauthenticated' });
+    expect(await inst.runner.acquireStartPermit({ ...req(x.token, x.a.id), source: 'noisy' })).toMatchObject({ granted: true }); // control: a valid token from the noisy source
   });
 
   it('the 41st review in a burst is throttled with no review; a token that failed is not reviewed again within 10 s', async () => {
     let now = 0;
-    const inst = e.newRunner({ nowMs: () => now, config: { review: { perSecond: 20, burst: 40 } } });
+    const inst = e.newRunner({ nowMs: () => now, config: { review: { perSecond: 20, burst: 40 }, podRate: { burst: 1000, intervalMs: 1 } } }); // the per-pod bucket (W-019) is out of the way: this is the shared budget's test
     const x = await started(inst);
     const y = await started(inst, { workspace: false });
     const aud = tokenAudience(e.a.orgId, x.a.id);
@@ -278,6 +280,8 @@ describe('W-017 permits', () => {
     await inst.workspaces.markWriterQuiescing(e.runnerCtx(e.a), x.ws as string, 1, x.pod.metadata.uid);
     expect(await terminateTx(inst.deps, stopping)).toBe('needs_settle'); // quiescing
     await inst.workspaces.markWriterStopped(e.runnerCtx(e.a), x.ws as string, 1, x.pod.metadata.uid);
+    expect(await terminateTx(inst.deps, stopping)).toBe('needs_proof'); // control (W-019): settled, but `terminated` cannot be written without the stored proof
+    await e.storeProof(inst, e.a, stopping);
     expect(await terminateTx(inst.deps, stopping)).toBe('terminated'); // retained
     expect((await e.allocation(e.a, x.a.id)).state).toBe('terminated');
     await until('nothing left waiting', async () => (await e.waiters()) === 0);
