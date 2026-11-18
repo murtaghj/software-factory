@@ -73,7 +73,7 @@ runners are attached.
 | P-19 | **Done (2026-11-18).** Add dedicated tests for the five review fixes that have none: event-stream hang on disconnect, task-list paging precision, newest-first decision listing, expiry at decision application, human gate requires a cited decision. |
 | P-20 | **Done (2026-11-18).** Split the two large worker files (workflow and activities) before M2 adds to them. |
 | P-25 | Close the short gap before a stage is marked in flight: a command applied there has its revision projected only after the stage ends (found while testing P-18; the P-15 behaviour covers only stages already in flight). |
-| P-26 | De-flake tests/system/test/p18-authority-at-application.test.ts: under load it intermittently sees a task revision one higher than expected (e.g. ['paused', 2] vs ['paused', 1]) or fails the group-owner case; it passes alone. Likely the P-25 projection gap in the test's own setup (parkedTask should wait for the pause to be projected). |
+| P-26 | **Done (2026-11-18), test only; P-25 stays open.** De-flake tests/system/test/p18-authority-at-application.test.ts: under load it intermittently sees a task revision one higher than expected (e.g. ['paused', 2] vs ['paused', 1]) or fails the group-owner case; it passes alone. Likely the P-25 projection gap in the test's own setup (parkedTask should wait for the pause to be projected). |
 
 ## Decision recorded while building P-01
 

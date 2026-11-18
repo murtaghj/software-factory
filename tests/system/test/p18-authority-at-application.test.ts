@@ -36,7 +36,9 @@ describe('P-18 command authority is re-checked when the command is applied', () 
     const who = await h.user([{ role: 'contributor', scope: [h.applicationId] }]);
     const taskId = await createTask(h, who);
     await pendingDecision(h, who, taskId);
-    return { taskId, owner: who, revision: (await getTask(h, who, taskId)).revision };
+    // The decision row can exist before the task's own projection (status and revision) lands; read the revision only once it has.
+    const parked = await waitStatus(h, who, taskId, ['waiting_decision']);
+    return { taskId, owner: who, revision: parked.revision };
   };
   const unchanged = async (taskId: string, revision: number) => {
     const t = await getTask(h, viewer, taskId);
@@ -64,7 +66,7 @@ describe('P-18 command authority is re-checked when the command is applied', () 
     const { taskId, owner: who } = await parkedTask();
     const paused = await command(h, who, taskId, 'pause');
     expect((await commandRow(paused.commandId)).state).toBe('applied');
-    const revision = (await getTask(h, viewer, taskId)).revision;
+    const revision = (await waitStatus(h, viewer, taskId, ['paused'])).revision; // applied is not yet projected (P-25)
     const r = await command(h, who, taskId, 'resume');
     expect(r.status).toBe(202);
     await revokeAll(who.principalId);
@@ -106,7 +108,7 @@ describe('P-18 command authority is re-checked when the command is applied', () 
     const r = await command(h, who, taskId, 'pause');
     expect(r.status).toBe(202);
     expect(await commandRow(r.commandId)).toMatchObject({ state: 'applied', rejection_reason: null });
-    expect((await getTask(h, viewer, taskId)).status).toBe('paused');
+    expect((await waitStatus(h, viewer, taskId, ['paused'])).status).toBe('paused');
     await cleanup(taskId);
   });
 
@@ -114,7 +116,7 @@ describe('P-18 command authority is re-checked when the command is applied', () 
     const who = await h.user([{ role: 'contributor', scope: [h.applicationId] }, { role: 'application_owner', scope: [h.applicationId] }]);
     const taskId = await createTask(h, who);
     await pendingDecision(h, who, taskId);
-    const revision = (await getTask(h, who, taskId)).revision;
+    const revision = (await waitStatus(h, who, taskId, ['waiting_decision'])).revision;
     const budget = (maxMicroUsd: number) => ({ budget: { ...investigation(h.applicationId).budget, maxMicroUsd } });
     const raise = await command(h, who, taskId, 'change_budget', budget(90_000_000));
     expect(raise.status).toBe(202); // an application owner may raise
@@ -206,11 +208,14 @@ describe('P-18 command authority is re-checked when the command is applied', () 
   it('an owner whose only authority is a group in owner_ids can pause, resume and cancel', async () => {
     const member = await groupOnly();
     const taskId = await createTask(h, member);
-    await pendingDecision(h, member, taskId);
+    await waitStatus(h, member, taskId, ['waiting_decision']);
+    // Each command waits for the projection of the one before it, so the next sees the status it expects (P-25).
+    const projectedAs: Record<string, string> = { pause: 'paused', resume: 'waiting_decision', cancel: 'cancelled' };
     for (const kind of ['pause', 'resume', 'cancel']) {
       const r = await command(h, member, taskId, kind);
       expect(r.status, kind).toBe(202);
       expect(await commandRow(r.commandId), kind).toMatchObject({ state: 'applied', rejection_reason: null });
+      await waitStatus(h, member, taskId, [projectedAs[kind] ?? '']);
     }
     expect((await waitStatus(h, member, taskId, ['cancelled'])).status).toBe('cancelled');
   });
@@ -219,7 +224,7 @@ describe('P-18 command authority is re-checked when the command is applied', () 
     const member = await groupOnly();
     const taskId = await createTask(h, member);
     await pendingDecision(h, member, taskId);
-    const revision = (await getTask(h, member, taskId)).revision;
+    const revision = (await waitStatus(h, member, taskId, ['waiting_decision'])).revision;
     const r = await command(h, member, taskId, 'pause');
     expect(r.status).toBe(202);
     await setOwners([]);
