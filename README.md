@@ -36,4 +36,4 @@ packages (`domain`, `policy`) and Temporal workflow code may not import I/O modu
 ## Layout
 
 `packages/*` and `apps/*` follow chapter 01 of the specification. Only the packages needed for
-milestones M0–M1 exist so far.
+milestones M0–M1 exist so far, plus `packages/workspace` (W-018, the first M2 package).

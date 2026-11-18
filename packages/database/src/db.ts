@@ -7,6 +7,13 @@ import pg from 'pg';
 export type TenantContext = { orgId: string; principalId?: string };
 export type Tx = pg.PoolClient;
 
+const sessions = new WeakMap<object, AbortSignal>();
+// Fires when the transaction's database session is lost (killed, reset, connection ended). Locks held
+// by that session are gone from then on, so anything that relied on them must stop.
+export function sessionLostSignal(tx: Tx): AbortSignal {
+  return sessions.get(tx) ?? new AbortController().signal;
+}
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export class Database {
@@ -37,16 +44,34 @@ export class Database {
 
   private async transaction<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
     const client = await this.pool.connect();
+    // A session killed under us (pg_terminate_backend, a restart, a reset) emits 'error' on the
+    // checked-out client; without a listener that is an uncaught exception. The first such error is
+    // kept: it, not pg's generic "not queryable", is what the caller sees (57P01, ECONNRESET, ...),
+    // and the session-lost signal fires so work that depends on the session's locks can stop.
+    const lost = new AbortController();
+    let lostError: Error | undefined;
+    const onLost = (err?: Error): void => { lostError ??= err ?? new Error('database session ended'); lost.abort(lostError); };
+    client.on('error', onLost);
+    sessions.set(client, lost.signal);
+    let releaseWith: Error | undefined;
     try {
       await client.query('BEGIN');
       const result = await fn(client);
       await client.query('COMMIT');
       return result;
     } catch (e) {
-      await client.query('ROLLBACK').catch(() => undefined);
+      await client.query('ROLLBACK').catch((re: unknown) => { releaseWith = re instanceof Error ? re : new Error(String(re)); });
+      if (lostError) {
+        // Surface the session's own error, with what failed because of it attached as its cause.
+        if (e !== lostError && lostError.cause === undefined) lostError.cause = e;
+        throw lostError;
+      }
       throw e;
     } finally {
-      client.release();
+      client.removeListener('error', onLost);
+      sessions.delete(client);
+      // A client that errored is destroyed (release with an error), not returned to the pool.
+      client.release(releaseWith ?? lostError);
     }
   }
 

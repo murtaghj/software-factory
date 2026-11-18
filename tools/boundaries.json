@@ -60,6 +60,19 @@
         "fastify"
       ]
     },
+    "@factory/workspace": {
+      "allowWorkspace": [
+        "@factory/contracts",
+        "@factory/domain",
+        "@factory/database",
+        "@factory/artifacts",
+        "@factory/test-support"
+      ],
+      "denyExternal": [
+        "@temporalio/",
+        "fastify"
+      ]
+    },
     "@factory/test-support": {
       "allowWorkspace": [
         "@factory/contracts"
