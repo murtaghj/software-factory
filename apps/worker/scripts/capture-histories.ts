@@ -6,7 +6,8 @@ import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { historyToJSON } from '@temporalio/common/lib/proto-utils';
-import type { WorkflowHandle } from '@temporalio/client';
+import type { Workflow } from '@temporalio/common';
+import { WithStartWorkflowOperation, type WorkflowHandle } from '@temporalio/client';
 import { canonicalHash } from '@factory/domain';
 import { createWorkerHarness, investigationSpec } from '../test/harness.ts';
 
@@ -86,8 +87,13 @@ const reviewerId = randomUUID();
 await h.db.withTenant({ orgId: h.orgId }, async (t) => {
   await t.query("INSERT INTO factory.principal (org_id, id, issuer, subject, display_name) VALUES ($1,$2,'https://issuer',$3,'Reviewer') ON CONFLICT DO NOTHING", [h.orgId, reviewerId, `reviewer-${reviewerId}`]);
   await t.query("INSERT INTO factory.membership (org_id, id, principal_id, role, application_scope) VALUES ($1,$2,$3,'reviewer','[\"*\"]')", [h.orgId, randomUUID(), reviewerId]);
+  // authority-v1 re-checks the issuing principal when pause, resume, cancel and amend are applied: the
+  // task's own principal (creator and owner) needs current access, as it has through the API.
+  await t.query("INSERT INTO factory.membership (org_id, id, principal_id, role, application_scope) VALUES ($1,$2,$3,'contributor','[\"*\"]')", [h.orgId, randomUUID(), h.principalId]);
 });
 type View = { status: string; controlRevision: number; nodes: Record<string, { status: string }> };
+// As the API would, record the command row a control command (pause, resume, cancel, amend) is issued under.
+const recordCommand = async (taskId: string, commandId: string, kind: string, principalId: string, rev: number) => h.db.withTenant({ orgId: h.orgId }, (t) => t.query("INSERT INTO factory.command (org_id, id, task_id, principal_id, expected_revision, kind, request_hash, payload, state) VALUES ($1,$2,$3,$4,$5,$6,$7,'{}','delivered')", [h.orgId, commandId, taskId, principalId, rev, kind, 'a'.repeat(64)]));
 const approve = async (handle: WorkflowHandle, workflowId: string, taskId: string) => {
   await until(async () => (await handle.query<View>('state')).status === 'waiting_decision');
   const d = await h.db.withTenant({ orgId: h.orgId }, async (t) => (await t.query<{ id: string; subject_hash: string }>("SELECT id, subject_hash FROM factory.decision_request WHERE task_id = $1 AND state = 'pending'", [taskId])).rows[0]);
@@ -109,7 +115,7 @@ async function captureWith(baseName: string, description: string, behavior: Para
   console.log(`captured ${name} (${String(history.events?.length ?? 0)} events)`);
 }
 // Command scenarios need the production template (plan review); captured for every build since commands-v1.
-const LATER_BUILDS = ['-settle-v1', '-resilience-v1'];
+const LATER_BUILDS = ['-settle-v1', '-resilience-v1', '-authority-v1'];
 if (suffix === '-commands-v1' || suffix === '-outcome-v1' || LATER_BUILDS.includes(suffix)) {
   await captureWith('plan-review-approved', 'Production template: plan review approved by an independent peer', undefined, async (tq) => {
     const { taskId, launch } = await h.newTask();
@@ -124,10 +130,14 @@ if (suffix === '-commands-v1' || suffix === '-outcome-v1' || LATER_BUILDS.includ
     await approve(handle, launch.workflowId, taskId);
     await until(async () => (await handle.query<View>('state')).nodes.investigate?.status === 'running');
     let rev = (await handle.query<View>('state')).controlRevision;
-    await handle.executeUpdate('applyCommand', { args: [{ workflowId: launch.workflowId, commandId: randomUUID(), kind: 'pause', expectedRevision: rev }] });
+    const pauseId = randomUUID();
+    await recordCommand(taskId, pauseId, 'pause', h.principalId, rev);
+    await handle.executeUpdate('applyCommand', { args: [{ workflowId: launch.workflowId, commandId: pauseId, kind: 'pause', expectedRevision: rev }] });
     await until(async () => (await handle.query<View>('state')).status === 'paused');
     rev = (await handle.query<View>('state')).controlRevision;
-    await handle.executeUpdate('applyCommand', { args: [{ workflowId: launch.workflowId, commandId: randomUUID(), kind: 'resume', expectedRevision: rev }] });
+    const resumeId = randomUUID();
+    await recordCommand(taskId, resumeId, 'resume', h.principalId, rev);
+    await handle.executeUpdate('applyCommand', { args: [{ workflowId: launch.workflowId, commandId: resumeId, kind: 'resume', expectedRevision: rev }] });
     await handle.result();
     return `${launch.workflowId}|${handle.firstExecutionRunId}`;
   });
@@ -137,7 +147,9 @@ if (suffix === '-commands-v1' || suffix === '-outcome-v1' || LATER_BUILDS.includ
     await approve(handle, launch.workflowId, taskId);
     await until(async () => (await handle.query<View>('state')).nodes.investigate?.status === 'running');
     const rev = (await handle.query<View>('state')).controlRevision;
-    await handle.executeUpdate('applyCommand', { args: [{ workflowId: launch.workflowId, commandId: randomUUID(), kind: 'cancel', expectedRevision: rev }] });
+    const cancelId = randomUUID();
+    await recordCommand(taskId, cancelId, 'cancel', h.principalId, rev);
+    await handle.executeUpdate('applyCommand', { args: [{ workflowId: launch.workflowId, commandId: cancelId, kind: 'cancel', expectedRevision: rev }] });
     await handle.result();
     return `${launch.workflowId}|${handle.firstExecutionRunId}`;
   });
@@ -182,7 +194,7 @@ if (LATER_BUILDS.includes(suffix)) {
     const specRef = await h.db.withTenant({ orgId: h.orgId }, (t) => h.artifacts.registerControllerArtifact(t, { orgId: h.orgId, taskId, producerId: 'capture', object, mediaType: 'application/json', schemaVersion: '2.0', classification: 'ordinary', purpose: 'amended_spec' }));
     const rev = (await handle.query<View>('state')).controlRevision;
     const commandId = randomUUID();
-    await h.db.withTenant({ orgId: h.orgId }, (t) => t.query("INSERT INTO factory.command (org_id, id, task_id, principal_id, expected_revision, kind, request_hash, payload, state) VALUES ($1,$2,$3,$4,$5,'amend_spec',$6,'{}','delivered')", [h.orgId, commandId, taskId, reviewerId, rev, 'a'.repeat(64)]));
+    await h.db.withTenant({ orgId: h.orgId }, (t) => t.query("INSERT INTO factory.command (org_id, id, task_id, principal_id, expected_revision, kind, request_hash, payload, state) VALUES ($1,$2,$3,$4,$5,'amend_spec',$6,'{}','delivered')", [h.orgId, commandId, taskId, h.principalId, rev, 'a'.repeat(64)]));
     await handle.executeUpdate('applyCommand', { args: [{ workflowId: launch.workflowId, commandId, kind: 'amend_spec', expectedRevision: rev, specRef }] });
     await until(async () => (await handle.query<View>('state')).status === 'waiting_decision' && (await handle.query<View>('state')).controlRevision > rev);
     await approve(handle, launch.workflowId, taskId);
@@ -192,10 +204,60 @@ if (LATER_BUILDS.includes(suffix)) {
 }
 
 // resilience-v1: a runner that fails outright, and a command applied (and projected) mid-stage.
-if (suffix === '-resilience-v1') {
+if (suffix === '-resilience-v1' || suffix === '-authority-v1') {
   await captureWith('runner-crashed', 'The investigate runner fails outright: stage recorded, reservation settled, task failed', { crash: (n) => n === 'investigate' }, async (tq) => {
     const { taskId, launch } = await h.newTask();
     const handle = await start(tq, launch, launch.workflowId);
+    await approve(handle, launch.workflowId, taskId);
+    await handle.result();
+    return `${launch.workflowId}|${handle.firstExecutionRunId}`;
+  });
+}
+
+// authority-v1: a command whose issuer has no current access is refused when it is applied.
+if (suffix === '-authority-v1') {
+  await captureWith('authority-refused', 'A pause issued by a principal with no current access is refused when applied; the task completes unpaused', undefined, async (tq) => {
+    const { taskId, launch } = await h.newTask();
+    const handle = await start(tq, launch, launch.workflowId);
+    await until(async () => (await handle.query<View>('state')).status === 'waiting_decision');
+    const rev = (await handle.query<View>('state')).controlRevision;
+    const commandId = randomUUID();
+    await recordCommand(taskId, commandId, 'pause', reviewerId, rev); // the reviewer is neither the owner nor an operator
+    const receipt = await handle.executeUpdate<{ state: string }, [unknown]>('applyCommand', { args: [{ workflowId: launch.workflowId, commandId, kind: 'pause', expectedRevision: rev }] });
+    if (receipt.state !== 'rejected') throw new Error('the pause should have been refused');
+    await approve(handle, launch.workflowId, taskId);
+    await handle.result();
+    return `${launch.workflowId}|${handle.firstExecutionRunId}`;
+  });
+}
+
+if (suffix === '-authority-v1') {
+  // A command that arrives in the same workflow task as the start, from a principal disabled since.
+  await captureWith('authority-at-start', 'A pause that arrives with the start, from a disabled principal, is refused', undefined, async (tq) => {
+    const { taskId, launch } = await h.newTask();
+    const gone = randomUUID();
+    const commandId = randomUUID();
+    await h.db.withTenant({ orgId: h.orgId }, (t) => t.query("INSERT INTO factory.principal (org_id, id, issuer, subject, display_name, disabled_at) VALUES ($1,$2,'https://issuer',$3,'Gone', now())", [h.orgId, gone, `gone-${gone}`]));
+    await recordCommand(taskId, commandId, 'pause', gone, 1);
+    const op = new WithStartWorkflowOperation('TaskWorkflow', { workflowId: launch.workflowId, taskQueue: tq, args: [launch], workflowIdConflictPolicy: 'FAIL' });
+    const receipt = await h.env.client.workflow.executeUpdateWithStart<Workflow, { state: string }, [unknown]>('applyCommand', { args: [{ workflowId: launch.workflowId, commandId, kind: 'pause', expectedRevision: 1 }], startWorkflowOperation: op });
+    if (receipt.state !== 'rejected') throw new Error('the pause should have been refused');
+    const handle = await op.workflowHandle();
+    await approve(handle, launch.workflowId, taskId);
+    await handle.result();
+    return `${launch.workflowId}|${(await handle.describe()).runId}`;
+  });
+  // The authority check fails on every attempt (a change_budget row whose payload is JSON null makes
+  // the Activity throw): the receipt is authority_check_unavailable, never an approval.
+  await captureWith('authority-check-unavailable', 'The authority check Activity exhausts its retries: the command is rejected, the task goes on', undefined, async (tq) => {
+    const { taskId, launch } = await h.newTask();
+    const handle = await start(tq, launch, launch.workflowId);
+    await until(async () => (await handle.query<View>('state')).status === 'waiting_decision');
+    const rev = (await handle.query<View>('state')).controlRevision;
+    const commandId = randomUUID();
+    await h.db.withTenant({ orgId: h.orgId }, (t) => t.query("INSERT INTO factory.command (org_id, id, task_id, principal_id, expected_revision, kind, request_hash, payload, state) VALUES ($1,$2,$3,$4,$5,'change_budget',$6,'null','delivered')", [h.orgId, commandId, taskId, h.principalId, rev, 'a'.repeat(64)]));
+    const receipt = await handle.executeUpdate<{ state: string; reason?: string }, [unknown]>('applyCommand', { args: [{ workflowId: launch.workflowId, commandId, kind: 'change_budget', expectedRevision: rev, budgetMicroUsd: 1_000_000 }] });
+    if (receipt.reason !== 'authority_check_unavailable') throw new Error(`unexpected receipt ${JSON.stringify(receipt)}`);
     await approve(handle, launch.workflowId, taskId);
     await handle.result();
     return `${launch.workflowId}|${handle.firstExecutionRunId}`;

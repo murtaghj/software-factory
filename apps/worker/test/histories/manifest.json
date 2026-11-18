@@ -334,5 +334,101 @@
     "workflowId": "factory/eaa79471-46d5-4ebe-b5d3-213765dc5813/3a775614-1acd-4042-9ef4-ac9858bb5dcd",
     "capturedWithWorkflowCodeDigest": "dc77710f5db8d60f8b0abe534352d39b15ec53b26a3d02ef7622fcb04d94fa53",
     "events": 242
+  },
+  "completed-authority-v1": {
+    "description": "Investigation plan run to success through fake stages",
+    "workflowId": "factory/4dca472d-b2c4-452d-b543-f2c5a7d80271/d9ad615f-f332-4e9f-9854-5221d577b53b",
+    "capturedWithWorkflowCodeDigest": "07dffefe3bdff231587789497eb9f8bf27db7e9c4d9587c652f6cbe94568fcc5",
+    "events": 301
+  },
+  "failed-authority-v1": {
+    "description": "Mandatory evidence_review stage reports a product failure",
+    "workflowId": "factory/4dca472d-b2c4-452d-b543-f2c5a7d80271/33a9613e-5588-43ff-a957-5fc41fcb05b5",
+    "capturedWithWorkflowCodeDigest": "07dffefe3bdff231587789497eb9f8bf27db7e9c4d9587c652f6cbe94568fcc5",
+    "events": 191
+  },
+  "active-mid-stage-authority-v1": {
+    "description": "Open history: the investigate stage is still executing",
+    "workflowId": "factory/4dca472d-b2c4-452d-b543-f2c5a7d80271/c8fa7701-38ca-49b5-a9e7-73d3fbc1dc8c",
+    "capturedWithWorkflowCodeDigest": "07dffefe3bdff231587789497eb9f8bf27db7e9c4d9587c652f6cbe94568fcc5",
+    "events": 119
+  },
+  "amended-authority-v1": {
+    "description": "amend_spec races an in-flight stage; plan 2 supersedes plan 1",
+    "workflowId": "factory/4dca472d-b2c4-452d-b543-f2c5a7d80271/5eb69017-01df-4e21-9a72-f1346e999860",
+    "capturedWithWorkflowCodeDigest": "07dffefe3bdff231587789497eb9f8bf27db7e9c4d9587c652f6cbe94568fcc5",
+    "events": 432
+  },
+  "continued-as-new-authority-v1": {
+    "description": "First run of a task that rolls over after two stages",
+    "workflowId": "factory/4dca472d-b2c4-452d-b543-f2c5a7d80271/c14e597b-aa35-47e4-bce6-c1b043a3e1e6",
+    "capturedWithWorkflowCodeDigest": "07dffefe3bdff231587789497eb9f8bf27db7e9c4d9587c652f6cbe94568fcc5",
+    "events": 143
+  },
+  "plan-review-approved-authority-v1": {
+    "description": "Production template: plan review approved by an independent peer",
+    "workflowId": "factory/4dca472d-b2c4-452d-b543-f2c5a7d80271/2ed6172d-6cf0-4e95-8eb9-501856c46075",
+    "capturedWithWorkflowCodeDigest": "07dffefe3bdff231587789497eb9f8bf27db7e9c4d9587c652f6cbe94568fcc5",
+    "events": 403
+  },
+  "paused-resumed-authority-v1": {
+    "description": "Paused during a stage, then resumed",
+    "workflowId": "factory/4dca472d-b2c4-452d-b543-f2c5a7d80271/cf5f91c9-4470-4b35-bb24-a58467eb0bc5",
+    "capturedWithWorkflowCodeDigest": "07dffefe3bdff231587789497eb9f8bf27db7e9c4d9587c652f6cbe94568fcc5",
+    "events": 434
+  },
+  "cancelled-in-flight-authority-v1": {
+    "description": "Cancelled while a stage was executing",
+    "workflowId": "factory/4dca472d-b2c4-452d-b543-f2c5a7d80271/3775f4ef-66a0-45d5-b051-f5b27ec53f02",
+    "capturedWithWorkflowCodeDigest": "07dffefe3bdff231587789497eb9f8bf27db7e9c4d9587c652f6cbe94568fcc5",
+    "events": 269
+  },
+  "budget-exhausted-authority-v1": {
+    "description": "Allowance runs out before the plan review: incomplete with reasons",
+    "workflowId": "factory/4dca472d-b2c4-452d-b543-f2c5a7d80271/17347d91-13e2-4b53-8f21-f6edd0883e19",
+    "capturedWithWorkflowCodeDigest": "07dffefe3bdff231587789497eb9f8bf27db7e9c4d9587c652f6cbe94568fcc5",
+    "events": 155
+  },
+  "plan-rejected-authority-v1": {
+    "description": "The required peer rejects the plan: incomplete, never approved",
+    "workflowId": "factory/4dca472d-b2c4-452d-b543-f2c5a7d80271/cebea8c1-cb7a-412b-8a1d-9bbb5472d053",
+    "capturedWithWorkflowCodeDigest": "07dffefe3bdff231587789497eb9f8bf27db7e9c4d9587c652f6cbe94568fcc5",
+    "events": 202
+  },
+  "decision-expired-authority-v1": {
+    "description": "Nobody answers the plan review: the durable timer expires it",
+    "workflowId": "factory/4dca472d-b2c4-452d-b543-f2c5a7d80271/608e6cd4-cde9-4dce-8270-5073bf571239",
+    "capturedWithWorkflowCodeDigest": "07dffefe3bdff231587789497eb9f8bf27db7e9c4d9587c652f6cbe94568fcc5",
+    "events": 198
+  },
+  "amend-rejected-authority-v1": {
+    "description": "An amendment naming an invalid spec is rejected; the task then completes on plan 1",
+    "workflowId": "factory/4dca472d-b2c4-452d-b543-f2c5a7d80271/0b9e20d7-3ace-4a8b-bdb8-64b77171f61a",
+    "capturedWithWorkflowCodeDigest": "07dffefe3bdff231587789497eb9f8bf27db7e9c4d9587c652f6cbe94568fcc5",
+    "events": 219
+  },
+  "runner-crashed-authority-v1": {
+    "description": "The investigate runner fails outright: stage recorded, reservation settled, task failed",
+    "workflowId": "factory/4dca472d-b2c4-452d-b543-f2c5a7d80271/ce96e363-7ec0-4a2b-94da-39df4c66b0a1",
+    "capturedWithWorkflowCodeDigest": "07dffefe3bdff231587789497eb9f8bf27db7e9c4d9587c652f6cbe94568fcc5",
+    "events": 253
+  },
+  "authority-refused-authority-v1": {
+    "description": "A pause issued by a principal with no current access is refused when applied; the task completes unpaused",
+    "workflowId": "factory/4dca472d-b2c4-452d-b543-f2c5a7d80271/bfb81347-5a08-436b-8dbd-89557e260bd0",
+    "capturedWithWorkflowCodeDigest": "07dffefe3bdff231587789497eb9f8bf27db7e9c4d9587c652f6cbe94568fcc5",
+    "events": 411
+  },
+  "authority-at-start-authority-v1": {
+    "description": "A pause that arrives with the start, from a disabled principal, is refused",
+    "workflowId": "factory/4dca472d-b2c4-452d-b543-f2c5a7d80271/9fbbc4df-599b-4732-8137-3e0d714f553c",
+    "capturedWithWorkflowCodeDigest": "07dffefe3bdff231587789497eb9f8bf27db7e9c4d9587c652f6cbe94568fcc5",
+    "events": 408
+  },
+  "authority-check-unavailable-authority-v1": {
+    "description": "The authority check Activity exhausts its retries: the command is rejected, the task goes on",
+    "workflowId": "factory/4dca472d-b2c4-452d-b543-f2c5a7d80271/a76837a7-f1b0-45de-b367-32a3c8948040",
+    "capturedWithWorkflowCodeDigest": "07dffefe3bdff231587789497eb9f8bf27db7e9c4d9587c652f6cbe94568fcc5",
+    "events": 411
   }
 }

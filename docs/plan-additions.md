@@ -69,9 +69,10 @@ runners are attached.
 | P-15 | **Done (2026-11-12).** Project a control-revision change while a stage is in flight, so a second command does not wait for the stage to end. |
 | P-16 | **Done (2026-11-12).** Settle a stage's budget reservation when its runner activity fails outright. Other activity failures (database writes exhausting retries) still fail the workflow. |
 | P-17 | Wire the release-approval check (AC-44 release half) to a real caller when a release flow exists; until then it is tested but unused. |
-| P-18 | Re-check authority when pause, resume, cancel and amend are applied, not only at ingress (A-13). |
-| P-19 | Add dedicated tests for the five review fixes that have none: event-stream hang on disconnect, task-list paging precision, newest-first decision listing, expiry at decision application, human gate requires a cited decision. |
-| P-20 | Split the two large worker files (workflow and activities) before M2 adds to them. |
+| P-18 | **Done (2026-11-18).** Re-check authority when pause, resume, cancel and amend are applied, not only at ingress (A-13, A-24). |
+| P-19 | **Done (2026-11-18).** Add dedicated tests for the five review fixes that have none: event-stream hang on disconnect, task-list paging precision, newest-first decision listing, expiry at decision application, human gate requires a cited decision. |
+| P-20 | **Done (2026-11-18).** Split the two large worker files (workflow and activities) before M2 adds to them. |
+| P-25 | Close the short gap before a stage is marked in flight: a command applied there has its revision projected only after the stage ends (found while testing P-18; the P-15 behaviour covers only stages already in flight). |
 
 ## Decision recorded while building P-01
 

@@ -1,7 +1,7 @@
 // Application-scoped RBAC (chapter 12 role matrix). Pure decision function: callers re-evaluate it
 // at the moment of use (command application, delivery), never cache a past "allowed".
-export const ROLES = ['viewer', 'contributor', 'task_owner', 'application_owner', 'policy_owner', 'reviewer', 'release_manager', 'operator', 'organization_admin'] as const;
-export type Role = (typeof ROLES)[number];
+import { ROLES, type Role } from '@factory/domain';
+export { ROLES, type Role };
 export type RoleGrant = { membershipId: string; role: Role; applicationScope: string[] | 'all' };
 
 export type Principal = {

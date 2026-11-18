@@ -36,8 +36,12 @@ export class CommandService {
   }
 
   private async insertCommand(tx: Tx, p: Principal, t: TaskRow, envelope: { commandId: string; kind: string; expectedRevision: number }, payload: Record<string, unknown>, requestHash: string): Promise<CommandReceipt> {
-    const inserted = await tx.query('INSERT INTO factory.command (org_id, id, task_id, principal_id, expected_revision, kind, request_hash, payload, state) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,\'queued\') ON CONFLICT (org_id, id) DO NOTHING',
-      [p.orgId, envelope.commandId, t.id, p.principalId, envelope.expectedRevision, envelope.kind, requestHash, JSON.stringify(payload)]);
+    // Application ownership can come from a group the token asserts (owner_ids lists "team:..."). The
+    // worker cannot see token groups, so the basis is recorded here and re-checked when applied (A-24).
+    const owners = Array.isArray(t.owner_ids) ? (t.owner_ids as unknown[]).filter((x): x is string => typeof x === 'string') : [];
+    const group = p.groups.find((g) => owners.includes(g) && g.length <= 200);
+    const inserted = await tx.query('INSERT INTO factory.command (org_id, id, task_id, principal_id, expected_revision, kind, request_hash, payload, state, authority_basis) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,\'queued\',$9) ON CONFLICT (org_id, id) DO NOTHING',
+      [p.orgId, envelope.commandId, t.id, p.principalId, envelope.expectedRevision, envelope.kind, requestHash, JSON.stringify(payload), group ? `group:${group}` : null]);
     if (inserted.rowCount !== 1) {
       const prior = await tx.query<{ request_hash: string; task_id: string }>('SELECT request_hash, task_id FROM factory.command WHERE id = $1', [envelope.commandId]);
       if (prior.rows[0]?.request_hash !== requestHash || prior.rows[0].task_id !== t.id) throw new ApiError(409, 'command_conflict', 'this commandId was already used for a different command');
@@ -187,6 +191,10 @@ export class CommandService {
       const replayed = await this.replayIfKnown(tx, p, resp.commandId, t.id, canonicalHash({ decisionId, ...resp }));
       if (replayed) return replayed;
       if (d.required_principal_id !== p.principalId) throw new ApiError(403, 'not_the_required_peer', 'this decision is assigned to another principal');
+      // Being the assigned peer is not enough: the principal must still hold a current, unrevoked
+      // reviewer membership for the task's application (the same rule that picked the reviewer).
+      const owners = Array.isArray(t.owner_ids) ? (t.owner_ids as unknown[]).filter((x): x is string => typeof x === 'string') : [];
+      if (!effectiveRoles(p, { applicationId: t.primary_application_id, applicationOwnerIds: owners }).some((g) => g.role === 'reviewer')) throw new ApiError(403, 'reviewer_authority_required', 'answering a decision requires a current reviewer role on the task\'s application');
       if (d.state !== 'pending') throw new ApiError(409, 'decision_closed', `decision is ${d.state}`);
       if (d.expired) throw new ApiError(409, 'decision_expired', 'the decision request has expired');
       if (resp.subjectHash !== d.subject_hash) throw new ApiError(409, 'stale_subject', 'the response names a different subject than the pending decision');

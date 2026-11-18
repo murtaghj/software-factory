@@ -93,6 +93,9 @@ export interface TaskActivities {
   requestPlanReview(i: { orgId: string; taskId: string; planVersion: number; nodeId: string; logicalId: string; packetRef: ArtifactRefLike; policyRef: ArtifactRefLike }): Promise<{ ok: true; decision: PendingDecision } | { ok: false; reason: string }>;
   settleDecision(i: { orgId: string; taskId: string; decision: PendingDecision; binding: Record<string, unknown> }): Promise<{ gate: 'passed' | 'failed'; reasonCodes: string[] }>;
   supersedeDecisions(i: { orgId: string; taskId: string; reason: string }): Promise<number>;
+  // authority-v1: re-checks, at the moment a command is applied, that the principal who issued it may still control the task.
+  // `pendingBudgetMicroUsd` is a budget change applied but not yet written; a raise is judged against it.
+  checkCommandAuthority(i: { orgId: string; taskId: string; commandId: string; pendingBudgetMicroUsd?: number }): Promise<{ ok: true } | { ok: false; reason: string }>;
   deliverReport(i: { orgId: string; taskId: string; logicalId: string; planVersion: number; candidateRef: ArtifactRefLike; reviewRef: ArtifactRefLike; requiredGateIds: string[] }): Promise<ControllerOutput>;
   recordOutcome(i: { orgId: string; taskId: string; logicalId: string; planVersion: number; deliveredRefs: ArtifactRefLike[]; providerHandles: string[] }): Promise<ControllerOutput>;
   project(i: { orgId: string; taskId: string; sequence: number; state: { status: TaskStatus; currentNodeId?: string | null; waitingReason?: string | null; specVersion: number; planVersion: number; controlRevision: number; outcomeRef?: ArtifactRefLike }; refs: Record<string, unknown>; eventType: string; correlationId: string }): Promise<{ outcome: 'applied' | 'duplicate' | 'stale' }>;

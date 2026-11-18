@@ -123,7 +123,7 @@ describe('W-006 role split and migration integrity', () => {
   });
 
   it('every migration declares a phase and contract migrations must declare what they retire', () => {
-    expect(loadMigrations().map((m) => m.phase)).toEqual(Array(15).fill('expand'));
+    expect(loadMigrations().map((m) => m.phase)).toEqual(Array(16).fill('expand'));
     const dir = mkdtempSync(join(tmpdir(), 'bad-migrations-'));
     try {
       writeFileSync(join(dir, '0001_drop_things.sql'), '-- phase: contract\nDROP TABLE x;\n');

@@ -66,7 +66,10 @@ describe('W-015 command and decision workflow (full stack)', () => {
       expect((await h.call(owner, 'GET', `/v2/decisions/${first.id}`)).body).toMatchObject({ state: 'superseded' });
       // The stale approval is refused at ingress, and also by the workflow if delivered directly.
       expect((await respond(h, reviewer, taskId, first)).status).toBe(409);
-      const direct = await h.temporal?.env.client.workflow.getHandle(`factory/${h.orgId}/${taskId}`).executeUpdate('applyCommand', { args: [{ workflowId: '', commandId: randomUUID(), kind: 'respond_decision', expectedRevision: (await getTask(h, owner, taskId)).revision, decisionId: second.id, subjectHash: first.subjectHash, outcome: 'approve', reviewedSectionIds: [], deciderPrincipalId: reviewer.principalId, channel: 'decision_response_endpoint' }] });
+      // Delivered directly, the command still needs the command row the API would have recorded for it.
+      const directId = randomUUID();
+      await h.tx((t) => t.query("INSERT INTO factory.command (org_id, id, task_id, principal_id, expected_revision, kind, request_hash, payload, state) VALUES ($1,$2,$3,$4,1,'respond_decision',$5,'{}','delivered')", [h.orgId, directId, taskId, reviewer.principalId, 'a'.repeat(64)]));
+      const direct = await h.temporal?.env.client.workflow.getHandle(`factory/${h.orgId}/${taskId}`).executeUpdate('applyCommand', { args: [{ workflowId: '', commandId: directId, kind: 'respond_decision', expectedRevision: (await getTask(h, owner, taskId)).revision, decisionId: second.id, subjectHash: first.subjectHash, outcome: 'approve', reviewedSectionIds: [], deciderPrincipalId: reviewer.principalId, channel: 'decision_response_endpoint' }] });
       expect(direct).toMatchObject({ state: 'rejected', reason: 'stale_subject: response names a different subject' });
       const ok = await respond(h, reviewer, taskId, second);
       expect(await commandState(h, reviewer, (ok.body as { commandId: string }).commandId)).toMatchObject({ state: 'applied' });
@@ -276,15 +279,21 @@ describe('AC-44 stale approval (decision expiry and authority at application tim
     expect((await respond(h, reviewer, taskId, d)).status).toBe(409);
   });
 
-  it('an approval accepted at ingress but applied after the reviewer lost authority does not pass the gate', async () => {
+  it('an approval accepted at ingress but applied after the reviewer lost authority is refused and leaves the decision pending (P-18)', async () => {
     const taskId = await createTask(h, owner);
     const d = await pendingDecision(h, owner, taskId);
     const r = await respond(h, reviewer, taskId, d);
     expect(r.status).toBe(202); // accepted while authorized; not yet delivered (no dispatch pass ran)
     await h.tx((t) => t.query("UPDATE factory.membership SET revoked_at = now() WHERE principal_id = $1 AND role = 'reviewer'", [reviewer.principalId]));
+    const commandId = (r.body as { commandId: string }).commandId;
+    const row = await pump(h, async () => { const c = (await h.tx((t) => t.query<{ state: string; rejection_reason: string | null }>('SELECT state, rejection_reason FROM factory.command WHERE id = $1', [commandId]))).rows[0]; return c && c.state !== 'queued' && c.state !== 'delivered' ? c : undefined; });
+    expect(row).toEqual({ state: 'rejected', rejection_reason: 'authority_revoked' });
+    // Nothing was decided: the request is still pending and the task still waits; only the expiry ends it.
+    expect(((await h.call(owner, 'GET', `/v2/decisions/${d.id}`)).body as { state: string }).state).toBe('pending');
     const done = await waitStatus(h, owner, taskId, ['incomplete', 'succeeded']);
-    expect(done.status).toBe('incomplete');
+    expect(done).toMatchObject({ status: 'incomplete', waitingReason: 'decision_expired' });
     const gate = await h.tx(async (t) => (await t.query<{ verdict: string; reason_codes: string[] }>("SELECT verdict, reason_codes FROM factory.gate_evaluation WHERE task_id = $1 AND gate_id = 'plan_peer_approved'", [taskId])).rows[0]);
-    expect(gate).toEqual({ verdict: 'failed', reason_codes: ['decider_authority_revoked'] });
+    expect(gate?.verdict).toBe('failed');
+    expect(gate?.reason_codes).toContain('decision_expired');
   });
 });
