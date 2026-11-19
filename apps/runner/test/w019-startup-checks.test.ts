@@ -55,7 +55,7 @@ describe('W-019 start-up checks', () => {
     expect(() => createTestConfig({ ...base, networkGate: { mode: 'required', denyTargets: ['10.96.0.1'] } })).toThrow(/literal/);
     expect(() => createTestConfig({ ...base, podRate: { intervalMs: 6000 } })).toThrow(/half a beat/);
     expect(createTestConfig(base).networkGate.mode).toBe('disabled'); // the fake tier has no network to gate
-    expect(createConfigNoThrow().networkGate.mode).toBe('required'); // production default: fail closed
+    expect(createConfigNoThrow).toThrow(/supervisor contract and the pod listener/); // production: nothing wired, nothing starts (and the gate's default is `required`)
   });
 });
 

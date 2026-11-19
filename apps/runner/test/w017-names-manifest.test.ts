@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { allocationId, cancelRecordId, checkpointJobName, jobName, pvcName, renderJob, renderPvc, RunnerError } from '../src/index.ts';
-import { ORG, TASK, WS, LOGICAL, allocation, config, request, stage, workspace } from './fixed-rows.ts';
+import { ORG, TASK, WS, LOGICAL, CA_SHA256, allocation, config, request, stage, workspace } from './fixed-rows.ts';
 
 const doc = (n: string): unknown => JSON.parse(readFileSync(join(import.meta.dirname, 'fixtures', n), 'utf8')) as unknown;
 const fixed = { allocation, stage, workspace, request, config };
@@ -38,6 +38,26 @@ describe('W-017 names and manifests', () => {
     expect(renderJob(fixed)).toEqual(doc('job.expected.json'));
     expect(renderPvc(fixed)).toEqual(doc('pvc.expected.json'));
     expect(renderJob(fixed)).toEqual(renderJob({ ...fixed })); // a pure function: any controller renders the same document
+  });
+
+  it('W-019: the supervisor\'s arguments carry the five values from the rows, the runner URL, the CA digest and the gate; the CA comes from a ConfigMap source; the harness is told only the local endpoint', () => {
+    const job = renderJob(fixed);
+    const spec = job.spec.template.spec;
+    const args = spec.containers.find((c) => c.name === 'supervisor')?.args ?? [];
+    const flag = (f: string): string[] => args.flatMap((a, i) => (a === f ? [args[i + 1] as string] : []));
+    expect(args[0]).toBe('serve');
+    expect([flag('--org'), flag('--allocation'), flag('--epoch'), flag('--generation'), flag('--workspace')]).toEqual([[ORG], [allocation.id], ['1'], ['1'], [WS]]);
+    expect(flag('--runner-ca-sha256')).toEqual([CA_SHA256]);
+    expect(flag('--deny-target')).toEqual(['10.43.0.1:443', '169.254.169.254:80']);
+    expect(flag('--network-gate')).toEqual(['required']);
+    expect(JSON.stringify(spec.volumes)).toContain('"configMap":{"name":"factory-runner-ca"');
+    expect(spec.containers.find((c) => c.name === 'harness')?.args).toEqual(['harness', '--supervisor', 'http://127.0.0.1:8765', '--', '/app/program']);
+    // control: with no supervisor configuration (W-017's stubs) the old arguments and no CA source
+    const legacy = renderJob({ ...fixed, config: { ...config, supervisor: undefined as never } });
+    expect(legacy.spec.template.spec.containers.find((c) => c.name === 'supervisor')?.args).toEqual(['serve', '--allocation', allocation.id]);
+    expect(JSON.stringify(legacy.spec.template.spec.volumes)).not.toContain('configMap');
+    // no workspace: no --workspace
+    expect(renderJob({ ...fixed, allocation: { ...allocation, workspaceId: null }, workspace: undefined, request: undefined }).spec.template.spec.containers[0]?.args).not.toContain('--workspace');
   });
 
   it('every container has limits, a read-only root, dropped capabilities, no automounted token and the File policy; grace 15, backoffLimit 0, deadline wall + 300', () => {

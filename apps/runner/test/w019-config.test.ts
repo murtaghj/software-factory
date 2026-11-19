@@ -3,6 +3,7 @@ import { generateKeyPairSync } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildConfig, createConfig, isUnspecified, reviewRateForWriters } from '../src/config.ts';
 import { BucketTable, TokenBucket } from '../src/listener/buckets.ts';
+import { isLoopbackOrLinkLocalOrUnspecified } from '@factory/runner-protocol';
 import { createTestConfig } from '../src/testing.ts';
 import { makePki, type Pki } from './listener-kit.ts';
 
@@ -12,7 +13,8 @@ beforeAll(() => { pki = makePki(); other = makePki(); });
 afterAll(() => { pki.cleanup(); other.cleanup(); });
 
 const d = `sha256:${'a'.repeat(64)}`;
-const prod = (): Parameters<typeof createConfig>[0] => ({ runnerIdentity: 'r', controlPlaneIdentities: ['c'], identityOrgs: { c: '00000000-0000-4000-8000-000000000001' }, images: { supervisor: `s@${d}`, harness: `h@${d}`, materializer: `m@${d}` }, networkGate: { mode: 'disabled', denyTargets: [] } });
+const prod = (): Parameters<typeof createConfig>[0] => ({ runnerIdentity: 'r', controlPlaneIdentities: ['c'], identityOrgs: { c: '00000000-0000-4000-8000-000000000001' }, images: { supervisor: `s@${d}`, harness: `h@${d}`, materializer: `m@${d}` }, networkGate: { mode: 'required', denyTargets: ['10.43.0.1:443'] },
+  supervisor: { runnerUrl: 'https://192.168.127.254:18443', caConfigMap: 'factory-runner-ca', caSha256: 'b'.repeat(64), localPort: 8765 }, podListener: { host: '127.0.0.1', port: 1, cert: pki.cert, key: pki.key } });
 const listener = (host: string, cert = pki.cert, key = pki.key) => ({ ...prod(), podListener: { host, port: 1, cert, key } });
 
 describe('W-019 the review ceiling and the buckets', () => {
@@ -91,5 +93,22 @@ describe('W-019 the listener\'s key, address and the test switches', () => {
     expect(() => { (c as unknown as { test: unknown }).test = { plaintext: true }; }).toThrow(TypeError);
     expect(() => { (c as unknown as { leaseSeconds: number }).leaseSeconds = 1; }).toThrow(TypeError);
     expect(() => { Object.assign(createTestConfig({ runnerIdentity: 'r', controlPlaneIdentities: ['c'] }), { test: { plaintext: true } }); }).toThrow(TypeError);
+  });
+
+  it('a production configuration needs the supervisor contract AND the pod listener, and a required gate; each missing piece is refused and the whole is accepted', () => {
+    const without = (k: 'supervisor' | 'podListener'): ReturnType<typeof prod> => { return Object.fromEntries(Object.entries(prod()).filter(([key]) => key !== k)) as ReturnType<typeof prod>; };
+    expect(() => createConfig(without('supervisor'))).toThrow(/supervisor contract and the pod listener/); // no supervisor: a Job would render W-017's ungated arguments
+    expect(() => createConfig(without('podListener'))).toThrow(/supervisor contract and the pod listener/);
+    expect(() => createConfig({ ...prod(), networkGate: { mode: 'disabled', denyTargets: [] } })).toThrow(/required in production/);
+    expect(createConfig(prod()).supervisor?.localPort).toBe(8765); // control
+    // the test builder keeps W-017's stubs: no supervisor, no listener
+    expect(createTestConfig({ runnerIdentity: 'r', controlPlaneIdentities: ['c'] }).supervisor).toBeUndefined();
+  });
+
+  it('the runner judges the supervisor\'s runner URL at its own start: http, loopback, link-local and unspecified are refused; control: a routable https address', () => {
+    const sup = (runnerUrl: string) => ({ ...prod(), supervisor: { runnerUrl, caConfigMap: 'x', caSha256: 'b'.repeat(64), localPort: 8765 } });
+    for (const bad of ['http://192.168.127.254:18443', 'https://127.0.0.1:18443', 'https://[::1]:18443', 'https://169.254.1.1:18443', 'https://0.0.0.0:18443', 'https://localhost:18443', 'nonsense']) expect(() => createConfig(sup(bad)), bad).toThrow(/runnerUrl/);
+    expect(() => createConfig(sup('https://192.168.127.254:18443'))).not.toThrow();
+    expect(isLoopbackOrLinkLocalOrUnspecified('10.0.0.5')).toBe(false); // one shared definition, in the protocol package
   });
 });

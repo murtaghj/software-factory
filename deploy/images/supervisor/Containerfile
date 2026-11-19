@@ -1,0 +1,9 @@
+# The supervisor's image (W-019, 19b): Node, tini, the supervisor's source and the wire contract, nothing else. Built by scripts/k3s.sh from a staged context
+# (`.k3s/ctx/supervisor`) that holds exactly the files named below, and no test entry. The supervisor has no database and no Kubernetes client.
+FROM docker.io/library/node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
+# Nothing in a running pod can install anything: apk, and the package managers the Node image ships (npm, npx, yarn, corepack), are removed in the same layer.
+RUN apk add --no-cache tini=0.19.0-r3 && rm -rf /sbin/apk /etc/apk /lib/apk /var/cache/apk && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /opt/yarn-* /usr/local/bin/yarn /usr/local/bin/yarnpkg
+COPY --chown=0:0 app /app
+RUN mkdir -p /app/node_modules/@factory && ln -s ../../packages/runner-protocol /app/node_modules/@factory/runner-protocol
+USER 10002:10002
+ENTRYPOINT ["/sbin/tini", "--", "node", "/app/apps/supervisor/src/main.ts"]

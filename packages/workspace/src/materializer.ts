@@ -6,6 +6,7 @@
 // when complete. Git runs only inside that staging directory, which the factory created and which
 // no candidate process has ever been able to write.
 import { createHash } from 'node:crypto';
+import { POD_MODE_KEY, ensurePodChild, isPodMode, type PodMode } from './internal/pod-mode.ts';
 import { lstatSync, mkdirSync, readFileSync, readlinkSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { ArtifactRef, FileSnapshot } from '@factory/contracts';
@@ -69,14 +70,21 @@ export class LocalMaterializer implements GitMaterializer {
   readonly #readBundle: ((ref: ArtifactRef) => Promise<Uint8Array>) | undefined;
   readonly #limits: MaterializeLimits;
   readonly #foldPaths: boolean;
+  readonly #pod: PodMode | undefined;
 
   constructor(o: LocalMaterializerOptions) {
+    // The pod mode comes in under a private key (internal/pod-mode.ts), never as a field of the options type. A value that this package did not mint is refused.
+    const m = (o as Record<symbol, unknown>)[POD_MODE_KEY];
+    if (m !== undefined && !isPodMode(m)) throw new WorkspaceError('invalid_request', 'not a pod mode');
+    this.#pod = m;
     this.root = o.root;
     this.git = o.git ?? new GitRunner();
     this.#readBundle = o.readBundle;
     this.#limits = { ...MATERIALIZE_LIMITS, ...o.limits };
     this.#foldPaths = o.foldPaths ?? process.platform === 'darwin';
   }
+
+  #dirMode(): number { return this.#pod?.dirMode ?? 0o700; }
 
   paths(t: MaterializeTarget): { workspaceDir: string; generationDir: string; staging: string } {
     if (!isUuid(t.orgId) || !isUuid(t.workspaceId) || !Number.isSafeInteger(t.generation) || t.generation < 1) throw new WorkspaceError('invalid_request', 'invalid materialization target');
@@ -89,14 +97,15 @@ export class LocalMaterializer implements GitMaterializer {
     try {
       assertRootOutsideCheckouts(this.root);
       assertSafeRoot(this.root);
-      ensureSafeChild(ensureSafeChild(this.root, request.target.orgId, true), request.target.workspaceId, true);
+      if (this.#pod) ensurePodChild(ensurePodChild(this.root, request.target.orgId, this.#pod), request.target.workspaceId, this.#pod);
+      else ensureSafeChild(ensureSafeChild(this.root, request.target.orgId, true), request.target.workspaceId, true);
       // The target check comes first and runs no Git: this side cannot see row state, so it never
       // trusts what it finds.
       if (exists(generationDir)) throw new WorkspaceError('target_exists', 'the generation directory already exists', { generationDir });
       const version = await this.git.version();
       rmSync(staging, { recursive: true, force: true }); // a staging path left by a crash
-      mkdirSync(workspaceDir, { recursive: true, mode: 0o700 });
-      mkdirSync(staging, { mode: 0o700 });
+      mkdirSync(workspaceDir, { recursive: true, mode: this.#dirMode() });
+      mkdirSync(staging, { mode: this.#dirMode() });
       const owned = claimFactoryOwned(staging);
       const signal = AbortSignal.any([AbortSignal.timeout(this.#limits.deadlineMs), ...(supplies.signal ? [supplies.signal] : [])]);
       const treeDigest = request.kind === 'remote' ? await this.#fromRemote(owned, staging, request, signal) : await this.#fromBundle(owned, staging, request, supplies, signal);
@@ -153,7 +162,7 @@ export class LocalMaterializer implements GitMaterializer {
   async #checkout(repo: FactoryOwnedRepo, staging: string, commit: string, entries: FileSnapshot[], signal: AbortSignal, branch: string | undefined): Promise<void> {
     mkdirSync(join(staging, 'git', '.git', 'info'), { recursive: true });
     writeFileSync(join(staging, 'git', '.git', 'info', 'attributes'), FACTORY_ATTRIBUTES);
-    mkdirSync(join(staging, 'work'), { mode: 0o700 });
+    mkdirSync(join(staging, 'work'), { mode: this.#dirMode() });
     const add = ['worktree', 'add', '--relative-paths', ...(branch === undefined ? ['--detach'] : ['-b', branch]), '../work/main', commit];
     await this.git.run(add, { cwd: repo, signal, timeoutMs: this.#limits.stepTimeoutMs });
     await this.#requireHead(claimFactoryOwned(join(staging, 'work', 'main')), commit, signal);

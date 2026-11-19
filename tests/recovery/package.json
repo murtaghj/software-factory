@@ -1,0 +1,24 @@
+{
+  "name": "@factory/recovery-tests",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./test/kit.ts"
+  },
+  "dependencies": {
+    "@factory/artifacts": "workspace:*",
+    "@factory/contracts": "workspace:*",
+    "@factory/database": "workspace:*",
+    "@factory/domain": "workspace:*",
+    "@factory/runner": "workspace:*",
+    "@factory/runner-protocol": "workspace:*",
+    "@factory/supervisor": "workspace:*",
+    "@factory/test-support": "workspace:*",
+    "@factory/workspace": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1",
+    "pg": "8.23.1"
+  }
+}

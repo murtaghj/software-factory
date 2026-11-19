@@ -55,8 +55,19 @@ const json = (env: NodeJS.ProcessEnv, name: string): unknown => {
 
 // The production composition: every image pinned by digest and every identity bound to an organization (createConfig
 // accepts no test switch). The cluster token is read once at start.
-export async function runnerProcessFromEnv(env: NodeJS.ProcessEnv = process.env): Promise<RunnerProcess> {
+// The process entry's composition. The cluster client is NOT a parameter of the exported function: `composeFromEnv(env, kube)` below is the seam the env-entry test uses (it
+// starts the very same composition against the fake cluster), exported only from `@factory/runner/testing`, which a boundary rule limits to tests.
+export const runnerProcessFromEnv = (env: NodeJS.ProcessEnv = process.env): Promise<RunnerProcess> => composeFromEnv(env, undefined);
+export async function composeFromEnv(env: NodeJS.ProcessEnv, kubeOverride: RunnerProcessOptions['kube'] | undefined): Promise<RunnerProcess> {
+  // W-019: the network gate, the pod listener and the supervisor's contract come from the environment. The gate is `required` by default and a required gate with no
+  // deny target refuses to start (the list must contain the API service's address): a production entry with none of these set fails closed, and starts no listener.
+  const gate = env['FACTORY_NETWORK_GATE'] === undefined ? undefined : (json(env, 'FACTORY_NETWORK_GATE') as { mode: 'required' | 'disabled'; denyTargets: string[] });
+  const listener = env['FACTORY_POD_LISTENER'] === undefined ? undefined : (json(env, 'FACTORY_POD_LISTENER') as { host: string; port: number; certFile: string; keyFile: string });
+  const supervisor = env['FACTORY_SUPERVISOR'] === undefined ? undefined : (json(env, 'FACTORY_SUPERVISOR') as NonNullable<ConfigInput['supervisor']>);
   const config = createConfig({
+    ...(gate ? { networkGate: gate } : {}),
+    ...(listener ? { podListener: { host: listener.host, port: listener.port, cert: readFileSync(listener.certFile, 'utf8'), key: readFileSync(listener.keyFile, 'utf8') } } : {}),
+    ...(supervisor ? { supervisor } : {}),
     runnerIdentity: need(env, 'FACTORY_RUNNER_IDENTITY'),
     controlPlaneIdentities: json(env, 'FACTORY_CONTROL_PLANE_IDENTITIES') as string[],
     identityOrgs: json(env, 'FACTORY_IDENTITY_ORGS') as Record<string, string>,
@@ -64,7 +75,7 @@ export async function runnerProcessFromEnv(env: NodeJS.ProcessEnv = process.env)
     ...(env['FACTORY_NAMESPACE'] === undefined ? {} : { namespace: env['FACTORY_NAMESPACE'] }),
     ...(env['FACTORY_STORAGE_CLASS'] === undefined ? {} : { storageClass: env['FACTORY_STORAGE_CLASS'] }),
   });
-  const kube = new HttpsKube({
+  const kube = kubeOverride ?? new HttpsKube({
     server: need(env, 'FACTORY_KUBE_SERVER'), ca: readFileSync(need(env, 'FACTORY_KUBE_CA_FILE')), namespace: config.namespace,
     token: readFileSync(need(env, 'FACTORY_KUBE_TOKEN_FILE'), 'utf8').trim(),
   });

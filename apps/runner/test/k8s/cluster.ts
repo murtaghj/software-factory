@@ -13,6 +13,8 @@ import type { ConformanceDriver } from '../conformance/suite.ts';
 
 export type K3sEnv = {
   server: string; caFile: string; adminCertFile: string; adminKeyFile: string; runnerTokenFile: string; namespace: string; fixtureCommit: string; imageDigest: string;
+  // W-019: where a pod reaches the runner's listener, and the throwaway CA and the listener's certificate `scripts/k3s.sh up` made.
+  listenerAddress: string; listenerPort: number; listenerCertFile: string; listenerKeyFile: string; runnerCaFile: string; runnerCaSha256: string; runnerCaConfigMap: string;
 };
 
 export const REPO_ROOT = join(import.meta.dirname, '..', '..', '..', '..');
@@ -28,7 +30,9 @@ export function loadK3sEnv(file = ENV_FILE): K3sEnv {
   for (const line of text.split('\n')) { const i = line.indexOf('='); if (i > 0) m.set(line.slice(0, i), line.slice(i + 1)); }
   const get = (k: string): string => { const v = m.get(k); if (v === undefined || v === '') throw new Error(`k3s tier: ${file} has no ${k}`); return v; };
   return { server: get('FACTORY_K3S_SERVER'), caFile: get('FACTORY_K3S_CA_FILE'), adminCertFile: get('FACTORY_K3S_ADMIN_CERT_FILE'), adminKeyFile: get('FACTORY_K3S_ADMIN_KEY_FILE'),
-    runnerTokenFile: get('FACTORY_K3S_RUNNER_TOKEN_FILE'), namespace: get('FACTORY_K3S_NAMESPACE'), fixtureCommit: get('FACTORY_K3S_FIXTURE_COMMIT'), imageDigest: get('FACTORY_K3S_IMAGE_DIGEST') };
+    runnerTokenFile: get('FACTORY_K3S_RUNNER_TOKEN_FILE'), namespace: get('FACTORY_K3S_NAMESPACE'), fixtureCommit: get('FACTORY_K3S_FIXTURE_COMMIT'), imageDigest: get('FACTORY_K3S_IMAGE_DIGEST'),
+    listenerAddress: get('FACTORY_K3S_LISTENER_ADDRESS'), listenerPort: Number(get('FACTORY_K3S_LISTENER_PORT')), listenerCertFile: get('FACTORY_K3S_LISTENER_CERT_FILE'), listenerKeyFile: get('FACTORY_K3S_LISTENER_KEY_FILE'),
+    runnerCaFile: get('FACTORY_K3S_RUNNER_CA_FILE'), runnerCaSha256: get('FACTORY_K3S_RUNNER_CA_SHA256'), runnerCaConfigMap: get('FACTORY_K3S_RUNNER_CA_CONFIGMAP') };
 }
 
 // The runner's own client: the runner's service-account token, so a call outside its Role fails here the way it would in production.
@@ -94,13 +98,20 @@ export class AdminClient {
       const [named = '', sub] = resource.split('/');
       const [name = '', objectName] = named.split('@');
       const group = name === 'jobs' ? 'batch' : name === 'tokenreviews' ? 'authentication.k8s.io' : name === 'storageclasses' ? 'storage.k8s.io' : '';
-      const clusterScoped = name === 'tokenreviews' || name === 'storageclasses';
-      spec['resourceAttributes'] = { ...(clusterScoped ? {} : { namespace: ns }), verb, group, resource: name, ...(sub === undefined ? {} : { subresource: sub }), ...(objectName === undefined ? {} : { name: objectName }) };
+      const clusterScoped = name === 'tokenreviews' || name === 'storageclasses' || name === 'nodes';
+      // The runner reads one Service, in `default`, not in its own namespace.
+      const space = name === 'services' ? 'default' : ns;
+      spec['resourceAttributes'] = { ...(clusterScoped ? {} : { namespace: space }), verb, group, resource: name, ...(sub === undefined ? {} : { subresource: sub }), ...(objectName === undefined ? {} : { name: objectName }) };
     }
     const r = await this.ok('POST', '/apis/authorization.k8s.io/v1/subjectaccessreviews', { apiVersion: 'authorization.k8s.io/v1', kind: 'SubjectAccessReview', spec });
     return (r['status'] as { allowed: boolean }).allowed;
   }
 
+  // A pod's log, as text (what a supervisor wrote to stdout).
+  async logs(podName: string, container: string): Promise<string> {
+    const r = await this.call('GET', `${this.ns('pods')}/${podName}/log?container=${container}`);
+    return typeof r.json['raw'] === 'string' ? r.json['raw'] : JSON.stringify(r.json);
+  }
   // Everything this test run left in the namespace, by label. Pods are removed at once: this is cleanup after a test, not code under test.
   async clean(selector: string): Promise<void> {
     for (const j of await this.items(this.jobs(), selector)) await this.call('DELETE', `${this.jobs()}/${(j['metadata'] as { name: string }).name}`, { propagationPolicy: 'Background' });
@@ -155,6 +166,8 @@ export function k3sDriver(env: K3sEnv, admin: AdminClient, runs: string[], recor
     // The Job controller's verdict, sooner: lower the deadline of the running Job (a Job's activeDeadlineSeconds may be lowered).
     expireDeadline: async (jobName) => { await admin.ok('PATCH', `${admin.jobs()}/${jobName}`, { spec: { activeDeadlineSeconds: 1 } }, 'application/merge-patch+json'); },
     record: (k, v) => { recorded.push(`${k}=${v}`); },
+    // The listener's CA is immutable: an update is refused by the API server (HTTP 422).
+    patchCaConfigMap: async () => (await admin.call('PATCH', `${admin.ns('configmaps')}/${env.runnerCaConfigMap}`, { data: { 'runner-ca.crt': 'tampered' } }, 'application/merge-patch+json')).status,
     canI: (as, verb, resource) => admin.canI(as, verb, resource),
     runnerServiceAccount: RUNNER_SA, supervisorServiceAccount: SUPERVISOR_SA,
   };

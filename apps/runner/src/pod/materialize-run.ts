@@ -10,7 +10,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { canonicalJson } from '@factory/domain';
-import { GitRunner, LocalMaterializer, WorkspaceError, type MaterializeRequest, type WorkspaceErrorCode } from '@factory/workspace/pod';
+import { GitRunner, WorkspaceError, createPodMaterializer, type MaterializeRequest, type WorkspaceErrorCode } from '@factory/workspace/pod';
 import { encodeReceiptMessage, encodeRefusalMessage } from './receipt.ts';
 
 export const MAX_REQUEST_BYTES = 8192;
@@ -85,12 +85,12 @@ export async function runMaterialize(o: RunOptions): Promise<number> {
   try {
     if (o.argv.length !== 3 || o.argv[0] !== 'materialize' || o.argv[1] !== '--request') return refusal('invalid_request', 'usage: materialize --request <canonical JSON>', 2);
     const request = parseRequest(o.argv[2] ?? '', o.allowFileRemote);
-    // The root is a subdirectory this process creates itself, mode 0700: the mount point of a provisioned volume is
-    // usually group- or world-writable, and the workspace package refuses a root like that.
+    // The root is a subdirectory this process creates itself, mode 0750 (W-019: the supervisor, in group 10001 through fsGroup, lists the checkout): the mount
+    // point of a provisioned volume is usually group- or world-writable, and the workspace package refuses a root like that.
     const root = join(o.volume, 'factory');
-    try { mkdirSync(root, { mode: 0o700 }); } catch (e) { if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e; }
+    try { mkdirSync(root, { mode: 0o750 }); } catch (e) { if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e; }
     const git = o.git ?? new GitRunner(o.allowFileTransport === true ? { allowFileTransport: true } : {});
-    const result = await new LocalMaterializer({ root, git }).materialize(request, { signal: o.signal });
+    const result = await createPodMaterializer({ root, git }).materialize(request, { signal: o.signal });
     if (o.signal.aborted) return refusal(result.ok ? 'git_failed' : result.code, 'terminated before the receipt was written', 143);
     if (result.ok) { o.writeMessage(`${encodeReceiptMessage(result.receipt)}\n`); return 0; }
     return refusal(result.code, result.message, 1);
@@ -105,6 +105,8 @@ export async function runMaterialize(o: RunOptions): Promise<number> {
 // `messagePath` defaults to the kubelet's fixed path. Only the test entry passes another (the fake kubelet's file); the
 // production entry reads no environment variable for it.
 export async function runProcess(o: { volume: string; allowFileRemote: boolean; allowFileTransport?: boolean; git?: GitRunner; messagePath?: string }): Promise<void> {
+  // 027 before any Git runs: `git/` and `work/main` are made by Git under the process umask, so they come out 0750 and their files 0640.
+  process.umask(0o027);
   const controller = new AbortController();
   const stop = (): void => { controller.abort(); };
   process.on('SIGTERM', stop);

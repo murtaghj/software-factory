@@ -1,7 +1,7 @@
 // The pod executor (17b): the real entry under the fake kubelet, real Git against a fixture repository, a temporary
 // directory as the volume. The init step clones, the receipt is accepted, the permit follows, the workspace is active.
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, chmodSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -80,7 +80,7 @@ describe('W-017 pod materializer: the real entry under the fake kubelet', () => 
     const pod = podOf(inst, a.jobName) as KubePod;
     const status = parseMaterializeStatus(pod);
     expect(status).toMatchObject({ kind: 'receipt', receipt: { generation: 1, headCommit: commit } });
-    // The files are where the entry puts them: <volume>/factory/<org>/<workspace>/g1/work/main, root mode 0700.
+    // The files are where the entry puts them: <volume>/factory/<org>/<workspace>/g1/work/main, root mode 0750.
     const checkout = join(volume, 'factory', e.a.orgId, ws, 'g1', 'work', 'main');
     expect(readFileSync(join(checkout, 'README.md'), 'utf8')).toBe('fixture\n');
     await until('the pod runs', () => podOf(inst, a.jobName)?.status.phase === 'Running');
@@ -90,6 +90,24 @@ describe('W-017 pod materializer: the real entry under the fake kubelet', () => 
     expect(await inst.runner.acquireStartPermit({ token, orgId: e.a.orgId, allocationId: a.id, epoch: a.ownerEpoch })).toMatchObject({ granted: true });
     expect(await e.workspace(e.a, ws)).toMatchObject({ state: 'active', ownerPodUid: pod.metadata.uid });
     expect((await e.allocation(e.a, a.id)).state).toBe('running');
+  });
+
+  it('W-019: the entry\'s root and every level it makes are 0750, and the files Git writes under the entry\'s umask 027 are 0640 (the supervisor lists the checkout through its group)', async () => {
+    const { inst, volume } = podRunner();
+    const s = await e.newStage(e.a);
+    const ws = await e.newWorkspace(e.a, s, inst, { baseCommit: commit });
+    await start(inst, s, ws);
+    const a = (await e.allocations(e.a, s))[0] as NonNullable<Awaited<ReturnType<typeof e.allocations>>[number]>;
+    await until('the init step finished', () => initDone(podOf(inst, a.jobName)));
+    const mode = (p: string): number => statSync(p).mode & 0o7777;
+    let dir = join(volume, 'factory');
+    const levels = [dir];
+    for (const part of [e.a.orgId, ws, 'g1', 'work', 'main']) { dir = join(dir, part); levels.push(dir); }
+    expect(levels.map(mode)).toEqual(levels.map(() => 0o750));
+    expect(mode(join(dir, 'README.md'))).toBe(0o640);
+    expect(mode(join(volume, 'factory', e.a.orgId, ws, 'g1', 'git'))).toBe(0o750);
+    // control: nothing is group- or world-writable, and no host path was widened (the host's materializer keeps 0700, see the workspace package's w019-modes)
+    for (const p of levels) expect(mode(p) & 0o022).toBe(0);
   });
 
   it('a missing commit gives a refusal with a non-zero exit, then stopping and terminated; the workspace is still allocated and no permit is granted', async () => {

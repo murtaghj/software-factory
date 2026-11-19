@@ -1,0 +1,19 @@
+# LOCAL TIER ONLY (W-019, D24, A-35). Default-deny egress for every pod of the execution namespace, with ONE allow rule: the runner listener's address AND port.
+# `scripts/k3s.sh up` fills the two placeholders and applies it on EVERY run, so every k3s run (W-017's files included) has it; their pods need no network.
+# It keeps a pod off the Mac's own services (the compose Postgres, whose admin password is in compose.yaml, and Temporal) and gives the supervisor's network gate
+# something real to observe. W-021 replaces this file with the production policy; the allow rule there names the listener's PORT, not the runner's host.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: factory-egress-listener-only
+  namespace: factory-exec-local
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - ipBlock:
+            cidr: __LISTENER_ADDRESS__/32
+      ports:
+        - protocol: TCP
+          port: __LISTENER_PORT__

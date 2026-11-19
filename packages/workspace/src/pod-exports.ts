@@ -5,3 +5,4 @@ export type { MaterializeRequest, MaterializeReceipt, MaterializeResult } from '
 export { WorkspaceError } from './errors.ts';
 export type { WorkspaceErrorCode } from './errors.ts';
 export { GitRunner } from './git.ts';
+export { createPodMaterializer } from './internal/pod-mode.ts';

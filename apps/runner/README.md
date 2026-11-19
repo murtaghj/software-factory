@@ -205,6 +205,34 @@ Until W-024 ships a quarantined volume can be removed early only by hand.
 **Not built in 19a.** The supervisor, the launcher, the scripted harness, the CA and the manifest arguments, the images and `scripts/k3s.sh` changes, the 0750
 modes, the fake kubelet's token files, volumes and ports, and the k3s files (19b); `finalizing` (W-020, D22); `watchEvents` and log chunks (D26).
 
+## W-019, 19b: the pod side
+
+`apps/supervisor` (README there), the manifest's arguments, the modes, the images, the fake kubelet's extensions, the production entry and the k3s files. Fake tier first: `tests/recovery`
+runs the real runner, its listener (TLS, a throwaway CA), `FakeKube` and the fake kubelet with the real supervisor and launcher as processes from the test entries in `tests/recovery/test/entry`
+(the production entries read no environment variable, and the supervisor's refuses a loopback runner URL). Every cross-app file keeps at most two live pods and moves time by backdating rows; the only
+real waits are a fence time, a beat or the hint flood's ten beats, because the supervisor's own clock is monotonic.
+
+- **Manifest** (`job-manifest.ts`; still a pure function of rows and config, no `StageInput`): with `config.supervisor` the supervisor's arguments are `serve --org --allocation --epoch --generation [--workspace]
+  --runner <url> --runner-ca-sha256 <hex> --listen 127.0.0.1:<port> --network-gate <mode> [--deny-target ...]`, the harness's `harness --supervisor http://127.0.0.1:<port> -- <program>`, and the identity volume gains
+  a `configMap` source for the listener's CA (`runner-ca.crt`). The CA is public; the token stays the only secret in the volume. Without `config.supervisor` (W-017's stub containers) the old arguments stand.
+- **Modes** (`packages/workspace/src/internal/pod-mode.ts`, not re-exported): the pod export makes `/workspace/factory` and every level the materializer makes 0750 and sets `umask 027` before Git, so `git/` and
+  `work/main` come out 0750 and their files 0640. Every host path keeps 0700; a `PodMode` can be minted only in that module and reaches the materializer under a private key.
+- **Images** (`deploy/images/supervisor`, `deploy/images/harness-scripted`): built from staged contexts of named files (`scripts/k3s.sh stage`), tini, a numeric user, apk removed, no test entry. The harness image is built
+  once per script.
+- **`scripts/k3s.sh up`** also makes a throwaway CA and an ECDSA P-256 listener certificate named for the host-gateway address (keys outside `.k3s/ctx`, 0600, the CA key deleted once the certificate is signed; `sh scripts/k3s.sh pki`
+  does only that), applies the CA as an **immutable** ConfigMap (the script holds the admin certificate; the runner's account never writes a ConfigMap), writes the digest and the listener's address and port to `.k3s/env`, and
+  applies `deploy/k8s/local/egress-listener-only.yaml` on **every** run.
+- **RBAC**: `get` on `nodes` (ClusterRole) and a Role in `default` that names only the `kubernetes` Service.
+- **Configuration** (`createConfig`): a production configuration needs the supervisor contract AND the pod listener together (otherwise a Job would render W-017's ungated arguments), a `required` gate (D24: `disabled` is the fake tier's), and a runner URL that is https and not loopback, link-local or unspecified (one definition, in `@factory/runner-protocol`). The test builder keeps W-017's stubs.
+- **Test seams** are not on the exported API: `composeFromEnv(env, kube)` is exported from `@factory/runner/testing` (the production `runnerProcessFromEnv(env)` takes no cluster client); `@factory/runner/test-harness`, `@factory/runner/testing`, `@factory/supervisor/testing` and `@factory/workspace/pod` are restricted in `tools/boundaries.json` (`restrictedModules`), the last to `apps/runner/src/pod/**`.
+- **The production entry** reads `FACTORY_NETWORK_GATE`, `FACTORY_POD_LISTENER` (host, port, certFile, keyFile) and `FACTORY_SUPERVISOR`; with none of them set the gate is `required` with no deny target and start-up refuses
+  (`w019-main-env.test.ts` starts the entry against the fake).
+- **k3s files** (`pnpm test:k8s`, on AC power, never beside the full suite, one gating supervisor at a time because every pod is one source through the gateway): `w019-supervised-run`, `ac-15-tree-stop`,
+  `w019-network-gate`, and conformance rows 16 to 21.
+
+**What k3s showed in step 0 and 19a that 19b relies on:** pods reach the listener at `192.168.127.254` over loopback (the listener binds `127.0.0.1` and sees source `127.0.0.1`); `169.254.169.254:80` is refused even with no
+policy, so that target shows no rule active here; a second mount under `fsGroup` rewrites modes, so the 0700-control of a directory holds on the first mount only.
+
 ## Known limits
 
 - `reconcileOne`'s inline budget is a deadline that list calls (and the checks between passes) see; the other Kubernetes calls
@@ -279,6 +307,12 @@ modes, the fake kubelet's token files, volumes and ports, and the k3s files (19b
 - Jobs render `enableServiceLinks: false`. A production configuration (`createConfig`) must pin every image by `@sha256` digest
   and bind every control-plane identity to an organization (`identityOrgs`); it accepts no test switch. The unpinned, unbound
   variant is `createTestConfig` in `@factory/runner/testing`, which the production entry does not import (a test checks it).
+- A production deployment must set `FACTORY_POD_LISTENER`, `FACTORY_SUPERVISOR` and `FACTORY_NETWORK_GATE`. Without the first
+  two together the runner refuses to start (it would otherwise render W-017's ungated Job arguments), and the gate may not be
+  `disabled` in production.
+- The listener CA's private key never reaches a pod, a harness image or a build context. The supervisor trusts that one
+  pinned CA and no system roots, so a process on loopback or a name that resolves to loopback cannot impersonate the runner
+  without it (INT-05).
 - A configured identity's denied calls are audited at a bounded rate per identity (`refusalAudit`, 5 a second, burst 20); the
   rest are counted (`audit_capped`).
 

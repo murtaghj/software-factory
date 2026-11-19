@@ -172,6 +172,7 @@ error leaves (`sessionLostSignal` in `@factory/database`).
 `factory-quarantine-record/1`), each with `prepare` (outside any transaction: the runner identity is required, a refusal is audited in its own transaction,
 the body is validated and put), `register` (on the caller's transaction, under the allocation's row lock) and `read` (counts only links the runner identity
 produced; two are a hard error, because `artifact_link` has no unique key and the row lock is the only thing making it "one"). `volume-disposition.ts` is pure.
+The pod export (`@factory/workspace/pod`, `createPodMaterializer`) makes every level 0750 (the supervisor lists the checkout through its group); everything reachable from the package index keeps 0700, and no exported signature carries a mode.
 The publisher's scratch root and any materializer's root must be disjoint (both use `<org>/<workspaceId>`); W-030 owns the check.
 
 ## Not built

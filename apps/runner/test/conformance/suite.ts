@@ -23,6 +23,8 @@ export type ConformanceDriver = {
   // `nonResourceURL:<path>` asks about a non-resource URL (the runner needs `get` on /openid/v1/jwks).
   // `storageclasses@<name>` asks about one named object.
   canI?(as: string, verb: string, resource: string): Promise<boolean>;
+  patchCaConfigMap?(): Promise<number>;             // cluster only (row 20): try to change the immutable CA ConfigMap; the HTTP status
+
   runnerServiceAccount?: string; supervisorServiceAccount?: string;          // what a tier observed and the design does not depend on (row 9's order)
 };
 
@@ -347,6 +349,22 @@ export function registerConformance(tier: string, make: () => Promise<{ kube: Ku
         expect(await can(driver.runnerServiceAccount, 'create', 'pods')).toBe(false); // the runner creates Jobs; the Job controller creates their pods
         expect(await can(driver.runnerServiceAccount, 'create', 'serviceaccounts/token')).toBe(false);
         expect(await can(driver.runnerServiceAccount, 'create', 'jobs')).toBe(true);
+      }));
+
+      it('19. the runner\'s account can get a node and cannot list, patch or delete one', () => withSubject(async ({ driver }) => {
+        const can = driver.canI?.bind(driver);
+        if (!can || !driver.runnerServiceAccount) throw new Error('a cluster driver supplies canI and the runner service account name');
+        expect(await can(driver.runnerServiceAccount, 'get', 'nodes')).toBe(true);
+        for (const verb of ['list', 'patch', 'delete', 'update', 'create']) expect(await can(driver.runnerServiceAccount, verb, 'nodes'), `runner ${verb} nodes`).toBe(false);
+      }));
+
+      it('20. neither the runner\'s nor the supervisor\'s account can create, update, patch or delete a ConfigMap in the execution namespace, and the CA ConfigMap refuses an update because it is immutable', () => withSubject(async ({ driver }) => {
+        const can = driver.canI?.bind(driver);
+        if (!can || !driver.runnerServiceAccount || !driver.supervisorServiceAccount || !driver.patchCaConfigMap) throw new Error('a cluster driver supplies canI, both service accounts and patchCaConfigMap');
+        for (const who of [driver.runnerServiceAccount, driver.supervisorServiceAccount]) {
+          for (const verb of ['create', 'update', 'patch', 'delete']) expect(await can(who, verb, 'configmaps'), `${who} ${verb} configmaps`).toBe(false);
+        }
+        expect(await driver.patchCaConfigMap()).toBe(422); // field is immutable when `immutable` is set
       }));
 
       it('21 (cluster). the runner\'s account can read the kubernetes Service and no other Service in default', () => withSubject(async ({ driver }) => {

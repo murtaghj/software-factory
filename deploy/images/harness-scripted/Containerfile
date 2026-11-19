@@ -1,0 +1,12 @@
+# The scripted harness container (W-019, 19b; A-33, stands in for W-077): the launcher plus ONE script, baked in at build time (SCRIPT). The build context holds that one script and
+# no other, and nothing in the running image can choose another: there is no environment override. No Claude, no gateway, no model call.
+# Built from a staged context (`.k3s/ctx/harness-scripted-<script>`). `/app/program` is what the Job's harness arguments name after `--`.
+# The label below marks the image as a TEST harness: W-021's and W-090's admission rules must refuse it outside the local tier (A-33).
+FROM docker.io/library/node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
+ARG SCRIPT=idle
+LABEL factory.harness="scripted" factory.harness.script="${SCRIPT}"
+RUN apk add --no-cache tini=0.19.0-r3 && rm -rf /sbin/apk /etc/apk /lib/apk /var/cache/apk && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /opt/yarn-* /usr/local/bin/yarn /usr/local/bin/yarnpkg
+COPY --chown=0:0 app /app
+RUN printf '#!/bin/sh\nexec node /app/apps/supervisor/src/scripts/%s.ts\n' "${SCRIPT}" > /app/program && chmod 755 /app/program
+USER 10001:10001
+ENTRYPOINT ["/sbin/tini", "--", "node", "/app/apps/supervisor/src/launcher.ts"]

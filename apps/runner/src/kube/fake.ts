@@ -26,6 +26,8 @@ export interface PodRuntime {
   hasLiveProcesses(podUid: string): boolean;
   onPodScheduled(pod: KubePod): void;
   onPodDeleting(pod: KubePod, graceMs: number): void;
+  // STOP or CONT for one container's process group (W-019: a paused supervisor is not a dead one).
+  signalContainer?(podUid: string, container: string, sig: 'SIGSTOP' | 'SIGCONT'): void;
 }
 
 type Match = (labels: Record<string, string>) => boolean;
@@ -192,8 +194,9 @@ export class FakeKube implements KubeApi {
   // The kubelet's side of a delete: the pod stays visible with a deletion timestamp until every container has exited.
   #terminate(pod: KubePod): void {
     pod.metadata.deletionTimestamp ??= this.now();
-    if (this.runtime) { this.runtime.onPodDeleting(clone(pod), 15_000); this.driver.settleIfStopped(pod.metadata.uid); return; }
+    // A held delete (W-019, `ac-12`): the pod is Terminating and the kubelet has not been told yet, so nothing in it has received TERM (a partitioned or paused node).
     if (this.delayDeletes) return;
+    if (this.runtime) { this.runtime.onPodDeleting(clone(pod), 15_000); this.driver.settleIfStopped(pod.metadata.uid); return; }
     this.driver.killContainers(pod, 143);
     this.driver.removePod(pod.metadata.name);
   }
@@ -492,6 +495,9 @@ export class FakeDriver {
     this.kube.nodes.delete(name);
     for (const p of [...this.kube.pods.values()]) if (p.spec.nodeName === name) this.removePod(p.metadata.name);
   }
+  // The driver pauses and resumes a container's process group: STOP and CONT. Fake-only, never reported as cluster evidence.
+  pause(podUid: string, container: string): void { this.kube.runtime?.signalContainer?.(podUid, container, 'SIGSTOP'); }
+  resume(podUid: string, container: string): void { this.kube.runtime?.signalContainer?.(podUid, container, 'SIGCONT'); }
   // A force delete (grace 0): the pod object is gone at once and its processes are still on the node.
   forceDeletePod(name: string): void { this.removePod(name); }
 }

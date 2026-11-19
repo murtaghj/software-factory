@@ -2,6 +2,13 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
+const SUPERVISOR_PID = [{ selector: "CallExpression[callee.object.name='process'][callee.property.name='kill'] > UnaryExpression[operator='-']", message: 'W-019: a negative pid belongs to group.ts alone (process.kill(-1) would reach every process of the session)' }];
+const SUPERVISOR_FS = [
+  { selector: "ImportExpression[source.value=/^(node:)?(fs|module)(\\/.*)?$/]", message: 'W-019: a dynamic import of node:fs belongs to workspace-view.ts and token-file.ts alone' },
+  { selector: "CallExpression[callee.name='createRequire']", message: 'W-019: createRequire would reach node:fs around the import rule' },
+  { selector: "CallExpression[callee.name='require']", message: 'W-019: no require() in the supervisor' },
+];
+
 export default tseslint.config(
   { ignores: ['**/node_modules/**', '**/dist/**', 'docs/**', '.k3s/**', 'deploy/**', 'tools/test-fixtures/**', '**/*.generated.ts', '**/generated/**'] },
   js.configs.recommended,
@@ -34,6 +41,18 @@ export default tseslint.config(
     },
   },
   { files: ['apps/runner/src/kube/https-client.ts'], rules: { 'no-restricted-syntax': 'off' } },
+  {
+    // W-019 (the supervisor): no Date.now (the fence is judged on the monotonic clock), no negative pid outside the one group-kill helper, and `node:fs` only in the
+    // workspace view (the one place that reads a workspace path), the token file reader, and the scripted harness (src/scripts): static imports, dynamic `import()` and `createRequire` alike.
+    files: ['apps/supervisor/src/**/*.ts'],
+    rules: {
+      'no-restricted-properties': ['error', { object: 'Date', property: 'now', message: 'W-019: the supervisor judges time on the monotonic clock' }],
+      'no-restricted-syntax': ['error', ...SUPERVISOR_PID, ...SUPERVISOR_FS],
+      'no-restricted-imports': ['error', { patterns: [{ group: ['node:fs', 'node:fs/*', 'fs', 'fs/*', 'node:module', 'module'], message: 'W-019: node:fs (and createRequire) only in workspace-view.ts and token-file.ts (and src/scripts)' }] }],
+    },
+  },
+  { files: ['apps/supervisor/src/workspace-view.ts', 'apps/supervisor/src/token-file.ts', 'apps/supervisor/src/scripts/**/*.ts'], rules: { 'no-restricted-imports': 'off', 'no-restricted-syntax': ['error', ...SUPERVISOR_PID] } },
+  { files: ['apps/supervisor/src/group.ts'], rules: { 'no-restricted-syntax': ['error', ...SUPERVISOR_FS] } },
   {
     files: ['apps/worker/src/workflows/**/*.ts'],
     rules: {

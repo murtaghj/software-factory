@@ -2,6 +2,7 @@
 import { createPrivateKey } from 'node:crypto';
 import net from 'node:net';
 import tls from 'node:tls';
+import { isLoopbackOrLinkLocalOrUnspecified } from '@factory/runner-protocol';
 import { RunnerError } from './errors.ts';
 
 export type ContainerResources = { requests: Record<string, string>; limits: Record<string, string> };
@@ -33,7 +34,7 @@ export type RunnerConfig = {
   nodeCheck: 'required' | 'off';
   nodeReadGraceSeconds: number;                                // how long past the stop deadline an unreadable node is retried before the stop is quarantined
   networkGate: { mode: 'required' | 'disabled'; denyTargets: readonly string[] };
-  supervisor?: { runnerUrl: string; caConfigMap: string; caSha256: string; localPort: number };
+  supervisor?: { runnerUrl: string; caConfigMap: string; caSha256: string; localPort: number; harnessProgram?: string };
   test?: TestSwitches;                                         // only `createTestConfig` accepts it
 };
 export type PodListenerConfig = { host: string; port: number; cert: string; key: string };
@@ -75,7 +76,13 @@ export type ConfigInput = Partial<Omit<RunnerConfig, 'review' | 'refusalAudit' |
 // `@factory/runner/testing`, which the production entry does not import.
 export function createConfig(over: ConfigInput): RunnerConfig {
   for (const k of ['allowUnpinnedImages', 'allowUnboundIdentities', 'test', 'plaintext', 'relaxSourceLimits', 'sourceOf']) if (Object.hasOwn(over, k)) throw new RunnerError('invalid_request', 'invalid runner configuration: test switches are not accepted here');
-  return buildConfig(over, false);
+  const c = buildConfig(over, false);
+  // A production runner renders the supervisor's whole contract and runs a listener for it: without `supervisor` the Job's arguments are W-017's stubs' (no gate, no permit),
+  // and without `podListener` no supervisor could be granted anything. Both are required, together. (The test builder keeps W-017's stubs.)
+  if (c.supervisor === undefined || c.podListener === undefined) throw new RunnerError('invalid_request', 'invalid runner configuration: a production configuration needs the supervisor contract and the pod listener together');
+  // D24: `disabled` is the fake tier's, and step 0 item 5's fallback; a production gate is `required`.
+  if (c.networkGate.mode === 'disabled') throw new RunnerError('invalid_request', 'invalid runner configuration: the network gate is required in production (D24)');
+  return c;
 }
 
 export function buildConfig(over: ConfigInput, test: boolean): RunnerConfig {
@@ -125,6 +132,12 @@ export function buildConfig(over: ConfigInput, test: boolean): RunnerConfig {
   if (c.podRate.intervalMs > (c.beatSeconds * 1000) / 2) bad('the per-pod interval must be at most half a beat');
   if (!['required', 'disabled'].includes(c.networkGate.mode)) bad('networkGate.mode');
   if (c.networkGate.denyTargets.length > 8 || c.networkGate.denyTargets.some((t) => !isLiteralTarget(t))) bad('every deny target must be a literal address and port (at most eight)');
+  if (c.supervisor) {
+    // The supervisor's own rule, shared: https, and not an address that belongs to the pod itself. A bad URL would otherwise fail every pod (exit 64), not the runner's start.
+    let u: URL | undefined;
+    try { u = new URL(c.supervisor.runnerUrl); } catch { u = undefined; }
+    if (!u || (!test && (u.protocol !== 'https:' || isLoopbackOrLinkLocalOrUnspecified(u.hostname)))) bad('supervisor.runnerUrl must be https and name a routable address, never a loopback, link-local or unspecified one');
+  }
   if (c.supervisor && (!/^[0-9a-f]{64}$/.test(c.supervisor.caSha256) || !Number.isSafeInteger(c.supervisor.localPort) || c.supervisor.localPort < 1 || c.supervisor.localPort > 65535)) bad('supervisor');
   if (c.podListener) {
     const l = c.podListener;

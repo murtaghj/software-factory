@@ -5,7 +5,7 @@ FROM docker.io/library/node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d9
 # Git and tini are pinned to the versions the build was measured with. tini is PID 1: Node is not an init process, so without it
 # the orphaned children of a killed Git (remote helpers) stay zombies, and the group never reads as gone until the grace period is over.
 # apk is removed in the same layer: nothing in a running pod can install anything.
-RUN apk add --no-cache git=2.54.1-r0 tini=0.19.0-r3 && git --version && rm -rf /sbin/apk /etc/apk /lib/apk /var/cache/apk
+RUN apk add --no-cache git=2.54.1-r0 tini=0.19.0-r3 && git --version && rm -rf /sbin/apk /etc/apk /lib/apk /var/cache/apk && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /opt/yarn-* /usr/local/bin/yarn /usr/local/bin/yarnpkg
 COPY --chown=0:0 app /app
 # @factory/workspace's path module imports the database package for a function this image never calls; the stub keeps
 # the image free of a database client (and of the factory's whole dependency tree).

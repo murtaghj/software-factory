@@ -76,12 +76,12 @@ describe('W-017 on k3s: one run, two controllers', () => {
     record('git', st.kind === 'receipt' ? st.receipt.gitVersion.replace(/ /g, '_') : '');
   });
 
-  it('the mount point, the 0700 subdirectory and the volume on the node (to-confirm 1 and 4: the owner and mode, and that local-path removes it)', async () => {
+  it('the mount point, the 0750 subdirectory and the volume on the node (to-confirm 1 and 4: the owner and mode, and that local-path removes it)', async () => {
     const claim = (await admin.items(admin.ns('persistentvolumeclaims'), `factory.local/workspace=${wsId}`))[0] as { metadata: { name: string }; spec: { volumeName: string } };
     dir = `/var/lib/rancher/k3s/storage/${claim.spec.volumeName}_${env.namespace}_${claim.metadata.name}`;
     record('mountpoint', (await inNode('stat', '-c', '%u:%g_%a', dir)).trim());
     record('factory_dir', (await inNode('stat', '-c', '%u:%g_%a', `${dir}/factory`)).trim());
-    expect((await inNode('stat', '-c', '%a', `${dir}/factory`)).trim().slice(-3)).toBe('700'); // fsGroup adds the setgid bit to a directory made under the mount point
+    expect((await inNode('stat', '-c', '%a', `${dir}/factory`)).trim().slice(-3)).toBe('750'); // W-019: 0750 (the supervisor lists the checkout through its group); fsGroup adds the setgid bit
     expect((await inNode('stat', '-c', '%u', `${dir}/factory`)).trim()).toBe('10001');
     expect((await inNode('test', '-d', `${dir}/factory/${e.a.orgId}/${wsId}/g1/work/main`).then(() => 'dir', () => 'missing'))).toBe('dir'); // the checkout is on the volume
   });

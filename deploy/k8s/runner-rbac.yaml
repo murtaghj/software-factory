@@ -40,11 +40,37 @@ rules:
     verbs: ["get"]
   - nonResourceURLs: ["/openid/v1/jwks"]
     verbs: ["get"]
+  # W-019: the writer's node, by name, at a stop (a pod garbage-collected with its node is the hazard) and at a permit. `get` only: never list, patch or delete.
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: factory-runner
 roleRef: { apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: factory-runner }
+subjects:
+  - { kind: ServiceAccount, name: factory-runner, namespace: factory-exec-local }
+---
+# W-019: the one Service the runner reads, in `default`: the API server's own cluster address, which the supervisor's network gate must list as a deny target.
+# `resourceNames` names only that Service; the runner gains no right on ConfigMaps (the script holds the admin certificate and writes the CA ConfigMap).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: factory-runner-api-service
+  namespace: default
+rules:
+  - apiGroups: [""]
+    resources: ["services"]
+    resourceNames: ["kubernetes"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: factory-runner-api-service
+  namespace: default
+roleRef: { apiGroup: rbac.authorization.k8s.io, kind: Role, name: factory-runner-api-service }
 subjects:
   - { kind: ServiceAccount, name: factory-runner, namespace: factory-exec-local }

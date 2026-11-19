@@ -20,7 +20,7 @@
       "factory.local/stage-run-full": "task-00000000-0000-4000-8000-000000000002/plan-1/implement/attempt-1",
       "factory.local/spec-hash-full": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
       "factory.local/owner-epoch": "1",
-      "factory.local/manifest-digest": "dfbf337275bdee5f8294dc99f4cd680cd1e14c515f55e8b538e9094184ebf853"
+      "factory.local/manifest-digest": "ca60a4edaf63c15e7af630750b0567ad22078a94d398c1cbb4b05c3340007cc0"
     }
   },
   "spec": {
@@ -44,7 +44,7 @@
           "factory.local/stage-run-full": "task-00000000-0000-4000-8000-000000000002/plan-1/implement/attempt-1",
           "factory.local/spec-hash-full": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
           "factory.local/owner-epoch": "1",
-          "factory.local/manifest-digest": "dfbf337275bdee5f8294dc99f4cd680cd1e14c515f55e8b538e9094184ebf853"
+          "factory.local/manifest-digest": "ca60a4edaf63c15e7af630750b0567ad22078a94d398c1cbb4b05c3340007cc0"
         }
       },
       "spec": {
@@ -112,8 +112,28 @@
             "image": "factory-stub:local",
             "args": [
               "serve",
+              "--org",
+              "00000000-0000-4000-8000-000000000001",
               "--allocation",
-              "6d6363a2-a415-8491-9af4-367374fd9aac"
+              "6d6363a2-a415-8491-9af4-367374fd9aac",
+              "--epoch",
+              "1",
+              "--generation",
+              "1",
+              "--workspace",
+              "00000000-0000-4000-8000-000000000003",
+              "--runner",
+              "https://192.168.127.254:18443",
+              "--runner-ca-sha256",
+              "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "--listen",
+              "127.0.0.1:8765",
+              "--network-gate",
+              "required",
+              "--deny-target",
+              "10.43.0.1:443",
+              "--deny-target",
+              "169.254.169.254:80"
             ],
             "securityContext": {
               "allowPrivilegeEscalation": false,
@@ -160,7 +180,11 @@
             "name": "harness",
             "image": "factory-stub:local",
             "args": [
-              "harness"
+              "harness",
+              "--supervisor",
+              "http://127.0.0.1:8765",
+              "--",
+              "/app/program"
             ],
             "securityContext": {
               "allowPrivilegeEscalation": false,
@@ -232,6 +256,17 @@
                     "audience": "factory-allocation:00000000-0000-4000-8000-000000000001:6d6363a2-a415-8491-9af4-367374fd9aac",
                     "expirationSeconds": 600,
                     "path": "token"
+                  }
+                },
+                {
+                  "configMap": {
+                    "name": "factory-runner-ca",
+                    "items": [
+                      {
+                        "key": "runner-ca.crt",
+                        "path": "runner-ca.crt"
+                      }
+                    ]
                   }
                 }
               ]

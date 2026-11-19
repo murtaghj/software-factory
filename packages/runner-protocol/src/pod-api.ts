@@ -110,6 +110,19 @@ export function parseStopAckAnswer(v: unknown): Parsed<StopAckAnswer> {
   return r.ok && !r.value.granted ? { ok: true, value: r.value } : { ok: false, reason: 'answer' };
 }
 
+// The runner and the supervisor share one definition of an address a supervisor must never take for the runner: loopback (inside a pod it belongs to the harness as much as to
+// the supervisor, and a port there can be taken after the start), link-local and unspecified. Pure: no `node:net`.
+export function isLoopbackOrLinkLocalOrUnspecified(host: string): boolean {
+  const h = host.replace(/^\[|\]$/g, '').split('%')[0] ?? '';
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(h)) { const [a = 0, b = 0] = h.split('.').map(Number); return a === 127 || a === 0 || (a === 169 && b === 254); }
+  if (h.includes(':')) {
+    let n: string;
+    try { n = new URL(`http://[${h}]`).hostname; } catch { return true; } // not an address at all: refused
+    return n === '[::1]' || n === '[::]' || /^\[fe[89ab]/i.test(n) || n.startsWith('[::ffff:7f') || n === '[::ffff:0:0]' || n.startsWith('[::ffff:a9fe');
+  }
+  return h === 'localhost' || h === '' || h.endsWith('.localhost');
+}
+
 // The status is a hint; the body is the answer. 200 granted; 400 invalid_request; 401 unauthenticated; 429 throttled; 503 review_unavailable; 409 every other denial.
 export function statusOf(a: PermitAnswer | StopAckAnswer): number {
   if ('acknowledged' in a || a.granted) return 200;

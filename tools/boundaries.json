@@ -219,6 +219,30 @@
         "node:https",
         "node:child_process"
       ]
+    },
+    "@factory/supervisor": {
+      "allowWorkspace": [
+        "@factory/runner-protocol"
+      ],
+      "denyExternal": [
+        "pg",
+        "@temporalio/",
+        "fastify"
+      ]
+    },
+    "@factory/recovery-tests": {
+      "allowWorkspace": [
+        "@factory/contracts",
+        "@factory/domain",
+        "@factory/database",
+        "@factory/artifacts",
+        "@factory/workspace",
+        "@factory/test-support",
+        "@factory/runner-protocol",
+        "@factory/runner",
+        "@factory/supervisor"
+      ],
+      "denyExternal": []
     }
   },
   "importableApps": {
@@ -229,6 +253,10 @@
       "@factory/dashboard",
       "@factory/mcp",
       "@factory/cli"
+    ],
+    "@factory/recovery-tests": [
+      "@factory/runner",
+      "@factory/supervisor"
     ]
   },
   "restrictedPaths": [
@@ -250,6 +278,41 @@
       "package": "@factory/fixtures",
       "file": "src/runner/runner.ts",
       "reason": "fixture-test-runner loads a canonical test package's scenarios.ts from the package directory it is given"
+    }
+  ],
+  "restrictedModules": [
+    {
+      "module": "@factory/runner/test-harness",
+      "allowFromPackages": [
+        "@factory/recovery-tests"
+      ],
+      "reason": "W-019: the runner's test rig is test code; nothing else imports it"
+    },
+    {
+      "module": "@factory/runner/testing",
+      "allowFromPackages": [
+        "@factory/recovery-tests"
+      ],
+      "reason": "W-019: the fake tier and the test configuration are for tests"
+    },
+    {
+      "module": "@factory/supervisor/testing",
+      "allowFromPackages": [
+        "@factory/recovery-tests"
+      ],
+      "allowFromPaths": [
+        "@factory/supervisor/test/"
+      ],
+      "reason": "W-019: the supervisor's test seams (a plain loopback runner URL, uncoalesced hints) are for tests"
+    },
+    {
+      "module": "@factory/workspace/pod",
+      "allowFromPaths": [
+        "@factory/runner/src/pod/",
+        "@factory/runner/test/pod/",
+        "@factory/workspace/test/"
+      ],
+      "reason": "W-019: only the pod entry may make 0750 checkouts (L6); a host caller would widen every checkout to the user's group"
     }
   ]
 }

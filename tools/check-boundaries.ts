@@ -12,6 +12,8 @@ type Rules = {
   dynamicImports?: Array<{ package: string; file: string; reason: string }>;
   importableApps: Record<string, string[]>;
   restrictedPaths: RestrictedPath[];
+  // A module that only some packages or paths may import (W-019): `allowFromPackages` by package name, `allowFromPaths` by `<package>/<path prefix>`.
+  restrictedModules?: Array<{ module: string; allowFromPackages?: string[]; allowFromPaths?: string[]; reason: string }>;
 };
 type WorkspacePackage = { name: string; dir: string; isApp: boolean; deps: Set<string> };
 
@@ -108,6 +110,11 @@ export function checkBoundaries(root: string): string[] {
           const allowed = (rules.dynamicImports ?? []).some((d) => d.package === pkg.name && d.file === rel && d.reason.length > 0);
           if (!allowed) violations.push(`${where}: module reference is not a string literal and cannot be checked`);
           continue;
+        }
+        for (const m of rules.restrictedModules ?? []) {
+          if (spec !== m.module && !spec.startsWith(`${m.module}/`)) continue;
+          const ok = (m.allowFromPackages ?? []).includes(pkg.name) || (m.allowFromPaths ?? []).some((p) => `${pkg.name}/${rel}`.startsWith(p));
+          if (!ok) violations.push(`${where}: imports ${spec}, which only ${[...(m.allowFromPackages ?? []), ...(m.allowFromPaths ?? [])].join(', ')} may (${m.reason})`);
         }
         for (const r of restricted) {
           if (spec.startsWith('.')) {

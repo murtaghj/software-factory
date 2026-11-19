@@ -6,7 +6,13 @@ export const ORG = '00000000-0000-4000-8000-000000000001';
 export const TASK = '00000000-0000-4000-8000-000000000002';
 export const WS = '00000000-0000-4000-8000-000000000003';
 export const LOGICAL = `task-${TASK}/plan-1/implement/attempt-1`;
-export const config = createTestConfig({ runnerIdentity: 'runner:factory', controlPlaneIdentities: ['service:worker'] });
+export const CA_SHA256 = 'b'.repeat(64);
+export const config = createTestConfig({
+  runnerIdentity: 'runner:factory', controlPlaneIdentities: ['service:worker'],
+  // W-019: the supervisor's contract. The CA's digest is in its arguments, and the CA itself comes from an immutable ConfigMap in the identity volume.
+  supervisor: { runnerUrl: 'https://192.168.127.254:18443', caConfigMap: 'factory-runner-ca', caSha256: CA_SHA256, localPort: 8765 },
+  networkGate: { mode: 'required', denyTargets: ['10.43.0.1:443', '169.254.169.254:80'] },
+});
 
 export const allocation: AllocationRow = {
   orgId: ORG, id: '6d6363a2-a415-8491-9af4-367374fd9aac', stageRunId: '00000000-0000-4000-8000-000000000005', stageRunLogicalId: LOGICAL, taskId: TASK, workspaceId: WS,

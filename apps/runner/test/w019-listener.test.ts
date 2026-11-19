@@ -67,7 +67,7 @@ describe('W-019 the pod listener', () => {
 
   it('configuration: a listener with no certificate is refused on any address, loopback included, and 0.0.0.0 is refused; the test configuration\'s flag accepts plaintext on 127.0.0.1; a production configuration cannot carry the test keys', () => {
     const d = 'sha256:' + 'a'.repeat(64);
-    const prod = { runnerIdentity: 'runner:factory', controlPlaneIdentities: ['service:worker'], identityOrgs: { 'service:worker': '00000000-0000-4000-8000-000000000001' }, images: { supervisor: `s@${d}`, harness: `h@${d}`, materializer: `m@${d}` }, networkGate: { mode: 'disabled' as const, denyTargets: [] } };
+    const prod = { runnerIdentity: 'runner:factory', controlPlaneIdentities: ['service:worker'], identityOrgs: { 'service:worker': '00000000-0000-4000-8000-000000000001' }, images: { supervisor: `s@${d}`, harness: `h@${d}`, materializer: `m@${d}` }, networkGate: { mode: 'required' as const, denyTargets: ['10.43.0.1:443'] }, supervisor: { runnerUrl: 'https://192.168.127.254:18443', caConfigMap: 'factory-runner-ca', caSha256: 'b'.repeat(64), localPort: 8765 }, podListener: { host: '127.0.0.1', port: 1, cert: pki.cert, key: pki.key } };
     expect(() => createConfig({ ...prod, podListener: { host: '127.0.0.1', port: 1, cert: '', key: '' } })).toThrow(/certificate/);
     expect(() => createConfig({ ...prod, podListener: { host: '10.0.0.5', port: 1, cert: '', key: '' } })).toThrow(/certificate/);
     expect(() => createConfig({ ...prod, podListener: { host: '0.0.0.0', port: 1, cert: pki.cert, key: pki.key } })).toThrow(/named address/);
@@ -102,7 +102,7 @@ describe('W-019 the pod listener', () => {
     expect(l.stats()['open_connection_refused']).toBeGreaterThanOrEqual(1);
     for (const s of [...four, other.socket]) s?.destroy();
     const d = 'sha256:' + 'a'.repeat(64);
-    const prod = { runnerIdentity: 'r', controlPlaneIdentities: ['c'], identityOrgs: { c: '00000000-0000-4000-8000-000000000001' }, images: { supervisor: `s@${d}`, harness: `h@${d}`, materializer: `m@${d}` }, networkGate: { mode: 'disabled' as const, denyTargets: [] } };
+    const prod = { runnerIdentity: 'r', controlPlaneIdentities: ['c'], identityOrgs: { c: '00000000-0000-4000-8000-000000000001' }, images: { supervisor: `s@${d}`, harness: `h@${d}`, materializer: `m@${d}` }, networkGate: { mode: 'required' as const, denyTargets: ['10.43.0.1:443'] }, supervisor: { runnerUrl: 'https://192.168.127.254:18443', caConfigMap: 'factory-runner-ca', caSha256: 'b'.repeat(64), localPort: 8765 }, podListener: { host: '127.0.0.1', port: 1, cert: pki.cert, key: pki.key } };
     expect(() => createConfig({ ...prod, sourceConnections: 5, pools: { authoring: 60, verifier: 60 } })).toThrow(/512/); // 5 x 120 = 600
     expect(() => createConfig({ ...prod, sourceConnections: 4, pools: { authoring: 60, verifier: 60 } })).not.toThrow(); // 480
     expect(() => createConfig({ ...prod, sourceConnections: 1, pools: { authoring: 150, verifier: 150 } })).toThrow(/review ceiling/); // 2 x 0.5 x 300 = 300 > 200

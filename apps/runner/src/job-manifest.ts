@@ -53,9 +53,16 @@ export function renderJob(i: RenderInput): JobManifest {
     init.push(container('materialize', c.images.materializer, ['materialize', '--request', canonicalJson(i.request)], 10001, c.resources.materializer,
       [{ name: 'workspace', mountPath: '/workspace' }, { name: 'materialize-tmp', mountPath: '/tmp' }]));
   }
-  const supervisor = container('supervisor', c.images.supervisor, ['serve', '--allocation', a.id], 10002, c.resources.supervisor,
+  // With `config.supervisor` the arguments are the supervisor's whole contract (W-019): the five values it needs, rendered from the rows, the runner's URL, the digest of
+  // the CA it must trust and the local endpoint. Without it (W-017's own tests, with stub containers) the old arguments stand and the identity volume has no CA.
+  const sup = c.supervisor;
+  const supArgs = sup === undefined ? ['serve', '--allocation', a.id] : ['serve', '--org', a.orgId, '--allocation', a.id, '--epoch', String(a.ownerEpoch), '--generation', String(a.generation),
+    ...(a.workspaceId === null ? [] : ['--workspace', a.workspaceId]), '--runner', sup.runnerUrl, '--runner-ca-sha256', sup.caSha256, '--listen', `127.0.0.1:${String(sup.localPort)}`,
+    '--network-gate', c.networkGate.mode, ...c.networkGate.denyTargets.flatMap((t) => ['--deny-target', t])];
+  const harnessArgs = sup === undefined ? ['harness'] : ['harness', '--supervisor', `http://127.0.0.1:${String(sup.localPort)}`, '--', sup.harnessProgram ?? '/app/program'];
+  const supervisor = container('supervisor', c.images.supervisor, supArgs, 10002, c.resources.supervisor,
     [{ name: 'workspace', mountPath: '/workspace', readOnly: true }, { name: 'supervisor-tmp', mountPath: '/tmp' }, { name: 'factory-identity', mountPath: '/var/run/factory-identity', readOnly: true }]);
-  const harness = container('harness', c.images.harness, ['harness'], 10001, c.resources.harness, [{ name: 'workspace', mountPath: '/workspace' }, { name: 'harness-tmp', mountPath: '/tmp' }]);
+  const harness = container('harness', c.images.harness, harnessArgs, 10001, c.resources.harness, [{ name: 'workspace', mountPath: '/workspace' }, { name: 'harness-tmp', mountPath: '/tmp' }]);
   const manifest: JobManifest = {
     apiVersion: 'batch/v1', kind: 'Job',
     metadata: { name: a.jobName, namespace: a.namespace, labels, annotations },
@@ -68,7 +75,9 @@ export function renderJob(i: RenderInput): JobManifest {
           shareProcessNamespace: false, securityContext: { runAsNonRoot: true, fsGroup: 10001, seccompProfile: { type: 'RuntimeDefault' } }, enableServiceLinks: false,
           ...(init.length > 0 ? { initContainers: init } : {}), containers: [supervisor, harness],
           volumes: [workspaceVolume, ...(init.length > 0 ? [{ name: 'materialize-tmp', emptyDir: { sizeLimit: '256Mi' } }] : []), { name: 'supervisor-tmp', emptyDir: { sizeLimit: '256Mi' } }, { name: 'harness-tmp', emptyDir: { sizeLimit: '256Mi' } },
-            { name: 'factory-identity', projected: { sources: [{ serviceAccountToken: { audience, expirationSeconds: 600, path: 'token' } }] } }],
+            { name: 'factory-identity', projected: { sources: [{ serviceAccountToken: { audience, expirationSeconds: 600, path: 'token' } },
+              // The listener's CA is public; the token stays the only secret in the volume. An attach compares the whole Job spec and the supervisor compares the file's digest.
+              ...(sup === undefined ? [] : [{ configMap: { name: sup.caConfigMap, items: [{ key: 'runner-ca.crt', path: 'runner-ca.crt' }] } }])] } }],
         },
       },
     },

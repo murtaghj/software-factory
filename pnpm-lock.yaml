@@ -333,6 +333,12 @@ importers:
         specifier: 8.23.1
         version: 8.23.1
 
+  apps/supervisor:
+    dependencies:
+      '@factory/runner-protocol':
+        specifier: workspace:*
+        version: link:../../packages/runner-protocol
+
   apps/worker:
     dependencies:
       '@factory/artifacts':
@@ -510,6 +516,43 @@ importers:
       '@factory/test-support':
         specifier: workspace:*
         version: link:../test-support
+    devDependencies:
+      '@types/pg':
+        specifier: 8.23.1
+        version: 8.23.1
+      pg:
+        specifier: 8.23.1
+        version: 8.23.1
+
+  tests/recovery:
+    dependencies:
+      '@factory/artifacts':
+        specifier: workspace:*
+        version: link:../../packages/artifacts
+      '@factory/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@factory/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@factory/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@factory/runner':
+        specifier: workspace:*
+        version: link:../../apps/runner
+      '@factory/runner-protocol':
+        specifier: workspace:*
+        version: link:../../packages/runner-protocol
+      '@factory/supervisor':
+        specifier: workspace:*
+        version: link:../../apps/supervisor
+      '@factory/test-support':
+        specifier: workspace:*
+        version: link:../../packages/test-support
+      '@factory/workspace':
+        specifier: workspace:*
+        version: link:../../packages/workspace
     devDependencies:
       '@types/pg':
         specifier: 8.23.1

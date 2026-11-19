@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { getRunnerStageRunById } from '@factory/database';
+import { makePki } from './listener-kit.ts';
 import { cancelRecordId, createConfig, KubeError, quantityValue, renderJob, renderPvc, templateDifferences, tokenAudience, type JobManifest } from '../src/index.ts';
 import { allocation, config as fixedConfig, request as fixedRequest, stage as fixedStage, workspace as fixedWorkspace } from './fixed-rows.ts';
 import { FakeKubelet, createTestConfig, move, passOnce, STUB_PROGRAMS } from '../src/testing.ts';
@@ -345,7 +346,11 @@ describe('review fixes', () => {
     const pinned = { supervisor: digest, harness: digest, materializer: digest };
     expect(() => createConfig(base)).toThrow(/pinned by an @sha256 digest/);
     expect(() => createConfig({ ...base, images: { ...pinned, materializer: 'registry.example/m:latest' } })).toThrow(/image materializer/);
-    expect(() => createConfig({ ...base, images: pinned })).not.toThrow();
+    const pki = makePki();
+    const contract = { networkGate: { mode: 'required' as const, denyTargets: ['10.96.0.1:443'] }, supervisor: { runnerUrl: 'https://192.168.127.254:18443', caConfigMap: 'x', caSha256: 'b'.repeat(64), localPort: 8765 }, podListener: { host: '127.0.0.1', port: 1, cert: pki.cert, key: pki.key } };
+    expect(() => createConfig({ ...base, images: pinned })).toThrow(/supervisor contract and the pod listener/); // pinned and bound, but nothing wired: refused
+    expect(() => createConfig({ ...base, images: pinned, ...contract })).not.toThrow();
+    pki.cleanup();
     expect(() => createConfig({ runnerIdentity: 'r', controlPlaneIdentities: ['c'], images: pinned })).toThrow(/bound to an organization/); // an identity with no organization
     expect(() => createConfig({ ...base, images: pinned, allowUnpinnedImages: true } as never)).toThrow(/test switches are not accepted/);
     expect(() => createTestConfig({ runnerIdentity: 'r', controlPlaneIdentities: ['c'] })).not.toThrow(); // the test factory: unpinned, unbound
