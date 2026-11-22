@@ -1,10 +1,12 @@
 # M2 plan: isolated execution
 
-Revision 6, 2026-11-18. Written against spec rev 1.13. Planning only; no source changed.
-Revision 2 answered the adversarial review of revision 1; revision 3 reworks the W-018 brief after its own second review. Section 8 lists what changed and what was not taken as written.
+Revision 8, 2026-11-22. Written against spec rev 1.13. Planning only; no source changed.
+Revision 2 answered the adversarial review of revision 1; revision 3 reworks the W-018 brief after its own second review. Section 10 lists what changed and what was not taken as written.
 Revision 4 adds the W-017 brief as section 5, with decisions D12 to D16 and spec issues SI-19 to SI-25. The old sections 5 and 6 are now 6 and 7.
-Revision 5 reworks the W-017 brief after its first review (no-go: four blockers, thirteen should-fix items, all taken), records the owner's decision D17, adds D18 and SI-26, and adds the results of a third k3s session that probed the two behaviours the brief rests on. A second review passed it for 17a subject to edits N1 to N7 and five small ones, which are made in section 5 (section 8, round 4).
+Revision 5 reworks the W-017 brief after its first review (no-go: four blockers, thirteen should-fix items, all taken), records the owner's decision D17, adds D18 and SI-26, and adds the results of a third k3s session that probed the two behaviours the brief rests on. A second review passed it for 17a subject to edits N1 to N7 and five small ones, which are made in section 5 (section 10, round 4).
 Revision 6 adds the W-019 brief as section 6, with decisions D19 to D27 and spec issues SI-27 to SI-33, revised twice after two rounds of an adversarial review and a security review.
+Revision 7 adds the W-020 brief as section 7, with decisions D28 to D37, open question O1, assumptions A-36 to A-39, spec issues SI-34 to SI-42 and plan additions P-30 to P-32, revised once after a design and a security review. The old sections 7 and 8 are now 8 and 9.
+Revision 8 adds the W-021 brief as section 8, with decisions D38 to D50, assumptions A-40 to A-46, spec issues SI-43 to SI-48 and plan additions P-33 to P-38, revised after a design review and a security review. The old sections 8 and 9 are now 9 and 10. On 2026-11-22 the owner accepted every recommended default of D28 to D50; O1 and the follow-up to D48 stay open, for silvio.
 
 Code references are to the working tree after the worker split (P-18, P-19, P-20: done, about to be
 committed on top of `b63a1a6`). The newest patch marker is `authority-v1`
@@ -36,12 +38,12 @@ against `backlog.json`: every dependency is built, assumed under D2, or earlier 
 | 1 | **W-018** Workspace manager and Git materialization | New `packages/workspace`: a `WorkspaceManager` for rows, epochs and fencing; a `GitMaterializer` port with a local executor; a publisher that updates task refs from a factory-owned repository; setup profile; independent source for verifiers. Brief in section 4. | W-006 ✓, W-007 ✓ | AC-12 (fencing half), AC-22 (source half), AC-38 (local ref half): F, real Git | 4–6 · L |
 | 2 | **W-017** Kubernetes controller and Job protocol | New `apps/runner`: `Runner.startOrAttach/getRun/cancel/getResult`, desired/observed reconcile, deterministic Job names, versioned allocations, and the **runner side of the start permit and pod-specific writer claim** (as the backlog deliverable says). The `KubeApi` port, its fake and the k3s tier (section 2). The pod executor for `GitMaterializer`. A capacity stand-in until W-088 (A-30). First named fault points. Brief in section 5. **Built and committed in two commits: 17a (`2d363a4`: the port, `HttpsKube`, `FakeKube` and its kubelet, the controller and reconciler, permits, capacity stand-in, receipt rules and D17's two transitions) and 17b (`1f2096d`: pod executor entry, `PodVolumeMaterializer` and release, manifests, images and the k3s tier).** | W-006 ✓, W-011 ✓; W-005, W-077, W-097 by assumption (D2) | AC-10 (one allocation, one permit winner at the runner API), AC-11: F and K | 4–6 · L, likely at the top |
 | 3 | **W-019** Lease fencing and process supervision | New `apps/supervisor`: the supervisor that takes and renews the permit, heartbeat 10 s / suspect 30 s / expiry 60 s judged on the **Postgres clock**, stale-epoch rejection, process-tree stop, the `QuiescenceProof` record (runner-issued: pod UID, the terminal state of every container still listed, and `gone` for a pod the kubelet removed, detachment observation; accepted only from the runner identity), the rule for a replaced generation's volume (D19), the quarantine record for a replaced generation (all three left out of W-018), the network start gate (D11). | W-017, W-018 | AC-10 (a real duplicate supervisor exits without touching the workspace), AC-12 (quarantine half): F. AC-15: F for the protocol only; **tree stop is claimed at K only** | 10 to 12 against 4–6, step 0 then two commits · L |
-| 4 | **W-020** Durable checkpoints and restore | In `packages/workspace`: committed and dirty-state manifests, self-contained bundles, finalization, restore into a clean allocation; `checkpoint_job` child rows and their fencing (SI-12); `finalizing` and its pass (D22). **Starts with the untrusted-Git reader** (below). | W-007 ✓, W-018, W-019 | AC-13, AC-14, AC-16: F, real Git | 4–6, plus 3–5 for the reader · L |
-| 5 | **W-023** Runner Activity attachment and cancellation | In `apps/worker`: `startOrAttachExecution`, `awaitExecution`, `cancelExecution` Activities; typed infrastructure versus semantic outcomes; cleanup on every non-semantic path; the new cleanup rule for `outcome_recorded`. Behind `patched('runner-v1')`. Design constraints in section 7. | W-019, W-020, W-011 ✓ | AC-10, AC-14, AC-15: F with Temporal | 3–5 · L |
+| 4 | **W-020** Durable checkpoints and restore | In `packages/workspace`: committed and dirty-state manifests, self-contained bundles, finalization, restore into a clean allocation; `checkpoint_job` child rows and their fencing (SI-12); `finalizing` and its pass (D22). **Starts with the untrusted-Git reader** (below). Brief in section 7. | W-007 ✓, W-018, W-019 | AC-14: F. AC-13, AC-16: restore mechanics only (material), the claim waiting for O1 and D36 | 18 to 21 against 4–6 (reader included), three commits (D35) · L |
+| 5 | **W-023** Runner Activity attachment and cancellation | In `apps/worker`: `startOrAttachExecution`, `awaitExecution`, `cancelExecution` Activities; typed infrastructure versus semantic outcomes; cleanup on every non-semantic path; the new cleanup rule for `outcome_recorded`. Behind `patched('runner-v1')`. Design constraints in section 9. | W-019, W-020, W-011 ✓ | AC-10, AC-14, AC-15: F with Temporal | 3–5 · L |
 | 6 | **W-024** Workspace and resource sweeper | UID-scoped cleanup, retention, orphan reconcile, failed cleanup left visible as an operator obligation. Moved ahead of the checkpoint: it is the only cleanup that survives a failed or terminated workflow. Never force-deletes. | W-019, W-020 | AC-43: F and K | 3–4 · S |
-| 7 | **W-021** Capability proxy and execution profiles | Extend the W-008 proxy into the runner: scoped grants, per-role identities, denied-operation audit, **durable call counters** (today they are an in-memory map, `apps/api/src/auth/capability-proxy.ts:47`, so a restart resets every limit); namespace, NetworkPolicy and admission manifests. | W-008 ✓, W-019 | AC-19: F. AC-56: K gives partial evidence, **R to claim** | 4–6 · M |
+| 7 | **W-021** Capability proxy and execution profiles | Extend the W-008 proxy into the runner: scoped grants, per-role identities, denied-operation audit, **durable call counters** (today they are an in-memory map, `apps/api/src/auth/capability-proxy.ts:47`, so a restart resets every limit); namespace, NetworkPolicy and admission manifests. Brief in section 8. | W-008 ✓, W-019 | AC-19: F. AC-56: K gives partial evidence, **R to claim** | 10 to 12 against 4–6, step 0 then two commits (D38) · L |
 | 8 | **W-022** Canonical verifier supervisor | New `apps/verifier`: exact source and package execution, externally collected results, counts and integrity checks, trusted finalization. Uses the W-004 fixture releases. | W-012 ✓, W-018, W-021; W-097 by assumption | AC-21, AC-22, AC-23, AC-24: F | 4–6 · M |
-| | **Exit-evidence checkpoint** | Independent review, full check, and the three exit scenarios run end to end and **end cleanly** (no live allocation, outcome recorded): lost pod (AC-10, AC-13, AC-14), stale writer (AC-12), canonical-test integrity (AC-22, AC-23). Not the M2 exit. | | | |
+| | **Exit-evidence checkpoint** | Independent review, full check, and the three exit scenarios run end to end and **end cleanly** (no live allocation, outcome recorded): lost pod (AC-10, AC-13, AC-14), stale writer (AC-12), canonical-test integrity (AC-22, AC-23). Not the M2 exit. The lost-pod scenario is not reachable until O1 is decided (section 7.9). | | | |
 | 9 | **W-088** Minimum execution admission | `CapacityManager` over the existing `capacity_reservation` table; visible waits; replaces the A-30 stand-in. Absorbs plan addition P-11, including its 429 quota response and per-application limits, which AC-128 does not cover. Workflow wait behind `patched('admission-v1')`. | W-013 ✓, W-019 | AC-128: F. Child limits are tested on task trees seeded directly, because intake refuses child tasks (`apps/api/src/tasks/service.ts:55`) | 3–5 · M |
 | 10 | **W-116** Candidate secret scanning | Deterministic scan of candidate diffs before checkpoint publication, push and delivery; redacted findings. | W-020, W-022 | AC-184: F | 2–3 · S |
 | 11 | **W-025** Context builder and role prompts | New `packages/context`: token allocation, fact selection, role context manifests, fresh/resume policy. | W-007 ✓, W-012 ✓, W-021 | AC-18, AC-57: F | 3–5 · M |
@@ -152,11 +154,12 @@ One suite runs these against `FakeKube` and against k3s. The fake must model eac
 - Sandboxed runtimes, node isolation, the agent-sandbox option (ADR-21); workload identity against the organization's issuer; amd64 images; capacity at the chapter 11 limits.
 - Process-tree stop on Linux is shown at K. The fake kubelet on macOS proves the protocol only; a child that starts its own session escapes a process group.
 - Anything about the Claude harness in a restricted pod (W-077).
+- W-021's admission rules on the real API server's version and identities, and its NetworkPolicy on the real CNI (D4).
 
 ## 3. Owner decisions
 
 The crew proceeds on the default unless told otherwise. None of these blocks W-018. D12 to D18
-belong to the W-017 brief (section 5). D17 is decided; none of the others blocks its start. D19 to D27 belong to the W-019 brief (section 6) and are decided provisionally.
+belong to the W-017 brief (section 5). D17 is decided; none of the others blocks its start. D19 to D27 belong to the W-019 brief (section 6) and are decided provisionally. D28 to D37 belong to the W-020 brief (section 7); none blocks 20a's start; D28, D33 and D34 are security calls. D38 to D50 belong to the W-021 brief (section 8); none blocks 21a's start; D44, D46 and D50 are security calls, and D48 changes D13. On 2026-11-22 the owner accepted the recommended default of every decision from D28 to D50, the security calls and D30 (always `inconclusive` until W-075) among them. Open questions are a new series, O1 onward: they are not decisions with a default. O1 and the follow-up to D48 (the pod artifact-read design, before W-022's brief) are open and assigned to silvio.
 
 | # | Decision | Recommended default |
 | --- | --- | --- |
@@ -172,7 +175,7 @@ belong to the W-017 brief (section 5). D17 is decided; none of the others blocks
 | D10 | The untrusted-Git reader for W-020. | Write it here (3–5 days, no dependency). The alternative is the `isomorphic-git` package: version 1.44.17 has 10 runtime dependencies including an HTTP client, is 5 MB unpacked, and its latest release is hours old. It is a full client where a bounded reader is wanted. |
 | D11 | Network policy is not in force when a pod starts (SI-15). This is a security call. | The supervisor withholds the harness start signal until a request to a denied address fails, and records the wait. Treat that as a mitigation only: it shows one rule is active, not all. Raise it with whoever owns INT-05; the real CNI must be measured the same way. |
 | D12 | Where the runner's network listener is built. Pods may reach only "the factory control-plane runner API" (`09-verification-security.md:77`), and apps cannot import each other (`tools/boundaries.json`), so the supervisor and the worker both need one eventually. | Not in W-017, which has nothing that could call it. W-019 adds the pod-facing listener with the supervisor; W-023 adds the worker-facing route and its client. W-017's service validates every input as wire input, so both are thin. Building it in W-017 costs one to two days more. |
-| D13 | Bundle sources (verifier copies, restores) for the pod materializer. | Not in W-017: `remote` sources only. A bundle needs a scoped artifact read from inside a pod, which arrives with W-021 and is first used by W-022. W-020's restore tests use the local materializer. |
+| D13 | Bundle sources (verifier copies, restores) for the pod materializer. | Not in W-017: `remote` sources only. A bundle needs a scoped artifact read from inside a pod. That read moves from W-021 to W-022, its first user (D48, accepted by the owner, 2026-11-22; the design goes to silvio before W-022's brief). W-020's restore tests use the local materializer. |
 | D14 | How many generations one stage run may consume. The spec sets no bound, and warns against multiplied retry loops (`04-temporal.md:100`). | Three, then a typed `generation_limit`. Configurable. |
 | D15 | One PVC per workspace generation. Old generations' PVCs stay in place until W-024 (sweep). Consequence: a workspace that had a replacement cannot reach `released` until the older PVC is gone; it stays `releasing` with `needsOperator`, because no row may be `released` while a PVC with its label exists. | Accept. On this machine they are small and `scripts/k3s.sh down` removes them. The storage class must have reclaim policy `Delete`; the runner refuses to start otherwise. The alternative is for W-017 to delete an older generation's PVC itself once that generation is `terminated` and replaced; it is a few lines, but it takes reclaiming a fenced generation away from W-019 and W-024, where W-018 put it. |
 | D16 | W-017 is larger than its estimate: 8 to 10 days against 4–6. | Two commits (17a, 17b), each with an independent review, and one build-log line after the second. |
@@ -187,6 +190,42 @@ belong to the W-017 brief (section 5). D17 is decided; none of the others blocks
 | D25 | How long a quarantined volume is kept, and who owns the obligation. A security call. | **Decided (provisional): 30 days, owner `platform-operator`**, the record `restricted`; an open-quarantine count on every pass for alerting; deletion before `preserveUntil` only by an audited operator action. The action is built in W-024 (A-34). |
 | D26 | Who stores the `StageInput`, and who builds `watchEvents` and log chunks (C5, C6). | **Decided (provisional), the brief's default:** W-023 stores the input. Events and log chunks wait for a harness adapter and for storage the schema does not have: W-023 with W-077. W-019 builds neither. |
 | D27 | A runner API outage longer than 50 s stops every running writer, and each loses its unacknowledged work. | **Decided (provisional), the brief's default:** accept; it is the spec's lease. On a real cluster run two runner replicas (rule 2 of section 5 already allows it). P-28 records a possible grace rule; it is not built. The rate limits of this brief are what keep a harness from causing the same thing. |
+| D28 | The reader's scope and limits (7.3). (W-020, section 7) | **Accepted by the owner, 2026-11-22.** SHA-1 repositories only; loose objects, pack v2/v3 with idx v2, offset and reference deltas to depth 512; loose and packed refs, no reftable; index v2 to v4 with no split or sparse index and no unmerged entries; the limit table of 7.3; Git's own path rules plus a refusal of backslashes. Everything outside is a typed refusal, never a fallback to Git. Not taken: depth 4,095 (Git's maximum; the work budget would bound it, but nothing needs it); accepting backslashes (legal on Linux, unrepresentable on hosts the factory may restore to). |
+| D29 | What a cancel does to a checkpoint (C13, SI-29). (W-020, section 7) | **Accepted by the owner, 2026-11-22.** A cancel never starts one. A cancel that finds the allocation `finalizing` lets the checkpoint finish and be stored, and the stage ends `cancelled` with no result. An urgent cancel gives the checkpoint up at once. The hold of section 6 stays a courtesy for `running` stops. |
+| D30 | Who mints the `StageResult`, and with what status (C6). **Set by the coordinator on 2026-11-21 after the security review (Furio M4); accepted by the owner, 2026-11-22.** (W-020, section 7) | W-020 builds `StageFinalizer.finalize` for the child's identity only. **The runner mints `inconclusive` with the checkpoint and no outputs. The harness exit code is a diagnostic only**, kept in the intent record and the handoff, until W-075's `submit_result` gives a source for a semantic status. Not taken: `completed` on exit code 0 (the brief's earlier default), which would let a hostile harness's own exit make a runner-authored `completed` (`06:7`, AC-231). SI-38. |
+| D31 | Retries of the checkpoint child (C7). (W-020, section 7) | **Accepted by the owner, 2026-11-22.** One receipt per attempt, at most two attempts, each admitted only after the previous one's pods are shown gone. |
+| D32 | How a child streams large parts (C8). (W-020, section 7) | **Accepted by the owner, 2026-11-22.** A second TLS listener on its own port with its own limits and the same admission order; parts streamed into the artifact service; the pod listener unchanged. Not taken: special-casing streamed routes on the pod listener (its limits are server-wide). |
+| D33 | The child's topology. A security call. (W-020, section 7) | **Accepted by the owner, 2026-11-22.** Two containers and two exchange volumes (7.4's shape table): `read` mounts the claim read-only, holds no credential and writes only `export`; `build` holds the token, never mounts the claim, mounts `export` read-only, keeps its repository in `work`, which only it mounts, and loads objects from `export` only as data through `index-pack --strict`. Not taken: one container (a reader bug would run beside the token); one shared scratch volume (the brief's earlier form: the process D33 distrusts would write the credential holder's working directory; review, Furio M5, Livia 9). |
+| D34 | What is captured (SI-37). (W-020, section 7) | **Accepted by the owner, 2026-11-22.** Every tracked path; untracked files except the root and nested `.git`, special files, five rebuildable directory names and the deny list of 7.4 (case-folded, an interim under A-38); repository ignore files not honoured; over a cap, refuse. Not taken: honouring `.gitignore` (a second parser over candidate data, and ignored files are where a harness may leave work). |
+| D35 | W-020 is larger than its estimate: 18 to 21 days against 4–6 (3–5 more for the reader); 7.11 shows the arithmetic. (W-020, section 7) | **Accepted by the owner, 2026-11-22.** Three commits, 20a, 20b and 20c, each with its own review; one build-log line after 20c. 20a lands as a library with no caller. |
+| D36 | Restore into a pod (C10, D13). (W-020, section 7) | **Accepted by the owner, 2026-11-22.** Not in W-020: a typed refusal until a pod can read an artifact (D13; W-021's D48, accepted by the owner on 2026-11-22, gives it to W-022, and its design goes to silvio first). AC-13 and AC-16 are logged as restore mechanics only, through `LocalMaterializer`. **Consequence:** the exit-evidence lost-pod scenario needs that read, and O1, before it can run end to end. |
+| D37 | How a stage reaches `finalizing` in M2. (W-020, section 7) | **Accepted by the owner, 2026-11-22.** The supervisor asks when the cluster reports the harness exited; the runner offers finalize in the grant only to an allocation with a workspace and a wait above 0, and waits up to 20 s for that request before stopping as W-019 does. Not taken: the runner alone moving `running → finalizing` on a harness exit (no route, no wait; but `06:112` has the supervisor record the request first, and W-019 handed over a route). |
+| D38 | W-021 is larger than its estimate: 10 to 12 days against 4–6, after the two reviews. (W-021, section 8) | **Accepted by the owner, 2026-11-22.** Step 0, then 21a, then 21b, each commit with an independent review; one build-log line after 21b. 21b's review includes a security reviewer. |
+| D39 | Where grants come from (C5, SI-43). `07:38` puts grants in the run input; `StageInput` carries them, unhashed and unstored. (W-021, section 8) | **Accepted by the owner, 2026-11-22.** The runner derives them from rows, with deterministic ids (rule 11). A `StageInput` that lists anything outside the derived set is refused; one that lists less narrows nothing. Not taken: honouring the input's grants (the runner would trust its caller's authority), or requiring an exact match (W-023 would have to rebuild the runner's derivation). |
+| D40 | Where durable counters live (C4). (W-021, section 8) | **Accepted by the owner, 2026-11-22.** **No migration.** One `audit_event` row per allowed call, at a deterministic id, written by the statement that decides it, under a per-grant advisory lock, found by primary-key probes. The runtime role can only insert there, so a spent call cannot be given back. Not taken: a `capability_slot` table with `UNIQUE (org_id, grant_id, n)` (a migration, a grant change and a retention rule, for the same guarantee), or a counter column on the allocation (one counter per allocation, not per grant). |
+| D41 | What happens to W-008's proxy in `apps/api`. (W-021, section 8) | **Accepted by the owner, 2026-11-22.** Delete it, with its test, and move the role table to `@factory/domain`; AC-19's cases move to the runner. It has no caller (searched today) and keeps the very counters this package exists to replace; two proxies would be two answers. |
+| D42 | Granularity of "per-role identities" (SI-45). (W-021, section 8) | **Accepted by the owner, 2026-11-22.** One service account per **profile**, four profiles (`authoring`, `read_only`, `verifier`, and `checkpoint` for W-020's child), with **one configuration home, `profiles.<name>`** (X2, decided 2026-11-21); the role table maps each of the nine roles to one of the first three. The authoring account keeps its name. Each listener accepts only its own subjects: the pod listener never the checkpoint account. Not taken: nine accounts, one per stage role (the audience already binds a token to one allocation, so nine accounts add names, not authority); one account for everything (the status quo, which the backlog item exists to end). |
+| D43 | What a capability check costs, and how it is limited (C13, X4). (W-021, section 8) | **Accepted by the owner, 2026-11-22.** Every check is reviewed and reads the pod, as the permit calls do; its own per-pod bucket (burst 20, one every 400 ms); the shared review budget counts the renewal, capability and checkpoint listeners' buckets together; no review cache. P-33 records that W-075 must measure. Not taken: caching a successful review for a few seconds (cheaper, but section 2 measured that the API server already keeps a review alive after its pod is gone, and a second cache would widen that window); a separate budget for the checkpoint listener (two budgets would let their sum pass the ceiling that protects the API server). |
+| D44 | **Security call.** The admission rule set, its exemptions and its failure mode. (W-021, section 8) | **Accepted by the owner, 2026-11-22.** The rules of 21b, four policies, `failurePolicy: Fail`, bound to the exec namespace only. Exemptions: the kubelet's group and the pod garbage collector for the grace rule (deletes and evictions), and the Job controller's identity for pod creation only. No exemption for cluster administrators. Evictions are held to the same grace rule (C15). Not taken: refusing the pod garbage collector (its pods would stay for ever, with no one able to remove them). |
+| D45 | Where the k3s tier shows Kubernetes doing what the exec namespace now refuses (C8, C18). (W-021, section 8) | **Accepted by the owner, 2026-11-22.** A local-only control namespace, `factory-exec-control`, with its own copy of the runner's Role, no policy and no admission, used only by the test driver: conformance rows 1 to 21 and the positive controls. `createConfig` refuses it. Not taken: binding admission with an exception for the admin (then the admin could do in the exec namespace what a test needs, and so could anyone with that certificate); making rows 1 to 21 conform to admission (they show Kubernetes behaviour, several by breaking the rules on purpose). |
+| D46 | **Security call.** How "refuse the scripted label outside the local tier" is enforced (C2). (W-021, section 8) | **Accepted by the owner, 2026-11-22.** By the tier's image allowlist, **per container name**: a `cluster` rendering admits under each container name only its one configured digest, a CEL rule refuses anything not matching `^[^@]+@sha256:[0-9a-f]{64}$`, and an image cannot be changed on a live pod. The label stays as documentation. Not taken: a mutating or validating webhook that pulls image configuration (a new server, registry credentials in the admission path, and a new dependency). |
+| D47 | How the profiles are packaged, and how the runner knows they are installed. D8 chose plain manifests and typed code for the Job. (W-021, section 8) | **Accepted by the owner, 2026-11-22.** The profile objects are rendered by typed code from `RunnerConfig`, as the Job is, with a committed fixture, and applied through a print entry; the namespace, the accounts that never vary and RBAC stay plain YAML. The runner checks at start and every 5 minutes that the policies, the three network policies, the LimitRange, the namespace's Pod Security labels and the params equal what it renders. **Only a 404 or a difference stops anything**, and only for a network policy; any other error warns and retries (design finding 5). Not taken: plain YAML for everything (the namespace, account names, label prefix, listener ports, images and sizes would be written twice, with nothing to catch drift). |
+| D48 | **Changes D13.** Who builds the scoped artifact read from inside a pod (C9). (W-021, section 8) | Not W-021. W-022 is its first user and should own it; the design (how a pod gets a bundle when only the supervisor holds an identity, `06:110`) needs its own brief. **Accepted by the owner, 2026-11-22.** **Follow-up, open:** the design goes to silvio before W-022's brief. Until then W-020's restores run through `LocalMaterializer`, as its draft already says. |
+| D49 | Order. W-019's k3s tier has not run (C10), and W-020 and W-021 share files (overlap table). (W-021, section 8) | **Accepted by the owner, 2026-11-22.** W-019's k3s tier passes once, unchanged, before W-021's step 0. Then plan order: W-020, then W-021 on top of it, with 21b filling in the `checkpoint` profile. If the owner wants them in parallel, only 21a's new files are built ahead. |
+| D50 | **Security call.** Which of `09:77`'s explicit routes the M2 profiles allow (SI-44). (W-021, section 8) | **Accepted by the owner, 2026-11-22.** Two, each to one port of the runner only: allocation pods may reach the pod listener's port, and the checkpoint child the checkpoint listener's port (`factory-exec-egress-checkpoint`, X3); neither reaches the other's. Nothing in M2 resolves a name (every target is a literal address, `config.ts:184-191`) or needs a mirror or the model gateway (A-27, A-33). Each later route (DNS, mirrors, the gateway) is a profile field with its own allow rule and its own test, added by the package that needs it. |
+
+**Open question O1 (W-020, section 7), open and assigned to silvio.** How does a later stage run start from an earlier
+stage run's accepted checkpoint? A workspace row is bound to one stage run by W-018's identity rule
+(`manager.ts:228`, `start.ts:87`), while `06:39` speaks of one clone per task and repository and
+`06:76` of replaying from the last acknowledged boundary; the reference `restore` takes a checkpoint
+and no target. The candidates are (a) a new row seeded with a source `checkpoint_ref`, which needs a
+field the row does not have, or (b) one row per task and repository across stage runs, which
+reverses W-018's identity rule and touches W-017's allocate step. Either changes W-018 and W-023
+together and is expensive to undo, so it is not decided here. W-020's mechanics serve both.
+**Until it is decided, the exit-evidence lost-pod scenario is not reachable**, and AC-13 and AC-16
+stay material (7.9).
+
+**Open follow-up to D48, assigned to silvio.** The decision itself (the pod artifact read moves from W-021 to W-022) is accepted. The design of that read, how a pod gets a bundle when only the supervisor holds an identity (`06:110`), goes to silvio before W-022's brief.
 
 ## 4. First package brief: W-018 Workspace manager and Git materialization
 
@@ -364,7 +403,7 @@ Temporal. A local setup executor and a bundle-making helper live here and are no
 ## 5. Second package brief: W-017 Kubernetes controller and Job protocol
 
 Written 2026-11-18 against W-018 as committed (`57b16e9`), and revised the same day after its first
-review: four blockers and thirteen should-fix items, all taken (section 8, round 3). Every
+review: four blockers and thirteen should-fix items, all taken (section 10, round 3). Every
 Kubernetes behaviour below is either a row of the section 2 table (verified) or is marked **to
 confirm in the k3s tier**. The two that carry the design were probed on k3s during the revision
 (step 0, below); the rest wait for 17b.
@@ -860,7 +899,7 @@ Hand-offs:
 
 - **W-019:** the listener the supervisor calls; the supervisor side of both permit calls; the durable proof built from `PodObservation`. Volume reuse is the PVC-name function called with the older generation. **The full `StageInput` is not stored anywhere**; the supervisor needs it, so W-019 or W-023 must persist it as an artifact the runner can serve. **The 0700 modes:** every directory level W-018 makes is 0700 and owned by uid 10001, so the supervisor (10002) can read none of it; W-019 changes W-018's directory modes in `ensureSafeChild`, and the `materializer.ts` workspace and staging `mkdirSync` calls (0750 passes the `& 0o022` root checks), together with the pod entry's `/workspace/factory`.
 - **W-020:** the accepted checkpoint is what lets a `retained` workspace be released. W-018's TODO still stands: bind the checkpoint to the workspace, generation and epoch.
-- **W-021:** `apps/api/src/auth/capability-proxy.ts:59` treats `starting` as live. After W-017 `starting` means "Job bound, no permit", so it should narrow to `running`. Also: an egress NetworkPolicy that blocks internal and cluster addresses (the API server, the metadata endpoint, other pods) for allocation pods, and a ValidatingAdmissionPolicy that backs A-25 (only the runner's account and the Job controller create Jobs, pods and claims in the execution namespace; nothing else uses the supervisor's account).
+- **W-021:** `apps/api/src/auth/capability-proxy.ts:59` treats `starting` as live. After W-017 `starting` means "Job bound, no permit", so it should narrow to `running`. Answered in section 8 (C3): live means `running` or `suspect`, at the epoch, with the lease unexpired in the statement that takes the slot. Also: an egress NetworkPolicy that blocks internal and cluster addresses (the API server, the metadata endpoint, other pods) for allocation pods, and a ValidatingAdmissionPolicy that backs A-25 (only the runner's account and the Job controller create Jobs, pods and claims in the execution namespace; nothing else uses the supervisor's account).
 - **W-023:** the runner client. Call the facade's `allocateOrAttach` before `startOrAttach` (SI-26). `terminated` without a cancel reports `reconciling`, and the answer is another `startOrAttach`. A cancel always succeeds and always blocks later starts, unless the run already has a result; send it on every non-semantic path, before the budget is charged. Release through the facade after `terminated`: `allocation_live` and `writer_active` are retryable, `checkpoint_not_accepted` is not until W-020. Until W-020 or W-024, every workspace whose writer was stopped keeps its 2 Gi PVC, so the cleanup rule must record it as an obligation and not wait for it. **Unbudgeted tasks:** the worker reserves a stage's budget only when the plan carries a ceiling (`apps/worker/src/workflows/stage-execution.ts:16`), and the runner answers `budget_not_reserved` every time without one; the Activity must reserve for every runner stage or define the alternative. The new cleanup rule: `apps/worker/src/activities/outcome.ts:53` and `shared.ts:80` still count allocation rows, and until W-023 only tests create them.
 - **W-024:** find by label. Older generations' PVCs, PVCs and Jobs of allocations with no live row, `retained` workspaces past their retention and `quarantined` rows are its work.
 
@@ -892,10 +931,10 @@ Assumptions W-017 writes to `docs/assumptions.md`:
 
 - **A-25** to **A-28**, as reserved in D2 and D3. In W-017, A-25 is one execution namespace (`factory-exec-local`), one supervisor service account, and pod identity by token review; A-27 is the stub containers.
 - **A-30**: the capacity stand-in above, with its per-generation pool key.
-- **A-31** (new; stands in for INT-02 and W-021): the pod materializer clones a fixture repository inside a test image over `file://`; no Git credential exists in any pod; `bundle` sources are not served to pods.
+- **A-31** (new; stands in for INT-02 and W-022, which now owns scoped artifact reads from pods, D48): the pod materializer clones a fixture repository inside a test image over `file://`; no Git credential exists in any pod; `bundle` sources are not served to pods.
 
 Spec issues W-017 records in `docs/spec-issues.md`: SI-13 and SI-14 from the earlier list, and
-SI-19 to SI-26, all in the table in section 7.
+SI-19 to SI-26, all in the table in section 9.
 
 ### Definition of done
 
@@ -911,7 +950,7 @@ SI-19 to SI-26, all in the table in section 7.
 ## 6. Third package brief: W-019 Lease fencing and process supervision
 
 Written 2026-11-18 against `1f2096d` (W-017b committed, tree clean), and revised twice the same day,
-after each round of its two reviews (section 8, round 5). No test and no cluster was run for this brief: every code fact below
+after each round of its two reviews (section 10, round 5). No test and no cluster was run for this brief: every code fact below
 was read today, and every Kubernetes behaviour is either a row of section 2 or of W-017's build-log
 line (verified), or is marked **to confirm in the k3s tier**. Seven of those carry design weight
 and are probed first (step 0).
@@ -1481,7 +1520,7 @@ every W-019 file. The build-log line gives the date, the image digest and the re
   - **Until W-024 ships, a quarantined volume can be removed early only by hand, with `kubectl delete`, and nothing audits that.** There is no real tenant in M2; an erasure request before W-024 would be met that way and recorded by the operator.
   - The new-connection and source limits protect the event loop from one source. They do nothing against many sources, and nothing behind NAT. Moving the listener to a worker thread, so that the reconciler's timing is not shared with it at all, is not built (P-29).
   - The start gate is enforced by the launcher, which is trusted because it comes from the harness image. A harness image that does not start through it is not gated; image admission is W-021's and W-090's.
-  - `local-path` does not enforce a claim's size, so a harness can fill the node's disk. That predates W-019 (W-021, W-024).
+  - `local-path` does not enforce a claim's size, so a harness can fill the node's disk. That predates W-019. W-021 does not close it (section 8, C11); it stays with W-024 and D4.
   - The scripted harness shows nothing about Claude in a restricted pod (W-077).
 
 ### Hand-offs
@@ -1492,13 +1531,13 @@ every W-019 file. The build-log line gives the date, the image digest and the re
   - Decide what the stop acknowledgement means for a checkpoint at cancel (SI-29).
   - **Inferred, not tested:** under `fsGroup` the kubelet may rewrite group and mode on every file when a second pod mounts the claim; a trusted read-only mount should not change the tree it is about to hash (step 0 records what this cluster does).
   - Any read of a workspace a harness has run in uses descriptor-relative, no-follow traversal (the view's rule).
-- **W-021:** the production policy, with an allow rule for the listener's **port**, not the runner's host (W-023's control-plane port lives there too); the real deny-target list; an admission rule against grace 0; `get nodes` and the one Service read are new rights. The local policy file is replaced. `capability-proxy.ts:59` still treats `starting` as live (section 5's hand-off stands).
+- **W-021:** the production policy, with an allow rule for the listener's **port**, not the runner's host (W-023's control-plane port lives there too); the real deny-target list; an admission rule against grace 0; `get nodes` and the one Service read are new rights. The local policy file is replaced. `capability-proxy.ts:59` still treats `starting` as live (section 5's hand-off, answered by C3 of section 8).
 - **W-023:** persist the stage input, bound as SI-21 decides (D26). After a harness exit the run reports `reconciling` until W-020. Carry the quarantine record's ref in `cleanupObligationRefs`. The worker-facing route is a second listener and its wire types go in `@factory/runner-protocol`. `watchEvents`. `cancel` has an `urgent` option.
 - **W-024:** delete a replaced generation's claim only when `volumeDisposition` is `quiescent`; a `quarantined` one only after `preserveUntil`, or earlier through the audited operator action D25 defines, **which W-024 builds**, with its resolution record; `unknown` never. Stop the pod of a quarantined allocation. Route the open-quarantine count to its owner (INT-09).
 - **W-030:** when the publisher gets a credential it must not sit under `scratchRoot`, and the publisher's scratch root and any materializer root must be disjoint; both use `<org>/<workspaceId>` (`publish.ts:113`, `materializer.ts:92`). Both READMEs say so from W-019 on. **W-030 owns the check and its test**, not only the sentence: the publisher refuses to start on a scratch root that equals, contains or lies inside a materializer root it is told about. **Control:** two disjoint roots start.
 - **W-075:** the tool routes join the local endpoint with their own authentication; every one checks the fence flag first, goes through the listener's guard for anything remote, and reads the workspace only by the view's rule.
 - **19b (the production entry):** `runnerProcessFromEnv` sets no `networkGate` and no `podListener`, so today it fails closed: the gate defaults to `required` with no deny target, and start-up refuses; and no listener starts. 19b must read both from the environment (the deny list, the listener's address, port, certificate and key) and add a test that starts **the env entry** against the fake and shows the listener answering and the checks having run.
-- **W-021 and W-090 (admission):** refuse an image labelled `factory.harness=scripted` outside the local tier (A-33). The production harness image is not built by `scripts/k3s.sh`.
+- **W-021 and W-090 (admission):** keep a scripted harness image out of every tier but the local one (A-33). Admission cannot read an image label, so W-021 enforces this through the tier's image allowlist, not by reading the label (section 8, C2 and D46). The production harness image is not built by `scripts/k3s.sh`.
 - **W-077:** replace the scripted program behind the same launcher; the harness's umask; whether a real harness's tree needs more than the pod delete. **It does not start on the k3s tier unless step 0 item 5 held** (D24).
 - **W-119:** the urgent stop is the per-run half of an emergency stop.
 - **W-134:** the guard's denials, the lease tests and the forged-call tests are the material for AC-236's runner-API half.
@@ -1532,7 +1571,7 @@ the start.
 Assumptions W-019 writes to `docs/assumptions.md`:
 
 - **A-32** (INT-05): in the k3s tier the listener runs in the test process on the Mac with TLS from a throwaway CA, and pods reach it at the podman host-gateway address `192.168.127.254` (`host.containers.internal`); gvproxy delivers that traffic to the Mac's loopback, so the listener binds `127.0.0.1`, sees every pod as source `127.0.0.1`, and its certificate names the gateway address (measured in step 0, item 1). That arrangement is for development only: every pod shares one source address there, so the per-source limits mean nothing, and a deployment must show the listener real pod addresses. The local tiers' configuration raises the per-source numbers for the same reason. The listener's certificate is ECDSA P-256, here and as the recommendation to INT-05. In the fake tier the listener is plaintext on loopback behind a test-only flag.
-- **A-33** (W-077, INT-08; extends A-27): the harness container is the launcher plus a scripted program. No Claude, no gateway, no model call. Each scripted-harness image carries ONE script, baked in at build time, no environment override, and the label `factory.harness=scripted`. **W-021's and W-090's admission rules must refuse that label outside the local tier** (a run could otherwise "end" on `harness_exited` having done no work).
+- **A-33** (W-077, INT-08; extends A-27): the harness container is the launcher plus a scripted program. No Claude, no gateway, no model call. Each scripted-harness image carries ONE script, baked in at build time, no environment override, and the label `factory.harness=scripted`. **W-021's image allowlist keeps a scripted image out of every tier but the local one** (admission cannot read the label; section 8, C2 and D46) (a run could otherwise "end" on `harness_exited` having done no work).
 - **A-34** (INT-07 retention obligations; `06-runner-workspaces.md:104`): a quarantined volume is preserved for 30 days under the obligation owner `platform-operator`, as restricted evidence, and is escalated after one day.
 - **A-35** (INT-05, W-021): the local tier's egress policy allows only the listener's address and port, and the gate's deny targets there are the API service, the metadata address and the Mac's Postgres and Temporal ports. A target counts as denied when a connect is refused or times out. **Amended after the 19b build:** `169.254.169.254:80` is refused on this machine with NO policy at all, so that target shows no rule active here; the three that show it are the API service and the gateway's Postgres and Temporal ports, and the `w019-network-gate.k8s` file first shows from the host that those two accept a connection. The pod-side with/without comparison is step 0 item 5's, not that file's.
 
@@ -1574,7 +1613,1715 @@ Plan additions for `docs/plan-additions.md`:
 - **Judgement:** the 10-to-12-day estimate; the 30-day window; the rates (5 new connections a second and 4 open per source, 10 a second per source for requests that did not verify, one every 2 s per pod, a review ceiling of 200 a second). They are sized against one renewal every 10 s, the handshake costs behind them are the security review's estimates and were not measured, and all of them go to P-14's load test before they are trusted.
 - **Where I would point the next review:** the admission order (whether anything a harness can cause still reaches a shared budget), and the interleavings of race rules 5 and 6.
 
-## 7. Risks
+## 7. Fourth package brief: W-020 Durable checkpoints and restore
+
+Written 2026-11-19 and 2026-11-20 against `a119964` (W-019b committed; W-019's k3s tier written, not
+yet run), and revised on 2026-11-21 after a design review and a security review (7.12). No test
+suite and no cluster was run for this brief. Every code fact below was read against `a119964`.
+The probes (Node 24.22.2, the version pinned in `.node-version` and `package.json` `engines`, and
+Git 2.50.1) and their results are in 7.2. Every Kubernetes behaviour is
+a row of section 2, a W-019 step 0 finding, or is marked **to confirm in the k3s tier**.
+
+**Goal.** Make a stage's work survive the loss of its pod once the work is acknowledged (INV-09),
+and nothing earlier. When W-020 is done:
+
+- a supervisor can ask to finish; the runner records the intent, moves `running → finalizing` on an unexpired lease, stops the whole authoring pod and proves it stopped, as W-019 does for a stop;
+- a trusted checkpoint child (`checkpoint_job`) of that allocation mounts the retained volume read-only and reads the candidate's `.git` and working tree **without running Git on them and without honouring anything in them**, through a bounded reader written here (D10);
+- the child reads the committed, index and dirty-state manifests in one container that holds no credential, and in another, which never mounts the claim, builds a self-contained bundle and patches in a factory-owned scratch repository, streams the parts to the runner, and submits;
+- the runner accepts one checkpoint per finalizing allocation, under the parent's lock, at the parent's generation and epoch, on an unexpired finalize deadline; compare-and-swaps `workspace.checkpoint_ref`; and moves the allocation to `completed` with a runner-minted `StageResult`, `inconclusive` until W-075 (D30);
+- a new generation of a checkpointed row can be restored from its accepted checkpoint into a fresh directory, and the restore proves it reproduced the recorded head, index and source digests. No runner path reaches this in M2 until O1 is decided (7.5);
+- a checkpoint that was uploaded but not accepted is never offered as a recovery point.
+
+No migration (`checkpoint_job`, its unique index, its grants and the `workspace.checkpoint_ref`
+grant all exist). No new npm dependency. No Temporal and no workflow change (W-023). No factory
+tools and no proposals (W-075). No secret scanning (W-116). No real harness (W-077). Restore into a
+**pod** waits for a scoped artifact read from inside a pod (D13, D36; W-021's D48 gives it to
+W-022); W-020's restores run through `LocalMaterializer`. How a later stage run starts from an
+earlier one's checkpoint is open (O1, 7.10).
+
+**Size.** The backlog says 4–6 days; section 1 added 3–5 for the reader. I expect **18 to 21**
+(7.11 counts it item by item): the reader is 5 to 6.5 days with its fuzz, layout, limit and hostile
+fixtures; the checkpoint child, its two containers and two volumes, its listener, the finalize
+route, the `finalizing` pass and acceptance are 10 to 12; restore is 2.5 to 3.5. Three commits,
+each with its own review (D35): **20a** the reader, a library with no caller; **20b** checkpoints;
+**20c** restore and the acceptance lines. There is no step 0 cluster probe; the five k3s questions
+this design rests on are in 7.9 and each has a fallback.
+
+**Words.** "The reader" is the untrusted-Git reader of 20a. "The child" is a `checkpoint_job` row
+and its Job; `read` and `build` are its two containers, and `export` and `work` its two exchange
+volumes. "The parent" is the `finalizing` authoring allocation. "The intent" is the stored
+finalize request. "The parts" are the bundle, the two patches, the index manifest, the handoff and the `CheckpointManifest`. "Acceptance" is the
+one transaction that moves the parent to `completed`. "Proof", "hold", "listener", "guard", "view",
+"launcher" and "PVC" are as in section 6.
+
+**Spec to read.** `06-runner-workspaces.md:25` (restore the last acknowledged checkpoint on a new
+volume), `:59` (no repository-local program), `:61` (secrets excluded from checkpoints), `:63-76`
+(the checkpoint algorithm, bundles, frequency), `:82-84` (restore, freeze, trailers), `:88` (one
+accepted terminal result; duplicate identical finalization returns it), `:90` (cancel),
+`:100-104` (release after an accepted checkpoint; sweep of unfinalized checkpoints), `:108`
+(bounded, path-safe parsing), `:112` (finalisation boundary, the child, its fencing, its identity),
+`:114` (the reader), `:116`; `09-verification-security.md:5`, `:71`, `:77`, `:95`;
+`07-harness-context.md:24`, `:128`, `:132`; `01-scope-architecture.md:39-40` (INV-09, INV-10);
+`contracts/interfaces.ts:78-97`, `:238-263` (`WorkspaceManager.checkpoint/restore`,
+`StageFinalizer`); `domain.schema.json` `CheckpointManifest`, `FileSnapshot`, `StageResult`,
+`HarnessRunResult`; `schema.sql` `checkpoint_job` (`:382-394`), `one_live_checkpoint_job`
+(`:983`), the grants (`:1460-1466`) and the note at `:1560`; acceptance AC-13, AC-14, AC-16,
+AC-206, AC-230, AC-231.
+
+Code: `packages/workspace/src/manager.ts:140-153` (`requestInTx`, `restore_unavailable`),
+`:310-322` (`replaceWriter`'s `next`), `:359-389` (release and its checkpoint rule), `:391-392`
+(the two stubs); `materializer.ts:35-49` (limits), `:138-175` (bundle path, worktree add),
+`:216-235` (`verifyCheckout`); `tree-digest.ts`; `paths.ts:55-150` (symlink and folding rules);
+`controller-record.ts`; `volume-disposition.ts`; `packages/database/src/workspace.ts:152-156`
+(`checkpointRetained`); `packages/workspace/src/git.ts:47-59`, `:71-97`; `apps/runner/src/states.ts:16-17`, `reconcile.ts:38-136`, `:359-449`,
+`:451-460`, `pod-guard.ts`, `names.ts:29`, `records.ts`, `workspaces.ts`, `start.ts:238-246`
+(`getResult`), `job-manifest.ts`; `packages/runner-protocol/src/pod-api.ts`;
+`apps/supervisor/src/supervisor.ts`, `heartbeat.ts`, `local-endpoint.ts`;
+`packages/artifacts/src/service.ts:110-139` (`reserve`), `:164-178` (`upload`, which takes an
+`AsyncIterable`), `:214-256` (`finalize`, which verifies digest and size), `:286-317`.
+
+### 7.1 What is already built, and the conflicts
+
+**Built, and not rebuilt here.** The `finalizing` edges (`states.ts:16-17`) and its `RunHandle`
+mapping (`states.ts:36`). `finalizing` already counts as live (`states.ts:27`), so
+`one_active_allocation` refuses a second generation while a checkpoint is in progress (AC-206's
+"without allocating a second authoring generation"). The `checkpoint_job` table with
+`one_live_checkpoint_job` (`0007_indexes.sql:31`, live = `desired`, `starting`, `running`,
+`quarantined`) and its column-limited grants (`0010_roles_ownership_grants.sql:88-89`: `job_uid`,
+`pod_uid`, `state`, `updated_at`). `checkpointJobName(org, receiptId)` and its vectors
+(`names.ts:29`, SI-13). The proof, the quarantine record, the one-way door and `volumeDisposition`
+(W-019). The streaming upload path of `ArtifactService` (`reserve`, `upload` over an
+`AsyncIterable`, `finalize` with a digest and size check). Release already accepts `checkpointed`
+and requires `checkpointRetained` on the stored ref (`manager.ts:69`, `:370`). `replaceWriter`
+already answers `restore_required` when `checkpoint_ref` is set (`manager.ts:320`).
+
+Each row below was checked against the code or the spec today.
+
+| # | Where | What it says | What is actually there | Brief |
+| --- | --- | --- | --- | --- |
+| C1 | Section 6, disposition table; hand-off | The child may mount a `quiescent` volume. | `volumeDisposition` answers `unknown` for a `finalizing` row even with a proof (`volume-disposition.ts:16-17`), and `quiescent` only for `stopping` and `terminated` (`:20`). The child is admitted while the parent is `finalizing`, so as written it can never be admitted. | 20b changes one row and adds one input: `finalizing` with a proof that meets the `quiescent` conditions answers `quiescent`, `mayAct` naming the child only; and a live or quarantined checkpoint child makes any state `in_use` (race rule 16). `w019-volume-disposition.test.ts` changes with it (7.7, edits table). |
+| C2 | Section 6 hand-off ("`register` must then also accept `finalizing`") | | `registerProof` refuses anything but `stopping` (`reconcile.ts:364`); `toQuarantined` refuses `finalizing` as a source (`:101-102`); `QuarantineRecordBody.source` has no `finalizing` (`quarantine-record.ts:12`). | All three gain `finalizing`. The record's schema stays `factory-quarantine-record/1`: the enum gains a value, and every reader already treats `source` as a code. |
+| C3 | W-017 assertion; `allocation.ts:118-120`; `reconcile.ts:459` | A pass leaves a `finalizing` row alone. | Kept by `w017-states.test.ts:55-59` and by the last line of `w019-container-exit.test.ts`. | 20b adds `finalizing` to the work list and a `passFinalizing`. Both assertions change: a pass on a `finalizing` row with no work to do (proof stored, child running, deadline ahead) changes nothing. Listed in the edits table. |
+| C4 | `backlog.json` W-020 `modules` | `packages/workspace` only. | The design needs `apps/runner` (routes, pass, child Job, acceptance), `apps/supervisor` (the finalize request), `packages/runner-protocol` and `packages/database`. | As W-019 did with `packages/workspace`: every file is listed in 7.7. The reader and the manifests live in `packages/workspace`, as the backlog says. |
+| C5 | SI-12; `backlog.json` W-129 | Child fencing (AC-206) is W-129's, in M4. | Nothing in M2 can finalize without it. | Built and tested here; **AC-206 is not claimed** and stays listed under W-129, which adds the operational projections. The build-log line says so. |
+| C6 | `start.ts:241` ("the runner never builds a result"); `backlog.json` W-075 ("quiesced finalization"); `apps/worker/src/activities/persistence.ts:41` | The result is someone else's. | `getResult` reads `stage_run.result_ref`, which today only the worker writes, from the fake executor. Without a runner-minted result no runner stage can end `completed`, and W-023 (package 5) and the exit-evidence checkpoint need one long before W-075 (package 14). | D30: W-020 builds `StageFinalizer.finalize`, callable only by the child's identity, minting `inconclusive` with the checkpoint and no outputs; the harness exit code is a diagnostic only until W-075's `submit_result` (accepted by the owner, 2026-11-22). W-075 adds the proposal binding. The runner writes `result_ref` once, compare-and-swap from null. Hand-off to W-023: the worker's persistence must not write a different `result_ref` for a runner stage. |
+| C7 | SI-13; `UNIQUE(org_id,namespace,job_name)` (`schema.sql:393`) | The child's name comes from `receipt_id` alone. | One receipt then allows exactly one child row and one Job name, ever. A child whose pod is lost could never be retried. | The name function is unchanged. The receipt is derived per **attempt** (D31: at most two), so each attempt is its own row and Job. "Finalizer retries use the same receipt" (`06:112`) still holds: retries of the finalize call within one attempt reuse its receipt. The token audience is `factory-checkpoint:<childId>`; the child id is itself derived from the organization. |
+| C8 | `pod-api.ts:8` | Pod-facing bodies are capped at 16 KiB. | A bundle can be hundreds of MiB. The listener's limits are server-wide: headers and body within 5 s, a request within 10 s (`pod-listener.ts:21-23`, `:176`), so no route on that server can carry one. Pods reach only the listener (`09:77`); a scoped artifact write from a pod does not exist (D13). | A separate route family for the child's identity, with its own admission and a streamed body (7.4, D32). The 16 KiB cap and the admission order of section 6 stay as they are for every other route. |
+| C9 | Section 6 hand-off ("inferred, not tested") and step 0 item 2 | Under `fsGroup` a second mount may rewrite modes. | Measured: a second mount turned 0750 and 0700 directories into 2770 and a 0640 file into 0660. Every pod the runner renders sets `fsGroup: 10001` (`job-manifest.ts:75`). | The child sets **no `fsGroup`**, and its `read` container runs as `10001:10001`, the tree's owner; the claim is mounted `readOnly` in both the volume source and the mount. The reader takes a file's mode from one bit only, the owner's execute bit, and never trusts group or other bits. To confirm at K (7.9, item 2). |
+| C10 | `manager.ts:143`, `:202`; `start.ts:89` | A row with a `checkpoint_ref` answers `restore_unavailable`. | Three places, not two: the allocate step refuses such a workspace before any allocation exists (`start.ts:89`), so even a correct manager would never be asked. | All three are replaced in 20c by a `restore` request kind (7.5). In a pod the request is still refused, now as `not_supported_restore_source`, until a pod can read an artifact (D13, D36). |
+| C11 | `CheckpointManifest.handoffRef` (required) | The manifest needs a handoff. | No handoff schema exists in `domain.schema.json`, and in M2 there is no adapter to write one (A-27). | A minimal factory-written handoff, `factory-portable-handoff/1` (SI-36, 7.4). |
+| C12 | AC-13 ("without secrets"); W-116 | The restored state holds no secret. | Secret scanning of checkpoints is W-116's (package 10). | Claimed **by construction only**: no factory credential is ever on the volume (the token is in the supervisor's projected volume, `06:110`; no Git credential, A-31), plus a factory deny list of names that are never captured (7.4). The scan is W-116's. |
+| C13 | `06:90`, `:112`; SI-29; `start.ts:186` | Cancel allows 30 s for "a safe checkpoint request"; cancellation "permits only scoped checkpoint/cleanup recording". | Cancel moves only `desired`, `starting`, `running` and `suspect` to `stopping`, and leaves a `finalizing` row alone after writing its record. There is no `stopping → finalizing` edge, and the DDL note says admission verifies `finalizing` (`schema.sql:1560`). | D29: a cancel never **starts** a checkpoint. A cancel that finds the row already `finalizing` lets the checkpoint finish and be recorded, and suppresses the result; an urgent one ends the checkpoint at once. The hold stays a courtesy. SI-29 is answered. |
+| C14 | `reconcile.ts:475-490` | The sweep deletes Jobs that should not exist. | It lists Jobs by the allocation label and skips any whose name is not the allocation's (`job-manifest.ts:110`), so it would neither delete nor clean up a child Job. | Child Jobs carry the `<prefix>profile: checkpoint` label (W-021's profile label) and their own annotations, and the sweep gains a rule of its own for them (7.4). |
+| C16 | `manager.ts:179`; section 6 rule 1 | No object-store call inside a transaction (W-019's clause). | W-018's `acceptInTx` puts the receipt object inside the caller's transaction, under the row lock. W-019 did not touch it. | 20c moves the put before the lock for every receipt (remote, bundle and restore): the body is built from the request, put, then registered under the lock after the comparisons. A receipt that loses the comparison leaves an orphan for the artifact sweep, as a proof does. `w018-allocate.test.ts` keeps passing unchanged. |
+| C17 | `heartbeat.ts:97` | A supervisor learns of a stop from `not_renewable` with reason `stopping`. | Any other final denial fences it (exit 70). A renewal of a `finalizing` row is answered `not_renewable` with reason `finalizing`, so as written a supervisor whose stage is being checkpointed would report itself fenced. | 20b: `finalizing` takes the `ending` path, without a stop acknowledgement (the finalize intent already is one). And once a supervisor has sent finalize, **any** final denial takes the `ending` path: the pass that the finalize sets off deletes the pod, so a retry after a lost answer is refused at the pod read (`pod-guard.ts:156`) as `not_this_job`, which must not read as fenced (review, Livia 10). |
+| C18 | `service.ts:336-353`, `manager.ts:136` | `readVerified` returns a verified `Buffer`. | It reads the whole object into memory, default cap 16 MiB. W-018's candidate path already reads bundles of up to 512 MiB this way. | Restore reads its bundle the same way, capped at the part limit (bundle 256 MiB, the artifact service's default upload cap; patches 128 MiB). A streaming read is P-31. |
+| C19 | `service.ts:57`, `:226-228` | Artifact finalization needs the reserved stage run to be active. | The check reads `stage_run.status`, which the worker writes. A stage the worker has already marked finished or cancelled refuses every part. | Kept: it is one more fence. A part refused this way fails the attempt as `stage_not_active`, and the parent goes to `stopping` (7.4). |
+| C20 | `states.ts:16`; `reconcile.ts:39` | `finalizing` is entered from `running`. | There is no `suspect → finalizing` edge, and `move` asserts every edge. | Finalize moves from `running` only. In `suspect` it answers `not_finalizable`, reason `suspect`, **retryable**: the supervisor's next renewal returns the row to `running` (`allocation.ts:176`) and its retry then succeeds. The edge table is unchanged (review, Livia 3). |
+| C21 | `workspace.ts:151-155` (database); `manager.ts:370` | Release requires the checkpoint to be retained. | `checkpointRetained` checks the one artifact `checkpoint_ref` names, the manifest. A checkpoint is six artifacts. | Acceptance links **every** part the manifest names, and the index manifest, under `checkpoint/<workspaceId>/g<generation>/<part>`, and `checkpointRetained` gains a second check that each linked part is still retained. W-024's unfinalized-part rule then cannot match an accepted part (review, Livia 1). |
+| C22 | `pod-guard.ts:191` | A workspace denial is `stale_epoch` on renew and stop-ack, `not_startable` otherwise. | A new route falls into `not_startable`. | `finalize` joins renew and stop-ack in the `stale_epoch` branch (review, Livia 14). |
+| C23 | `job-manifest.ts:47`; `pod-guard.ts:182` | An allocation may have no workspace; the guard then skips the workspace clause. | Finalize would move such a row to `finalizing`, where no child can ever be admitted, and it would hold capacity until the finalize deadline. | The runner offers finalize only to an allocation with a workspace (the grant's `finalizeOffered`, 7.4); a finalize without one answers `not_finalizable`, reason `no_workspace`, and the pass stops it as W-019 does (review, Livia 5). |
+| C24 | `tests/recovery/test/kit.ts:68-73`; `w019-lifecycle.test.ts:22-39`; `pod-listener.ts:70` | W-019's cross-app and k3s files expect a harness exit to end `stopping`, `harness_exited`. | `kit.ts` does not pin the new wait, so its 20 s default lets finalize win; and with the wait at 0 the pass a renewal sets off races the supervisor's request. | The supervisor sends finalize **only when the grant says `finalizeOffered: true`**, which the runner sets only when its wait is above 0 and the allocation has a workspace. W-019's files pin the wait to 0 and are then deterministic; the edits table lists every one (review, Livia 4). |
+| C15 | Section 1 row 4 | AC-13, AC-14 and AC-16 at F, "real Git". | The design runs Git only in factory-owned repositories. The candidate's repository is read by the reader. | Unchanged in substance: real Git builds and verifies every bundle and restore, and the candidate's `.git` is never given to it. |
+
+### 7.2 Rules, and the probes
+
+W-017's three rules and W-019's four stand. Rule 1's clause (no Kubernetes or object-store call
+inside a transaction) covers every new path; parts are streamed and objects put before the
+transaction that links them. Three more:
+
+8. **Candidate Git metadata is data.** Nothing trusted runs Git, or any program, on a directory a
+   candidate could write. Trusted code reads it only through the reader, which opens a fixed list
+   of paths from the layout the factory created, never a path the repository names (not `.git`
+   files, `commondir`, `gitdir`, alternates, `info/grafts`, `refs/replace`, `shallow`,
+   `commit-graph`, `multi-pack-index`, or any configuration). Every object is checked against its
+   SHA-1. Git runs only in a scratch repository the child created, on objects the reader verified,
+   and Git itself verifies them again on the way in (`index-pack --strict`, 7.4). Node's SHA-1 has
+   no collision detection and Git's does, so that second check is the collision check and may never
+   be skipped (review, Furio L3). Every path a candidate chose reaches Git through stdin,
+   NUL-separated, with literal pathspecs (review, Furio M1).
+9. **One accepted checkpoint per finalizing allocation, and only under the parent's lock.**
+   Admission and acceptance both lock the parent and check `finalizing`, generation and epoch, and
+   acceptance also checks the finalize deadline in the same statement (rule 4 applied to the
+   child). Acceptance alone takes the full lock order, stage run, then workspace, then allocation,
+   then child; every guard check before it is unlocked and advisory (review, Livia 13). A child's identity can do nothing else. The authoring supervisor and the harness cannot
+   finalize (AC-231).
+10. **A checkpoint is acknowledged only by the commit that stores it.** Until acceptance commits,
+    `workspace.checkpoint_ref` and every reader of it still name the previous accepted checkpoint,
+    or none. An uploaded part, a stored manifest object and a child that reported success are not
+    checkpoints (AC-14).
+
+**Probes run for this brief** (Node 24.22.2 and Git 2.50.1, throwaway scripts, no factory code; kept at
+merge under `docs/design/w020-probes/`):
+
+| # | What was run | Result | What it means here |
+| --- | --- | --- | --- |
+| Z1 | `zlib.inflateSync` of a stream followed by 12 bytes of junk, with `{ info: true }` | Accepted. `engine.bytesWritten` is 17, the stream's own length, against 29 bytes of input. | Node does not refuse trailing data. The reader must compare bytes consumed with what it expected: the whole file for a loose object, the gap to the next object for a pack entry. |
+| Z2 | `inflateSync` of 50 MB of zeros with `maxOutputLength: 1_000_000`; a 200 MB stream (194,409 bytes, ratio 1,029) with `maxOutputLength: 4096` | Both refused with `ERR_BUFFER_TOO_LARGE`; the bomb in 0.06 ms. | `maxOutputLength` is the decompression cap. A pack entry is inflated with the size its own header declares and nothing more; a loose object, whose size is inside the stream, with the per-object cap, after which the header is checked against what came out. A bomb costs nothing. |
+| Z3 | A stream cut by 3 bytes; non-zlib bytes; a stream made with a preset dictionary | `Z_BUF_ERROR`; `Z_DATA_ERROR`; `Z_NEED_DICT`. | Truncation, garbage and dictionaries are refused by Node itself; the reader maps each to one code and never passes a `dictionary` option. |
+| P1 | `node --permission --allow-fs-read=<tree> --allow-fs-write=<out>`, then reads of an absolute symlink to `/etc/hosts`, a relative symlink out of the tree and a path through a directory symlink to `/etc` | **All three read the outside file.** Writes into the tree, `child_process` and `worker_threads` were refused (`ERR_ACCESS_DENIED`). | The permission model is not a path boundary: it follows symlinks out of the allowed tree. It is kept as a second line against writes and process spawns only (7.3). |
+| P2 | `open(path, O_RDONLY \| O_NOFOLLOW)` on a symlink, and on `dirlink/hosts` where `dirlink` is a directory symlink | The symlink: `ELOOP`. Through the directory symlink: **opened**. | `O_NOFOLLOW` covers the last component only. The reader `lstat`s every component itself (7.3). |
+| P3 | `open` of a FIFO with `O_NONBLOCK \| O_NOFOLLOW` | Opens at once; `fstat` reports a FIFO. (Without `O_NONBLOCK` a FIFO open blocks until a writer appears: POSIX behaviour, not run, since it would hang the probe.) | A planted FIFO (as `.git/index`, a pack or a worktree file) would hang a reader that opens it plainly. Every open uses `O_NONBLOCK`, and anything that is not a regular file after `fstat` is refused. |
+| Z4 | `inflateSync` of the deflated empty buffer with `maxOutputLength: 0`, then with 1 (Furio's `docs/design/w020-probes/furio/z.cjs`, run again here) | `ERR_OUT_OF_RANGE` (it must be at least 1); with 1, 0 bytes out and the whole stream consumed. | The empty blob and the empty tree declare size 0. The reader inflates them with a cap of 1 and requires 0 bytes out, or every repository after `git gc` would crash it (review, Furio L1). |
+| G1 | Git 2.50.1: trees written with `hash-object -t tree --literally` holding entries of mode `100664` and `100775`, and a tree with a zero-padded `040000` entry; then `ls-tree -r`, `cat-file -p` and `fsck --strict` | `ls-tree` and `cat-file -p` print `100644` and `100755`. `fsck --strict` reports `badFilemode` as a warning and `zeroPaddedFilemode` as an error. | Git canonicalises a regular file's mode to `100644` or `100755` by the owner's execute bit when it reads a tree, so W-018's `treeDigest`, which reads `ls-tree`, records `100644` for a stored `100664`. The reader must canonicalise the same way to reproduce the digest byte for byte (7.3). |
+| G3 | Git 2.50.1: the same two trees, cloned with `transfer.fsckObjects=true` (W-018's setting) and loaded with `index-pack --strict` and `--fsck-objects` | `100664`: a `badFilemode` warning, accepted by all three. Zero-padded `040000`: `zeroPaddedFilemode` **refused** by all three. | W-018 never materializes a zero-padded tree, so the reader refuses one too (`object_corrupt`, reason `zero_padded_mode`); the revision before this one said it accepted it, which was wrong. `index-pack --strict` refuses nothing that W-018's clone accepts in these cases. |
+| G4 | Git 2.50.1 (Furio's `docs/design/w020-probes/furio/g1`, run again here): `git add -N '--pathspec-from-file=/etc/hosts'`; `git add -N -- ':(glob)*'` with and without `GIT_LITERAL_PATHSPECS=1` | The first prints `fatal: pathspec '##' ...`, the first line of `/etc/hosts`. The glob stages every file without literal pathspecs and matches only its own name with them. | A candidate path can read a host file or act as pathspec magic when passed to Git as an argument. Rule 8's stdin and literal-pathspec clause (7.4, 7.5). |
+| G2 | Git 2.50.1, a bare repository whose `HEAD` tree holds `.gitattributes` with `* -diff`; `git diff` of two commits, with no option, with `--attr-source=<empty tree>`, and with `--attr-source=HEAD` | A text diff, a text diff, and **`Binary files ... differ`** (the control: the attribute is live when a tree is named). | A bare repository does not read in-tree attributes unless told to. The builder still passes `--attr-source=4b825dc642cb6eb9a060e54bf8d69288fbee4904` (the empty tree) on every diff, so that no default, present or future, lets a candidate's attributes shape a patch (7.4). |
+
+The scripts are `docs/design/w020-probes/w020-probe/z.cjs`, `docs/design/w020-probes/w020-probe/p.cjs` (its "symlink out" line is not evidence:
+the symlink it names was never created; P1 replaces it), `docs/design/w020-probes/w020-probe2-p.cjs`, the shell lines of G1
+and G2 (`docs/design/w020-probes/w020-probe4/`), of G3 and G4 (`docs/design/w020-probes/w020-probe5/`), and Furio's
+`docs/design/w020-probes/furio/z.cjs`, `docs/design/w020-probes/furio/g1/` and `docs/design/w020-probes/furio/g2/`.
+They are kept in `docs/design/w020-probes/`. P1 to P3 were run a second time, with the same results.
+
+### 7.3 Step one (20a): the untrusted-Git reader
+
+A library in `packages/workspace/src/git-reader/`, with no caller in 20a. It reads one generation
+directory that a candidate has written, and returns verified objects and three manifests. It never
+runs Git or any other program, never writes inside the directory it reads, and honours nothing the
+repository says about itself. It is reviewed on its own before 20b starts (D35).
+
+**What it may open.** The layout is the one W-018 creates (`materializer.ts:4`, `:127`, `:145`, `:166`):
+`g<n>/git/.git` is the common directory and `g<n>/git/.git/worktrees/main` the worktree's
+administrative directory, both made by `git clone --no-local --no-checkout` or `git init` and
+`worktree add --relative-paths`; `g<n>/work/main` is the checkout. The reader opens only these
+paths, built from the generation directory and fixed names, never from a file's contents:
+
+| Path under `g<n>/git/.git/` | Read for | Never read |
+| --- | --- | --- |
+| `worktrees/main/HEAD` | The checked-out ref or commit | `worktrees/main/commondir`, `gitdir`, `config.worktree` |
+| `worktrees/main/index` | The index | |
+| `refs/heads/...` (one loose ref, and up to four symref hops) and `packed-refs` | Resolving `HEAD` | `refs/replace/`, `refs/remotes/`, every other ref |
+| `objects/xx/<38 hex>` | Loose objects | `objects/info/alternates`, `objects/info/http-alternates`, `objects/info/packs`, `objects/info/commit-graph(s)`, `objects/pack/multi-pack-index` |
+| `objects/pack/pack-<40 hex>.idx` and `.pack`, paired | Packed objects | `.keep`, `.rev`, `.mtimes`, `.promisor` and any other name |
+| (existence only, by `lstat`) `reftable` | Refusal: `unsupported_ref_storage` | |
+
+`config`, `info/attributes`, `info/grafts`, `info/exclude`, `hooks/`, `shallow`, `.git` files and
+everything else are never opened. In `work/main` the root `.git` entry is never opened; every other
+entry is data (below).
+
+**File access** (`fs-safe.ts`, the only module of the reader that imports `node:fs`):
+
+- Every path is walked component by component **from the claim's mount root** (`/workspace` in the child), with `lstat`: `factory`, the organization, the workspace, `g<n>`, `git`, `.git`, `objects`, `objects/pack`, `worktrees/main`, `work` and `main` are each a real directory or the walk stops with `path_unsafe`. The harness had all of them mounted read-write and could have replaced any one with a symlink (`job-manifest.ts:65`); P2 shows `O_NOFOLLOW` covers only the last component (review, Furio L2).
+- Paths are built as `Buffer`s from raw names and never decoded first. A name is checked as well-formed UTF-8 on its raw bytes before anything uses it.
+- Every open is `O_RDONLY | O_NOFOLLOW | O_NONBLOCK` (P3), followed by `fstat`: it must be a regular file with the same device and inode as the `lstat`, and no larger than the cap for its kind. **Small files** (`HEAD`, a ref, `packed-refs`, the index, a loose object, a working-tree file) are read whole, exactly `st.size` bytes, and a second `fstat` must show the same size. **Packs and their indexes are never read whole:** entries are read with positioned reads (`readSync` at an offset, at most one entry's compressed length at a time), and the trailer's SHA-1 is computed by streaming the file through the hash in 1 MiB chunks (review, Livia 8, Furio M2).
+- Directory listings use `readdirSync(path, { encoding: 'buffer' })`, so names are bytes; each name is then `lstat`ed, never followed.
+- The `read` entry runs the reader under `node --permission` with read access to `/app` and `/workspace` and write access to `/export` only (7.4). P1 shows that is not a read boundary, so it is a second line against writes, spawns and workers, and nothing more.
+
+**Objects.** Every object the reader returns has been verified, and is returned as its type and
+body. Lookup is packs first, then loose; there is no other source.
+
+- **Loose:** the file is at most `maxObjectBytes` compressed. It is inflated with `maxOutputLength = maxObjectBytes + 64` (Z2). The header must be `<type> <decimal size>\0`, the type one of `commit`, `tree`, `blob`, `tag`, the size without leading zeros and equal to the body's length; the bytes consumed (`engine.bytesWritten`) must equal the file's size (Z1); the SHA-1 of the inflated bytes must equal the name.
+- **Packs:** `.idx` version 2 only (magic `\377tOc`; a version 1 index is `unsupported_pack`). The fan-out must be monotone and end at the object count, names strictly ascending, large offsets only through the 64-bit table; the trailing SHA-1 of the index must verify, and so must the pack's own trailer, which must also equal the checksum the index records. The `.pack` must start `PACK`, version 2 or 3, with the index's object count.
+- **Pack entries:** the type and size varint is bounded to 10 bytes. Types 1 to 4, 6 (offset delta) and 7 (reference delta); anything else is `object_corrupt`. An entry's compressed length is the distance to the next entry's offset (or to the trailer), taken from the sorted index offsets. It is inflated with `maxOutputLength` equal to the size its header declares, **or 1 when it declares 0** (Z4: the empty blob and the empty tree); the output must be exactly that size and the bytes consumed exactly the compressed length (Z1). The CRC-32 of the raw entry (`zlib.crc32`, Node 22 or later) must equal the index's.
+- **Deltas:** an offset delta must point at an earlier entry that the index lists; a reference delta's base is looked up like any object. The delta header's base size must equal the base's length, its result size must be at most `maxObjectBytes`; a copy must lie inside the base (a size of 0 means 0x10000), an insert is 1 to 127 bytes, opcode 0 is refused, and the output must be exactly the result size. Resolution is iterative, depth at most `maxDeltaDepth` (512, against Git's own maximum of 4,095 and default of 50), with a visited set for cycles and a delta-base cache of 96 MiB.
+- **SHA-1 for every object:** of `<type> <size>\0<body>`, compared with the index name or the file name. A mismatch is `object_corrupt`. Nothing is trusted because it came from a pack.
+- **zlib:** `inflateSync` with `maxOutputLength` always and `dictionary` never; `Z_NEED_DICT`, `Z_BUF_ERROR` and `Z_DATA_ERROR` (Z3) map to `preset_dictionary`, `truncated` and `zlib_error`; consumed bytes short of the expected length are `trailing_data`.
+- **Work budget:** `maxWorkBytes` caps the sum of every byte inflated **and every byte a delta writes**, delta bases re-inflated after eviction included, so a chain of tiny deltas that each copy 32 MiB is charged for its copies (review, Furio M2). The deadline is checked before every object, not every 4,096.
+- **Memory:** the reader holds at most the delta-base cache (96 MiB), one object's base, delta and result (3 × `maxObjectBytes`), the index file (64 MiB) and the manifests it is building. Its peak is under 512 MiB by construction; the `read` container's limit (7.4) is 1 GiB.
+
+**Refs and `HEAD`.** `worktrees/main/HEAD` is at most 4 KiB: `ref: refs/heads/<name>` or 40
+lowercase hex digits. A ref name must pass Git's `check-ref-format` rules and lie under
+`refs/heads/`. It is resolved from its loose file, else from `packed-refs` (header line, `<oid>
+<name>` lines, `^<oid>` peel lines; at most 16 MiB and 100,000 lines); a loose symref is followed at
+most four more hops (Git's limit is five in all). The result must be a commit object; a tag, a
+64-digit id (`extensions.objectFormat=sha256`) or a missing object is refused. Only `HEAD`'s ref is
+read: other branches are not captured.
+
+**Commits and trees.** A commit's first line must be `tree <oid>`, followed only by `parent <oid>`
+lines before any other header; at most 64 parents. Other headers are not parsed. The export walks
+every commit reachable from `HEAD`, with the trees and blobs of each (a self-contained bundle needs
+them all, `06:74`), up to `maxCommits` and `maxObjects`. A tree entry is `<octal mode> <name>\0<20
+bytes>`. **The mode is canonicalised as Git does when it reads a tree** (G1): a regular file becomes
+`100755` if the owner's execute bit is set and `100644` otherwise; `120000` is a symlink; `40000`
+a directory. A zero-padded mode (`040000`, `0100644`) is refused as `object_corrupt`, reason
+`zero_padded_mode`, because W-018's clone refuses it too (G3). `160000` (a submodule) and every
+other type is `unsupported_tree_entry`, as in W-018. Names follow the path rules below. Depth is at most
+`maxDepth`.
+
+**The committed manifest and `treeDigest`.** The reader produces `TreeBlob`s (`pathBytes`, the
+canonical mode, the blob bytes) for `HEAD`'s tree and passes them to W-018's own `treeEntries` and
+`computeTreeDigest` (`tree-digest.ts:25-44`), unchanged. The digest is therefore computed by the
+same code over the same inputs; what has to be shown is that the inputs are the same, which is the
+differential test below. W-018's `assertSymlinksContained` (`paths.ts:76`) is applied to the result,
+so a checkpoint never holds a symlink that restore would refuse.
+
+**The index manifest** (`factory-checkpoint-index/1`; SI-34). `DIRC`, versions 2, 3 and 4, at most
+64 MiB. Each entry's name length, NUL padding (versions 2 and 3) or prefix compression (version 4:
+the strip count may not exceed the previous name's length) is checked; the extended flags only from
+version 3. Entries must be strictly ascending by name bytes and stage. Modes must be exactly
+`100644`, `100755` or `120000`; `160000` is `submodule`; a stage other than 0 is `unmerged_index`.
+Extensions: `TREE`, `REUC`, `UNTR`, `FSMN`, `EOIE` and `IEOT` are skipped by their length and never
+honoured; `link` (split index) is `split_index` and `sdir` (sparse index) is `sparse_index`; any
+other extension whose name starts with an upper-case letter is optional and skipped, and one that
+does not is refused, as Git does. The trailing SHA-1 must verify; an all-zero trailer is Git's
+`index.skipHash` and is accepted, recorded as `checksum: 'skipped'`. Stat fields are read and
+dropped. The manifest lists each entry's path, mode, blob id and the three flags that change what
+restore must do (`assumeValid`, `skipWorktree`, `intentToAdd`). Every blob it names, except the
+empty blob of an intent-to-add entry, must be in the object store.
+
+**The working-tree manifest.** `work/main` is walked as described under file access. Regular files
+become `100755` or `100644` by the owner's execute bit alone (C9); symlinks become `120000` with the
+link's bytes as the blob and are never followed; FIFOs, sockets and devices are never opened and
+are listed as `excluded: special_file`. A directory whose name folds to `.git` below the root is not
+entered and is listed as `excluded: nested_git`. The fixed exclusions of D34 apply. Each file is
+hashed as raw bytes (`06:114`). The manifest's `files` are `FileSnapshot`s: one per file and
+symlink, and `kind: 'deleted'` for every index path that is absent from the tree, whose `sha256` is
+the SHA-256 of the blob the index records for that path (the bytes that were deleted). The source
+digest is `computeTreeDigest` over the present files **after** D34's exclusions, that is over what
+is captured, so that a candidate frozen from the captured tree has `treeDigest` equal to it.
+
+**Where each recorded digest lives** (review, Livia 14). `CheckpointManifest` carries `headCommit`
+and `sourceDigest`. Everything else that restore checks is in the index manifest: `headTreeDigest`
+(the committed manifest's `treeDigest`), `indexDigest` (`canonicalHash` of the entries and their
+flags), and three ids the builder adds after it has written them (the index tree, the working-tree
+tree and the two synthetic commits).
+
+**Path rules** (`path-rules.ts`), the same for tree entries, index entries and directory names:
+
+- a path is well-formed UTF-8 (W-018's decoder: fatal, BOM kept), at most 4,096 bytes and 256 components; all paths of one manifest at most 8 MiB together;
+- no component is empty, `.` or `..`, and none contains NUL, `/` (inside a tree name) or a backslash (D28);
+- no component is `.git` after removing the code points HFS+ ignores, ASCII case folding, and stripping trailing dots and spaces, and none is `git~1` (Git's own `verify_path` with `core.protectHFS` and `core.protectNTFS`);
+- `.gitmodules`, `.gitattributes`, `.gitignore` and `.mailmap` may not be symlinks, under the same folding;
+- a leading `-` or `:`, and LF or CR inside a name, are legal in Git and are kept. They are made harmless where a path meets Git: on stdin, NUL-separated, with literal pathspecs (rule 8; review, Furio M1);
+- paths that differ only by case or Unicode normalisation are legal on Linux and are kept; the manifest counts them, and a restore on a host that folds refuses them through W-018's `assertNoFoldedCollisions` (`paths.ts:130`).
+
+**Limits** (`ReaderLimits`, every one configurable downwards only by the child's arguments):
+
+| Limit | Default | Why that number |
+| --- | --- | --- |
+| `maxObjectBytes` | 32 MiB | W-018's `maxBlobBytes` |
+| `maxObjects` / `maxCommits` | 500,000 / 100,000 | A self-contained bundle carries the whole history |
+| `maxPackFiles` / `maxPackBytes` | 64 / 1 GiB on disk, **all packs together** | Bounds the trailer hashing |
+| `maxWorkBytes` | 4 GiB | Bytes inflated plus bytes written by deltas, re-inflation included |
+| `maxDeltaDepth` | 512 | Ten times Git's default; Git's own maximum is 4,095 |
+| `maxEntries` | 50,000 each for tree, index and working tree | W-018's `maxEntries` |
+| `maxPathBytes`, `maxDepth`, `maxTotalPathBytes` | 4,096, 256, 8 MiB | W-018's |
+| `maxTotalBytes` / `maxUniqueBytes` | 512 MiB / 256 MiB | W-018's |
+| Index, `packed-refs`, a ref file | 64 MiB, 16 MiB, 4 KiB | |
+| `deadlineMs` | 10 minutes | Checked before every object and every file |
+
+A limit that binds is a typed refusal naming the limit. Nothing is truncated, sampled or skipped to
+fit.
+
+**Interface** (exported from `@factory/workspace/git-reader`, a new subpath; the package index does
+not re-export it):
+
+```ts
+openCandidate(mountRoot: Buffer, target: { orgId: string; workspaceId: string; generation: number }, limits?: Partial<ReaderLimits>): CandidateReader
+                                                // the walk starts at mountRoot and lstats every component to g<n> (Furio L2)
+reader.snapshot(): Promise<CandidateSnapshot>   // head, committed manifest and treeDigest, index manifest, working-tree manifest, counts
+reader.exportPack(out: string): Promise<ExportSummary>
+                                                // HEAD's closure, the index's blobs, the working tree's blobs, each verified once,
+                                                // written as one pack with no deltas (version 2, its own trailer) to a file that must not exist
+class ReaderError extends Error { code: ReaderErrorCode; file?: string; limit?: string }
+```
+
+`ReaderErrorCode` is a closed list. A refusal names the file relative to the generation directory
+and the rule; it never carries more than 64 bytes of content, as hex. Any exception that is not a
+`ReaderError` is a bug, and the fuzz tests treat it as a failure.
+
+**Tests (20a, `packages/workspace/test`).** Real Git builds every fixture in a temporary directory;
+the reader reads it; Git reads it again as the oracle. Git is run on the fixtures by the tests only,
+never by the reader. **Every hostile case has its positive control: the same fixture, unmodified,
+reads and matches Git.**
+
+| Test file | Shows |
+| --- | --- |
+| `w020-reader-objects.test.ts` | Loose objects, and packs after `git gc`, `git repack -a -d --depth=50` and `--depth=400`, both offset and reference deltas: every object equals `git cat-file --batch`. Refused, each with its own code: a body byte changed and recompressed (SHA-1), 12 bytes after the zlib stream (Z1), a stream cut short, a preset dictionary, a header size one too large, a 1 KiB file that inflates past the cap, a wrong idx trailer, a wrong pack trailer, a wrong CRC-32, an offset delta pointing forward and one outside the pack, a reference-delta cycle, a copy outside the base, opcode 0, depth 513, entry type 5, an idx of version 1, a zero-padded tree mode. **Control:** depth 512 reads, and a packed empty blob and empty tree read (Z4). |
+| `w020-reader-tree-digest.test.ts` | **The differential test.** For a corpus (W-018's committed vector; G1's `100664` and `100775` trees; an unsorted tree written with `--literally`; 256-deep paths; names with a BOM, combining marks and case-only differences; an empty file; a symlink), the reader's `treeDigest` equals W-018's `readTree` plus `computeTreeDigest` on the same commit, byte for byte. A submodule entry, a non-UTF-8 name and a non-UTF-8 symlink target are refused by both with the same code, and a zero-padded tree by both (G3). Any case W-018 accepts and the reader refuses is listed in the file by name; the target is none. |
+| `w020-reader-index.test.ts` | Indexes written by real Git: versions 2, 3 and 4 (`update-index --index-version`), `add -N`, `--skip-worktree`, `--assume-unchanged`, a 5,000-byte path, `index.skipHash`. Entries and flags equal `git ls-files -s` and `ls-files -t -v`. Refused: a merge conflict (stage 1 to 3), `--split-index`, a sparse index, unsorted entries, a duplicate, a bad checksum, an unknown lower-case extension, a version 4 strip count past the previous name. **Control:** an unknown upper-case extension is skipped. |
+| `w020-reader-refs.test.ts` | Loose ref, packed refs after `pack-refs --all`, detached `HEAD`, a symref chain of five reading and six refused, `HEAD` naming a tag refused, a `reftable` repository (`init --ref-format=reftable`) refused, a ref name with `..` refused, a malformed and an oversized `packed-refs` refused. **A FIFO planted as `worktrees/main/HEAD`, `index`, `packed-refs`, a `.idx` and a `.pack`** is refused without blocking (each under a 5 s limit). |
+| `w020-reader-worktree.test.ts` | Binary files, the execute bit taken from the owner bit only (a 0710 file is `100755`, a 0670 one `100644`), a contained symlink kept as data, an escaping one refused, a directory symlink listed and not entered (**control:** the real directory is entered), a FIFO listed as excluded and never opened (the test would hang otherwise, so it runs under a 5 s limit), a socket excluded, a nested `.git` directory excluded, a 0000 file refused as `unreadable`, an inode swapped between `lstat` and `open` (a test hook) refused, each cap at its limit and one past it, **a working-tree name that is not UTF-8** refused before any `lstat` of it. Deleted index paths appear as `kind: 'deleted'` with the index blob's SHA-256. The source digest of a clean checkout equals its commit's `treeDigest`. |
+| `w020-reader-hostile-metadata.test.ts` | AC-230's material at the library level. The repository is planted with `core.fsmonitor`, `core.hooksPath`, filter, textconv and diff drivers, `.gitattributes` and `info/attributes` naming them, every hook, an alternate holding objects that were then pruned locally, `info/grafts`, a replace ref swapping a blob, `commondir` and `gitdir` files pointing elsewhere, and a `shallow` file. **Control:** `git status`, `git diff` and `git log` run directly in the planted repository write the canary and show the replaced blob, so the fixtures are live. The reader writes no canary, its digests equal those of the unplanted repository, and the alternate's objects are `object_missing`. |
+| `w020-reader-layout.test.ts` | **A symlink at each fixed component** (`factory`, the organization, the workspace, `g<n>`, `git`, `.git`, `objects`, `objects/pack`, `worktrees/main`, `work`, `main`), each pointing at a complete repository elsewhere: each is `path_unsafe` and nothing outside the claim's root is opened (an `fs` spy). **Control:** the real layout reads. |
+| `w020-reader-limits.test.ts` | Each limit binds, at its value and one past it: `maxWorkBytes` with a pack whose 512-deep chain of 20-byte deltas each copies 32 MiB (review, Furio M2); `maxPackBytes` with three packs that together pass it though each is under it; `maxObjects`; `maxCommits`; `deadlineMs` with a delay hook between objects. The resident memory of the run on the largest legal fixture stays under 512 MiB. **Control:** one under each limit reads. |
+| `w020-reader-paths.test.ts` | Each path rule, through a tree entry, an index entry and a directory name: `.GIT`, `.git ` and `.git.`, `git~1`, `.g` followed by U+200C and `it`, `..`, an empty component, a backslash, a symlinked `.gitmodules`. **Control:** `.github`, `git`, `.gitx` and `a.git` are accepted. |
+| `w020-reader-fuzz.test.ts` | Fixed-seed mutation fuzzing with a small generator in the test (no dependency): 2,000 mutations each of a loose object, an idx, a pack, an index, `packed-refs`, a tree and a commit (bit flips, truncation, insertion, length fields set to extremes). Every case ends in a `ReaderError` or in output equal to Git's reading of the same bytes; none throws anything else, none takes more than 2 s, and the process's resident memory grows by less than 256 MiB over the run. **Control:** with the trailing-data check switched off (a test switch) the run finds a case that is accepted wrongly, so the fuzzing can find a bug of that kind. |
+| `w020-reader-structure.test.ts` | No file under `src/git-reader/` imports `node:child_process`, `node:worker_threads`, `../git.ts` or `node:fs` except `fs-safe.ts`. **Control:** a planted import in a temporary copy is reported. |
+
+### 7.4 Checkpoints (20b)
+
+**The parts, and where each runs.**
+
+| Part | Runs in | Touches |
+| --- | --- | --- |
+| Finalize request | The supervisor (sender), the pod listener (route) | One new route on the existing listener; the allocation row and the intent record. |
+| Harness-exit wait (D37) | The reconciler's `running` pass | One record per allocation. |
+| `passFinalizing` | The runner process | Postgres, the `KubeApi` port, the proof and quarantine records of W-019, the child rows. |
+| Child admission and rows | The runner process, under the parent's lock | `checkpoint_job`, existing columns and grants only. |
+| `read` (the child's init container) | `factory-checkpoint` image, uid 10001, the claim read-only, no credential | The reader (20a), and `/export`, which only it writes. |
+| `build` (the child's main container) | Same image, uid 10003, the identity token, **no workspace mount** | `/export` read-only, `/work` (its own), real Git through W-018's `GitRunner`, the checkpoint listener. |
+| Checkpoint listener and child guard | The runner process, a second port | Token review on its own budget, the child and parent rows, `ArtifactService`. |
+| Acceptance (`StageFinalizer.finalize`) | The runner process | One transaction over stage run, workspace, allocation and child; objects put before it. |
+
+**The finalize request.**
+
+- **Offered, not assumed** (C23, C24). A grant (acquire or renewal) carries `finalizeOffered: true` only when the allocation has a workspace and the runner's `finalizeRequestWaitSeconds` is above 0. The supervisor cannot read the runner's configuration, so the runner tells it.
+- **Sender.** When a grant reports the harness `terminated` (`heartbeat.ts:92`) **and** offered finalize, the supervisor sends one `POST /pod/v1/finalize` with `{ orgId, allocationId, epoch }`, retrying transport errors, `throttled` and the retryable `not_finalizable` (`suspect`) until its fence time. From the moment it has sent it, **any final answer takes the `ending` path** without a stop acknowledgement: the grant, `not_renewable` with `finalizing`, and also `not_this_job`, which is what a retry gets once the pass has begun deleting the pod (C17; review, Livia 10). Without the offer it sends nothing and the stop is W-019's. In M2 this is the only trigger; W-075's `submit_result` is the next one.
+- **Route** (pod listener, the 16 KiB body, the admission order of section 6 unchanged). `review(req, { audience, subjects, bucket })` with the authoring profiles' accounts as `subjects`, **never the checkpoint account** (X2). Guard need `NEED_FINALIZE`: states `running` and `finalizing` (the repeat); not claimable; workspace clause `writer_active`, its denial mapped to `stale_epoch` (C22). The pod read must show the `harness` container `terminated`, the cluster's statement and not the pod's (rule 5). Denials: `not_finalizable` with reason `harness_running`, `suspect` (retryable, C20) or `no_workspace` (C23).
+- **Locked statement.** In one transaction under the allocation's row lock: `transitionAllocation` from `running` to `finalizing` with `leaseUnexpired: true` (the lease clause W-019 handed over: `allocation.ts:145`, `:159`) and `leaseSeconds: finalizeDeadlineSeconds`, so `controller_lease_until` becomes the finalize deadline; and the **intent record**, an `audit_event` at a deterministic id from `factory-finalize-intent/1`, organization and allocation, written by D18's rule, holding the pod UID, the harness exit code read from the pod (a diagnostic, D30), and nothing from the request. An expired lease answers `lease_expired` and writes nothing but the capped denial.
+- A repeat while the pod still exists finds the row `finalizing` with this pod's intent and answers `{ finalizing: true }`, writing nothing.
+- `PermitDenialCode` gains `not_finalizable`, and `PermitGrantAnswer` the optional `finalizeOffered`; the vectors and the status mapping (409) change with them.
+
+**The harness-exit wait (D37).** Today the `running` pass stops a pod at once when its harness has
+exited (`reconcile.ts:322`). From 20b, when the pass sees the harness `terminated`, finalize was
+offered (a workspace, the wait above 0), the allocation has a start record and the supervisor
+container is still running, it writes a `factory-harness-exit-seen/1` record the first time, and
+moves to `stopping` with `harness_exited` only once that record is older than
+`finalizeRequestWaitSeconds` (default 20, two beats; age judged in SQL on `clock_timestamp()`). A
+supervisor exit still stops at once. With the wait at 0 nothing is offered and the pass behaves as
+in W-019, which is how W-019's own files run (edits table).
+
+**The `finalizing` pass** (`passFinalizing`; `finalizing` joins the work list, `allocation.ts:119-121`).
+Each pass, in order:
+
+1. **Stop and prove.** As steps 1 and 3 to 4 of the `stopping` pass, with no hold: the intent is the acknowledgement. Settle the workspace's first edge, delete the Job and every pod, list, evaluate. Proved: `prepare`, then `registerProof`, which now accepts `finalizing` (C2). Not proved while the row has been `finalizing` for less than `stopDeadlineSeconds` (`sinceUpdateMs`; nothing else writes the row in this state): wait. Past it: `quarantine` with source `finalizing`, which refuses when a proof exists (rule 6).
+2. **Settle on the proof.** `settleWorkspace(a, 'proof')`: the workspace goes `quiescing → retained`.
+3. **Give up**, when any of these holds: the finalize deadline has passed (`leaseExpired`); `maxAttempts` attempts have ended without acceptance (D31); the latest child is `quarantined` (it holds the one live slot for good, SI-40); the stage run has an urgent stop record (D29). **First the live child, if any, is ended** (review, Livia 6): its Job and pods are deleted and proved gone as in step 5, and the row moves to `failed`, or to `quarantined` if its pods cannot be shown gone by `stopDeadlineSeconds` after the delete. Only then `finalizing → stopping` with the reason, and the `stopping` pass, which finds the proof, ends `terminated`. The workspace keeps the `checkpoint_ref` it had, or none: the work since the last accepted checkpoint is lost, as `06:76` allows. A child that ends `quarantined` here leaves the claim `in_use` for `volumeDisposition` (race rule 16) and is W-024's obligation, with its record.
+4. **Admit a child**, if no child is live:
+   - `volumeDisposition` must answer `quiescent` (C1), and a fresh list of the namespace **without a selector** must show no unfinished pod naming the claim (W-019's hand-off: the proof is a past observation).
+   - Under the parent's row lock (`FOR UPDATE`): `finalizing`, generation and epoch as read, deadline ahead; insert the child row in `desired` with `id = v8(factory-checkpoint-job/1, org, allocation, attempt)`, `receipt_id = v8(factory-checkpoint-receipt/1, org, allocation, attempt)`, `job_name = checkpointJobName(org, receipt_id)`, the parent's generation and epoch, the namespace and `identity_audience = factory-checkpoint:<childId>`. `one_live_checkpoint_job` makes a second insert fail; the loser re-reads.
+   - Commit; then create or fetch the Job (rule 1), validated as W-017 validates an allocation Job (identity annotations and the whole template); `desired → starting` with `job_uid`. A foreign Job under the name quarantines the child.
+5. **Watch the child.** Its pods are listed by the `checkpoint-job` label. When the Job has failed, the child's deadline has passed, or either container of its pod has exited without the child being accepted: delete its Job and pods, prove them gone as an allocation's are (Job absent, no pod listed), and move it to `failed` with the exit codes and the termination messages' codes, which are recorded and never decide anything. A child whose pods cannot be shown gone by `stopDeadlineSeconds` after its delete is `quarantined`. A `completed` child's Job is left to the sweep (below), so that a retried finalize can still be answered (race rule 11).
+
+**The child's identity** (X2). The account is `profiles.checkpoint.serviceAccount` (default
+`factory-checkpoint`), W-021's reserved profile key; there is no other key for it. It has no Role.
+Its token is projected into the `build` container only, audience `factory-checkpoint:<childId>`,
+600 s, and `build` reads the file on every call, as the supervisor does, so the kubelet's rotation
+is picked up. The checkpoint listener calls the generalised `review(req, { audience, subjects,
+bucket })` (`pod-guard.ts:96-140`) with `subjects` = `{ system:serviceaccount:<namespace>:<profiles.checkpoint.serviceAccount> }`
+and its **own** review bucket (`checkpoint.review`: 5 a second, burst 10), so children never spend
+the authoring pods' budget and W-021's ceiling product can count it (X4). Inside the control plane
+the child acts as `config.checkpoint.identity`, a service identity distinct from the runner's and
+the supervisor's, and only through a `ChildBinding` that the child guard alone can mint (a
+`WeakSet`, as `controller-record.ts:22`). An authoring supervisor's token fails the checkpoint
+review (subject and audience); a child's token fails the pod listener's review (subject); the
+harness has no token at all (AC-231).
+
+**The child Job** (`renderCheckpointJob`, pure, from the parent row, the child row, the workspace
+row and config). **This is the shape W-021's admission is written to accept**, and nothing else:
+
+| Item | Exactly |
+| --- | --- |
+| Job | name `checkpointJobName(org, receipt_id)`; `backoffLimit: 0`; `activeDeadlineSeconds: checkpoint.childDeadlineSeconds`; no `manualSelector` |
+| Labels (Job and template) | organization, task, the parent allocation, workspace, generation, `<prefix>profile: checkpoint`, `<prefix>checkpoint-job: <childId>` |
+| Annotations | the full ids, the parent's epoch, the receipt, the manifest digest |
+| Pod spec | `restartPolicy: Never`; `serviceAccountName: profiles.checkpoint.serviceAccount`; `automountServiceAccountToken: false`; `shareProcessNamespace: false`; `enableServiceLinks: false`; grace 15 s; `securityContext`: `runAsNonRoot`, `seccompProfile: RuntimeDefault`, **no `fsGroup`** (C9) |
+| Init container `read` | image `images.checkpoint` (`factory-checkpoint`, by digest outside the local tier); args `read ...`; uid and gid 10001; read-only root, no privilege escalation, all capabilities dropped; `terminationMessagePolicy: File`; resources `profiles.checkpoint.resources.read`; mounts `workspace` at `/workspace` **read-only**, `export` at `/export`, `read-tmp` at `/tmp`. No identity. |
+| Container `build` | the same image; args `build ...`; uid and gid 10003; the same security context; resources `profiles.checkpoint.resources.build`; mounts `export` at `/export` **read-only**, `work` at `/work`, `build-tmp` at `/tmp`, `factory-identity` at `/var/run/factory-identity` read-only. **No workspace volume.** |
+| Volumes | `workspace`: the generation's claim, `persistentVolumeClaim.readOnly: true`; `export`: `emptyDir`, `sizeLimit` 4 GiB; `work`: `emptyDir`, 6 GiB; `read-tmp`, `build-tmp`: `emptyDir`, 256 MiB; `factory-identity`: projected, a `serviceAccountToken` (audience `factory-checkpoint:<childId>`, 600 s, path `token`) and the listener's CA ConfigMap, as section 6 |
+| Resources (defaults, sized from 7.3) | `read`: requests 500m CPU and 768 MiB, limits 2 CPU and 1 GiB (the reader's peak is under 512 MiB); `build`: requests 500m and 1 GiB, limits 2 CPU and 2 GiB (`index-pack` over up to 500,000 objects); ephemeral storage as the volumes |
+
+So the one process that reads the candidate's tree holds no credential, and the one that holds the
+credential never has the tree, nor anything `read` wrote except through a read-only mount (D33;
+review, Furio M5, Livia 9).
+
+**`read`** runs the reader under `node --permission` (7.3) from the claim's mount root, writes the
+export pack to `/export/objects.pack` and the snapshot to `/export/snapshot.json` (both created
+exclusively, mode 0644, under `maxExportBytes` 3 GiB), and ends with a termination message (policy
+`File`, under 4 KiB, W-017's measured mechanism) holding the counts, the digests or the
+`ReaderErrorCode`.
+
+**The builder** (`build`; Git only through W-018's `GitRunner`, whose environment is built from
+nothing, `git.ts:1-7`; `claimFactoryOwned` gains this one caller and its structural test lists it).
+**`/export` is untrusted input to the builder**, not factory-owned storage:
+
+1. Create `/work/repo` with exclusive `mkdir` (it must not exist), owner 10003, mode 0700, checked as `homeDirectory()` checks its directory (`git.ts:47-59`); `git init --bare` there. Nothing in `/export` is moved, linked or used as a repository.
+2. Open `/export/snapshot.json` and `/export/objects.pack` with the reader's `fs-safe` rules (from the mount root, `O_NOFOLLOW`, regular files only, size caps), parse the snapshot with caps, and stream the pack into `git index-pack --strict --stdin`: Git computes every object id itself, so no planted name survives, and its checks (with collision detection) run on every object (rule 8, G3).
+3. Build the index tree: a fresh `GIT_INDEX_FILE` in `/work`, `update-index -z --index-info` from the index manifest (NUL-separated, intent-to-add entries left out), `write-tree`. Build the working-tree tree the same way from the working-tree manifest's present files.
+4. Two commits on top of `HEAD`, both written by the factory from server records (`06:84`): the index commit (parent `HEAD`) and the working-tree commit (parent the index commit). Author and committer `Factory Checkpoint <checkpoint@factory.invalid>`, date the intent's time, message a fixed line plus `Factory-Task`, `Factory-Stage-Run` and `Factory-Checkpoint` trailers. The same inputs always give the same commit ids.
+5. `refs/factory/checkpoint/{head,index,worktree}`; `git -c pack.threads=1 bundle create` with those three refs and no basis, so a second attempt produces a byte-identical bundle; `assertFullBundle` (`materializer.ts:238`); `git bundle verify` in an empty repository, as W-018 does; `git fsck --no-dangling`.
+6. Patches, with `git --attr-source=<empty tree> diff --binary --full-index --no-renames --no-ext-diff --no-textconv` (G2): `HEAD → index` is the staged patch; `index → working tree` is the unstaged patch, and it carries untracked files as additions (SI-37).
+7. The handoff, `factory-portable-handoff/1` (SI-36): task, stage run, allocation, generation, epoch, reason `harness_exited`, the harness exit code (a diagnostic), the three commit ids, the Git and reader versions (SI-41), `nativeState: 'absent'` and `narrative: null`. Everything in it is a factory record; nothing is agent text.
+8. The `CheckpointManifest` (`schemaVersion` `2.0`): `workspaceId`, `generation`, `ownerEpoch`, `repositoryId`, `baseCommit`, `setupProfileRef` from the arguments; `headCommit` the candidate's `HEAD`; `sourceRef` the bundle; `prerequisiteRefs: []`; the two patch refs; `files` the working-tree `FileSnapshot`s, deletions included; `handoffRef`; `createdAt` the intent's time; `sourceDigest`. `untrackedArchiveRef`, `nativeStateRef` and `sessionBindingRef` are absent. It is validated against the contract before upload.
+9. Upload the parts in order (index manifest, handoff, bundle, patches, then the manifest, whose refs are the earlier answers), then call finalize. Exit 0 after the answer; any failure exits non-zero with a code in its termination message.
+
+`gitEnvironment()` gains `GIT_LITERAL_PATHSPECS=1` (`git.ts:85-97`), for every caller of
+`GitRunner`, W-018's included: none of them uses pathspec magic, and it closes G4 everywhere.
+
+**Captured and not captured** (D34). Every tracked path is captured as it stands: it is in the
+repository's history already, and leaving it out would make restore disagree with the index.
+Untracked files are captured except: the root `.git`; nested `.git` directories; special files; a
+fixed list of rebuildable directories, matched by exact component name at any depth
+(`node_modules`, `.venv`, `__pycache__`, `.pytest_cache`, `.gradle`; `06:70`: dependency caches can
+be rebuilt); and a deny list, matched after ASCII case folding, of names never captured (review,
+Furio L4): `.env` and `.env.*`; `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks`, `*.keystore`;
+`id_rsa`, `id_dsa`, `id_ecdsa`, `id_ed25519`; `.npmrc`, `.netrc`, `.pypirc`, `.git-credentials`;
+`.aws/credentials`, `.docker/config.json`, `.kube/config`. It is an interim measure under A-38 and is
+replaced by W-116's scan. Build outputs such as `dist/` or `target/` are captured: telling them from
+source needs a rule the factory does not have. Repository ignore files are **not** honoured:
+`.gitignore` would need a second pattern parser over candidate data, and `info/exclude` and
+`core.excludesFile` are configuration, which rule 8 never reads. The caps of 7.3 bound what a
+candidate can add. Each exclusion is listed in the working-tree manifest by path and reason.
+
+**The checkpoint listener** (`src/listener/checkpoint-listener.ts`; D32). Its own port, the same
+certificate and CA, and its own server, so its limits never loosen the pod listener's:
+
+- Admission steps 1 to 6 of section 6, with their own buckets: new connections per source as there, **2 open connections per source**, the source charge, local verification, the per-pod bucket and the checkpoint review bucket. In the local tier every pod is one source (A-32), so the per-source numbers there protect nothing and are relaxed by the test configuration; what keeps authoring harnesses off this port is the egress policy (below), not the source cap (review, Furio M3).
+- Then the child guard, **unlocked and advisory** (rule 9): the child row by id; `epoch` equal to the parent's; the pod read (same UID, no deletion timestamp, `checkpoint-job` label, owned by the child's Job UID); the child's `pod_uid` equal to the reviewed pod (claimed by `begin`); the parent `finalizing` at the child's generation and epoch. Each writing route then repeats what it needs inside its own statement, in the lock order of rule 9.
+- `POST /checkpoint/v1/begin` (JSON, 16 KiB): `starting → running` with `pod_uid`, compare-and-swap from null, under the parent's lock and then the child's. Answers the part caps.
+- `PUT /checkpoint/v1/part/{index|handoff|bundle|staged|unstaged|manifest}`: `content-length` required and at most the part's cap (bundle 256 MiB, the artifact service's default upload cap; each patch 128 MiB; index manifest 64 MiB; manifest 32 MiB; handoff 64 KiB), `x-factory-sha256` required. Headers within 5 s; then the body is streamed straight into `ArtifactService.upload` (an `AsyncIterable` of the request) with no transaction open; at least `checkpoint.partMinBytesPerSecond` (1 MiB/s) over any 30 s window, and at most the part's cap divided by that rate plus 30 s in all; one part in flight per child. The runner reserves (`reserve`, actor `config.checkpoint.identity`, the stage run's logical id, the part's cap and media type), uploads, and finalizes with the header's digest and length (`service.ts:214-284`). Then, under the parent's lock and then the child's, it checks the parent is still `finalizing` with an unexpired deadline, and links the artifact with purpose `checkpoint_part/<childId>/<name>`. The same name again with the same digest answers the same ref; with another digest, `conflict`.
+- `POST /checkpoint/v1/finalize` (JSON, 16 KiB): `{ orgId, childId, receiptId, epoch, inputHash, checkpointRef, sourceDigest }`, the reference input of `StageFinalizer.finalize` plus the child. **Before any state check**, the route reads `stage_run.result_ref`: if it names a result minted from this child's checkpoint, it returns that result, still requiring this child's reviewed token and its pod (review, Livia 11). Otherwise, acceptance below.
+- A route answers first and reconciles after, as on the pod listener: a pass runs after the answer is written, single-flight per allocation.
+
+**Egress to the second port** (X3; review, Furio M3). The local egress file
+(`deploy/k8s/local/egress-listener-only.yaml`) keeps its select-all rule exactly as it is, the pod
+listener's address and port. W-020 adds a **separate** NetworkPolicy beside it,
+`factory-exec-egress-checkpoint-local`, whose `podSelector` is `<prefix>profile: checkpoint` and
+whose one allow rule is the checkpoint listener's address and port. W-021 renders the production
+twin, `factory-exec-egress-checkpoint`, and its admission ties the profile label to the checkpoint
+account, so an authoring pod cannot wear the label.
+
+**Acceptance** (`src/finalizer.ts`, `StageFinalizer.finalize`; D30). Only with a `ChildBinding`
+and `ctx.actorId` equal to `config.checkpoint.identity`; anything else is refused and audited (the
+authoring supervisor and the harness never hold either).
+
+*Unlocked:*
+
+- `receiptId` must be the child's; `allocationEpoch` the parent's; `inputHash` the stage run's.
+- Read the manifest part (`readVerified`, 32 MiB) and validate it as a `CheckpointManifest`. Every ref in it, and the index manifest, must be a part linked to this child (the purpose above, producer `config.checkpoint.identity`). Its row fields must equal the rows: workspace, generation, epoch, repository, base commit, setup profile ref. `createdAt` must equal the intent's time; `prerequisiteRefs` must be empty; `sourceDigest` must equal the input's.
+- Mint the `StageResult`: `schemaVersion` `2.0`, organization, task, logical stage run, `inputHash`, `allocationEpoch`, **`status: 'inconclusive'`** (D30: the harness exit code is a diagnostic only, in the handoff and the intent record, until W-075's `submit_result`; accepted by the owner, 2026-11-22), `outputRefs: []`, `checkpointRef`, `usage: []`, `producerId` the runner's identity, `producerKind: 'runner'`, `completedAt` from the Postgres clock. Validate it; put it as a controller object.
+
+*Locked* (one transaction, the lock order of rule 9: stage run, then workspace, then allocation,
+then the child; nothing before it held a lock):
+
+- Stage run: if `result_ref` is set and names a result with this checkpoint and this child, return it (a duplicate identical finalization, `06:88`); if it names anything else, `conflict`, audited.
+- Workspace: `retained`, at the parent's generation and epoch.
+- Allocation: `finalizing`, generation and epoch as the child's, a proof stored; the move to `completed` is a `transitionAllocation` with `leaseUnexpired: true`, so an expired finalize deadline fails **inside the statement** (`06:112`: expired authority is revalidated before acceptance).
+- Child: `running`, this pod, this receipt.
+- Then: workspace `retained → checkpointed` with `checkpoint_ref` set (rule 10); links of the manifest **and of every part it names, and of the index manifest**, with purposes `checkpoint/<workspaceId>/g<generation>/<part>` (C21); the result registered with purpose `stage_result/<logicalId>`; `stage_run.result_ref` set **only where it is null**; allocation `finalizing → completed` with `terminated_at` and the deadline cleared; child `running → completed`; capacity released; an audit row naming the previous `checkpoint_ref`.
+- **With a cancel record for the stage run** (D29), the same transaction stores the checkpoint (workspace, links, child) but writes no result: the allocation goes `finalizing → stopping` with reason `cancelled_after_checkpoint`, then `terminated` with its proof, and `getRun` answers `cancelled` (`states.ts:38`). Acknowledged work survives a cancel; a result does not.
+
+**Release** then works as before, with one more check (C21): `checkpointed` is releasable once its
+`checkpoint_ref` is retained (`manager.ts:69`, `:370`) **and** every part linked under
+`checkpoint/<workspaceId>/g<generation>/` is retained too.
+
+**`WorkspaceManager.checkpoint(ctx, id, expectedEpoch)`** (SI-35) becomes a read: with the runner
+identity, the accepted `checkpoint_ref` of the row at that epoch, or `no_checkpoint`. The manager
+still never touches a filesystem; the snapshot is the child's.
+
+**The sweep** (C14). `sweepJobs` gains a second list, by the `<prefix>profile: checkpoint` label. A
+child Job is deleted (UID precondition, `Background`) when its child row is `failed`, when no row
+records its UID, when its parent is not `finalizing` and the child is not `completed`, or when the
+child is `completed` and the acceptance is older than one reconcile interval (so that a retried
+finalize can be answered, race rule 11); a `quarantined` child's Job is left for W-024.
+
+**Config added** (`src/config.ts`): `finalizeDeadlineSeconds` 4,200; `finalizeRequestWaitSeconds`
+20; `profiles.checkpoint: { serviceAccount: 'factory-checkpoint', resources: { read, build } }`
+(W-021's reserved key; no other key names the account); `images.checkpoint`; `checkpoint: {
+identity, listener: { host, port, cert, key }, review: { perSecond: 5, burst: 10 },
+childDeadlineSeconds: 1,800, partMinBytesPerSecond: 1 MiB, partCaps, maxAttempts: 2, readerLimits
+}`. Validation (review, Livia 7):
+
+- `readerLimits.deadlineMs / 1000 + Σ partCaps / partMinBytesPerSecond + 240 (build) + 60 (start) ≤ childDeadlineSeconds`. With the defaults: 600 + 608 + 240 + 60 = 1,508 ≤ 1,800.
+- `finalizeDeadlineSeconds ≥ stopDeadlineSeconds + maxAttempts × (childDeadlineSeconds + stopDeadlineSeconds) + 60`. With the defaults: 180 + 2 × (1,800 + 180) + 60 = 4,200.
+- The checkpoint identity differs from the runner's, from every control-plane identity and from every profile's account; `profiles.checkpoint.serviceAccount` is in no other listener's subject set; `maxAttempts` at most 2; the listener on a named address, TLS, as the pod listener's.
+
+### 7.5 Restore (20c)
+
+**What restore means here, and what it does not.** A workspace row belongs to one stage run: W-018
+compares `stageRunId` on attach (`manager.ts:228`) and the allocate step refuses a workspace of
+another stage run (`start.ts:87`). So the only restore the code can express today is **the same
+row, at a new generation**: `replaceWriter` on a row with a `checkpoint_ref` answers
+`restore_required` (`manager.ts:320`), and the new generation must be rebuilt from that checkpoint.
+That is what 20c builds. **No runner path reaches it in M2** (review, Livia 2): acceptance completes
+the stage, after which `startOrAttach` returns the handle (`start.ts:69`) or, after a cancel,
+`run_cancelled` (`:70`), and there are no mid-stage checkpoints (P-30), so nothing calls
+`replaceWriter` on a checkpointed row except a test. 20c is therefore **restore mechanics**, logged
+as material for AC-13 and AC-16, not as their claim. How a *later* stage run starts from an
+earlier one's checkpoint (`06:76`: replay from the last acknowledged boundary; `06:39`: one clone
+per task and repository) is a binding between two workspace rows that neither the spec's interface
+nor this plan defines. It is **open question O1** (7.10), and it is W-023's caller that needs it.
+The mechanics below do not depend on the answer; the claims do.
+
+**The request.** `requestInTx` answers `{ kind: 'restore', target, checkpoint, branch? }` for an
+`allocated` row with a `checkpoint_ref` and no accepted receipt, in place of `restore_unavailable`
+(C10); `probe` answers `ready`; the allocate step no longer refuses such a workspace (`start.ts:89`).
+In a pod the request is still refused, as `not_supported_restore_source`, beside the `bundle` kind
+(`reconcile.ts:191`): a pod cannot read an artifact yet (D13, D36; W-021's D48 gives that read to W-022).
+
+**`WorkspaceManager.restore(ctx, checkpointRef, generation, ownerEpoch)`** (SI-35). Runner identity,
+task-scoped caller. Unlocked: read the manifest (`readVerified`, 32 MiB) and validate it as a
+`CheckpointManifest`. Locked, on the row `manifest.workspaceId`: the row's `checkpoint_ref` equals
+`checkpointRef` (artifact id and digest); `generation` and `ownerEpoch` are the row's and the
+manifest's generation is older; the state is `allocated` with no accepted receipt; repository, base
+commit and setup profile ref equal the manifest's. It returns the record and touches no
+filesystem: the manager never does (W-018). `LocalWorkspaceHost.ensureRestored` calls it and then
+`ensureMaterialized`, which now handles the `restore` kind.
+
+**`LocalMaterializer`, restore kind** (`#fromCheckpoint`, in the one staging path, as every kind):
+
+1. The host supplies the bytes: the bundle (at most 256 MiB), both patches (128 MiB each) (`readVerified`, C18) and the index manifest (found by its `checkpoint/.../index` link), read under the caller's own scope, as `readCandidateSource` does (`manager.ts:130-138`).
+2. `assertFullBundle`; `git init`; `git bundle verify`; fetch `+refs/factory/checkpoint/*:refs/factory/checkpoint/*` with object checks on. `refs/factory/checkpoint/head` must be the manifest's `headCommit`.
+3. W-018's `#digest` of `HEAD` (limits, symlink rule, folding on macOS), then its `#checkout` onto the row's branch (or detached when the row has none), with `FACTORY_ATTRIBUTES` in `info/attributes` and `verifyCheckout` (`materializer.ts:162-171`, `:216-235`).
+4. `git apply --index --binary` of the staged patch, which changes the index **and** the working tree, so that the working tree then matches the index (review, Furio L5: with `--cached` the unstaged patch, whose base is the index, would meet a working tree still at `HEAD`); `git write-tree` must equal the index manifest's index tree. Then `git apply --binary` of the unstaged patch, in the working tree only. Then the flags, **with every path on stdin, NUL-separated** (rule 8, G4): `update-index -z --stdin --skip-worktree`, `update-index -z --stdin --assume-unchanged`, and `add --intent-to-add --pathspec-from-file=- --pathspec-file-nul` for intent-to-add entries. `GIT_LITERAL_PATHSPECS=1` is in every call's environment (7.4), so a path such as `:(glob)*` names only itself, and no path is ever an argument, so `--pathspec-from-file=/...` cannot be one. The patches name their paths inside the patch text, which `git apply` reads as data.
+5. **The proof that it reproduced the checkpoint.** The reader of 20a is run on the staging directory, which has exactly the factory's layout and which no candidate has touched: its `HEAD` must be `headCommit`, its `treeDigest` the index manifest's `headTreeDigest`, its `indexDigest` the index manifest's, and its source digest the manifest's `sourceDigest` (7.3, "Where each recorded digest lives"). `git rev-parse HEAD` and `git write-tree` are checked as well, so the reader is not the only witness. Any difference is `restore_mismatch` and nothing is renamed into place.
+6. Rename into place. The receipt (`factory-workspace-restore/1`) holds the generation, `headCommit`, `treeDigest`, the Git version, the checkpoint's artifact id, the index and source digests, and three fields that say what was not done: `nativeState: 'absent'`, `fallback: 'portable_handoff'`, `setup: 'not_rerun'`.
+
+**Acceptance of a restore receipt** is `acceptInTx` with the restore's expectations, read before the
+lock from the manifest and the index manifest: the commit, both digests and the checkpoint's id.
+With C16 the receipt object is put before the lock. The same receipt again is `unchanged`.
+
+**AC-16's record.** Accepting a restore receipt also writes an audit row,
+`workspace.restore_fallback`, with `{ nativeState: 'absent', used: 'portable_handoff' }`. No native
+session exists before W-077 (A-36), so the fallback is always taken. The record is what AC-16 asks
+for, and it is material only until a resuming task can reach a restore (O1).
+
+**Not done by restore:** the setup profile is not rerun (`06:82`). There is no local executor for
+setup recipes, by W-018's design (setup is candidate code and runs only in the sandbox), so the
+first writer of the restored generation runs it. SI-39.
+
+### 7.6 Race and crash rules
+
+1. **Finalize against cancel.** A cancel takes the stage run's lock, then the allocation's (`start.ts:172`, `:185`). If it commits first (`running → stopping`), the finalize statement finds `stopping`, answers `not_renewable` with `stopping`, and the supervisor, having sent finalize, ends (C17); no checkpoint (D29). The finalize route takes only the allocation's lock, so it cannot meet cancel's lock order the other way round (rule 9). If finalize commits first, the cancel finds `finalizing`, writes its record and nothing else (`start.ts:186`); the checkpoint is stored at acceptance and the result is not.
+2. **Finalize against the lease, and against the harness-exit wait.** Both stops are `move` compare-and-swaps from `running` (`reconcile.ts:38-50`), and finalize is a compare-and-swap from `running` with the lease clause in the statement. One commits; the other changes nothing. A finalize that meets `suspect` is retryable and wins on the next beat, unless the lease stop wins first (C20).
+3. **Two controllers in `finalizing`.** The child insert is fenced by `one_live_checkpoint_job`; the Job name is deterministic, so the second create is `AlreadyExists` and is validated, not attached blindly; the proof is registered once (W-019 rule 6).
+4. **A crash between the child row and its Job, or between the Job and its UID.** The next pass creates or fetches by name and binds, as `passDesired` does for an allocation.
+5. **Two pods for one child Job.** `begin` claims `pod_uid` by compare-and-swap; the other pod is refused at the guard and deleted by the pass. Both mount the claim read-only, so the loser cannot have changed anything.
+6. **A part uploaded, the runner dies before the link.** The artifact exists with its `stage_output` link and nothing else. It is not a checkpoint (rule 10). The child's retry uploads again; the artifact service registers the same digest once (`service.ts:259-271`) and the link is written then.
+7. **The child dies after uploading.** The attempt fails once its pod is shown gone. The second attempt builds commits with the same ids (fixed identity and date), so its bundle and patches have the same digests and dedupe.
+8. **Acceptance crashes after the result object is put.** The object is an orphan for the artifact sweep. A retry mints a result with another `completedAt` and commits it; there is never more than one `result_ref`.
+9. **A stale child returns.** Attempt 2 is admitted only after attempt 1's pods are shown gone (7.4, step 5), so a stale child can only be a late request carrying attempt 1's identity: its pod no longer exists, so the guard's pod read refuses it even inside the API server's short cache of a successful review (section 2), and its row is `failed`, so the row check refuses it too. Neither reaches acceptance (AC-206's material).
+10. **The finalize deadline passes during acceptance.** The `completed` move carries the deadline in its own statement; it changes nothing and acceptance rolls back whole. The pass then gives up.
+11. **Acceptance repeated after its commit.** The finalize route checks `result_ref` before any state check (7.4), so while the child's pod exists the retry gets the stored result (`06:88`). The sweep leaves a completed child's Job for one reconcile interval for this. A retry later than that is refused at the pod read; the result is stored either way, and the child's non-zero exit is ignored because its row is `completed`.
+12. **The worker writes `result_ref` first** (today's `persistence.ts:41`). Acceptance writes only where it is null, so it fails as `conflict`, audited, and the parent gives up at its deadline. W-023 must make that impossible (hand-off).
+13. **The object store is down.** No part, no acceptance: the attempt fails, the second fails, and the parent goes to `stopping` and then `terminated` with its proof. The work since the last accepted checkpoint is lost, in the safe direction (as W-019 rule 9).
+14. **The runner restarts mid-upload.** The child sees a broken stream and retries the part; the abandoned reservation expires and `sweepExpiredUploads` removes its object.
+15. **A renewal or `stop-ack` in `finalizing`.** A renewal is `not_renewable` with `finalizing` (C17); `stop-ack` is for `stopping` only and is refused.
+16. **A parent that gives up with a child live.** The child is ended first (7.4, step 3), so no `starting` or `running` row outlives its parent, `one_live_checkpoint_job` is freed, and the claim is not left `in_use` for ever (review, Livia 6).
+17. **A compromised `read`.** It can write anything into `/export`: a symlink, a file larger than its cap, a pre-made Git repository, a forged snapshot. `build` never follows a symlink there (`fs-safe` rules), never uses anything there as a repository (its own exclusive `/work/repo`), lets Git compute every object id (`index-pack --strict`), and parses the snapshot under caps. The worst it can do is make the checkpoint fail or describe a tree that restore's proof then refuses (review, Furio M5).
+18. **A quarantined child.** It holds `one_live_checkpoint_job` for good. The parent gives up (7.4, step 3), and `volumeDisposition` answers `in_use` for the claim while a child is live or quarantined, so W-024 does not delete a claim a lingering child pod may still mount.
+19. **Restore, crash between rename and accept.** As in W-018: the host finds the target with no receipt under the row lock, removes it and starts again.
+20. **Restore against a newer checkpoint.** `restore` and the receipt's acceptance both compare `checkpoint_ref` under the row lock; a checkpoint accepted in between makes the first one's restore `conflict`.
+
+### 7.7 Files
+
+| File | Content | Commit |
+| --- | --- | --- |
+| `packages/workspace/src/git-reader/{index,limits,errors,fs-safe,inflate,loose,pack,delta,objects,commit,tree,refs,index-file,worktree,path-rules,reader}.ts` | The reader (7.3). | 20a |
+| `packages/workspace/package.json` | Exports `./git-reader` and `./checkpoint-build`; the package index re-exports neither. | 20a, 20b |
+| `packages/workspace/src/checkpoint-manifest.ts` | The index and working-tree manifest types (`factory-checkpoint-index/1`, `factory-checkpoint-worktree/1`), the handoff (`factory-portable-handoff/1`), part names and caps, the purposes, and their validators. | 20a |
+| `packages/workspace/src/checkpoint-build.ts` | The builder (7.4): its own exclusive repository, `index-pack --strict` from the export, commits, bundle, patches, handoff, manifest. The third caller of `claimFactoryOwned`. | 20b |
+| `packages/workspace/src/git.ts` | `GIT_LITERAL_PATHSPECS=1` in `gitEnvironment()` (G4). | 20b |
+| `packages/workspace/src/manager.ts`, `packages/database/src/workspace.ts` | Release also requires every part linked under the checkpoint's purpose to be retained (C21). | 20b |
+| `packages/workspace/src/quarantine-record.ts`, `src/volume-disposition.ts`, `src/index.ts`, `README.md` | `finalizing` as a source; the `finalizing` row and the optional `checkpointChild` input (C1, race rule 16); exports; the reader, the builder, rules 8 to 10, the captured and excluded lists. | 20b |
+| `packages/workspace/src/manager.ts`, `src/materializer.ts`, `src/local-host.ts` | The `restore` request kind and `probe`; `restore` and `checkpoint` (SI-35); the receipt put before the lock (C16); `#fromCheckpoint` and its receipt; `ensureRestored`. | 20c |
+| `packages/runner-protocol/src/pod-api.ts`, `src/checkpoint-api.ts`, `test/vectors.json` | The finalize route, `not_finalizable` and the grant's `finalizeOffered`; the checkpoint routes, parsers, part names and caps. | 20b |
+| `packages/database/src/allocation.ts`, `src/checkpoint-job.ts`, `src/workspace.ts`, `src/index.ts` | `finalizing` in the work list; a record-age read on `clock_timestamp()`; `setStageResultOnce` (only where null); child rows (insert, lock, guarded transitions, list by parent) on the existing grants; a plain `linkArtifact`. | 20b |
+| `apps/runner/src/listener/pod-listener.ts`, `src/listener/checkpoint-listener.ts`, `src/pod-guard.ts`, `src/child-guard.ts` | The finalize route; the second listener, its limits and its review bucket; `review(req, { audience, subjects, bucket })` (X2), the pod listener's subjects never including the checkpoint account; `finalize` in the `stale_epoch` branch (C22); the child guard and `ChildBinding`. | 20b |
+| `apps/runner/src/finalize-request.ts`, `src/finalizer.ts`, `src/checkpoint-job.ts` | The route's service; `StageFinalizer.finalize` and acceptance; `renderCheckpointJob` and its validation. | 20b |
+| `apps/runner/src/reconcile.ts`, `src/records.ts`, `src/names.ts`, `src/states.ts`, `src/config.ts`, `src/main.ts`, `src/runner.ts`, `src/index.ts` | `passFinalizing`, the harness-exit wait, `registerProof` and `toQuarantined` for `finalizing`, the child sweep; the intent and exit-seen records; child, receipt and record ids; nothing in the edge table (`running → finalizing` and the three edges out of `finalizing` exist; finalize uses no other, C20); `profiles.checkpoint`, `images.checkpoint`, the new settings and the two budget checks; the second listener; the finalizer on the service. | 20b |
+| `apps/runner/src/checkpoint-pod/{read-entry,read-run,build-entry,build-run,client}.ts` | The two container entries and the child's client. The production entries read no environment variable. | 20b |
+| `apps/runner/src/start.ts`, `src/reconcile.ts` | `start.ts:89` removed; the `restore` kind refused in a pod. | 20c |
+| `apps/supervisor/src/heartbeat.ts`, `src/runner-client.ts`, `src/state.ts` | The finalize call on a `terminated` harness when the grant offered it; after it is sent, any final denial takes the `ending` path. | 20b |
+| `packages/test-support/src/faults.ts` | `runner.after_finalize_intent`, `before_child_job_create`, `after_child_job_create`, `after_part_finalize`, `before_part_link`, `after_result_put`, `before_acceptance_tx`, `workspace.after_restore_rename`. | 20b, 20c |
+| `deploy/images/checkpoint`, `deploy/k8s/checkpoint-sa.yaml`, `deploy/k8s/local/egress-listener-only.yaml`, `scripts/k3s.sh` | The image (Node, tini, Git 2.48 or later, the two entries, a numeric user; built from a staged context of named files as section 6's images are); the service account with no Role; the local policy file keeps its select-all rule unchanged and gains a **separate** policy, `factory-exec-egress-checkpoint-local`, selected by `<prefix>profile: checkpoint`, allowing only the checkpoint listener's address and port (X3); the image build and the port in `.k3s/env`. | 20b |
+| `eslint.config.js` | Under `src/git-reader/`, `node:fs` only in `fs-safe.ts`; `node:child_process` and `node:worker_threads` nowhere. | 20a |
+| `docs/design/w020-probes/` | The probes of 7.2, copied at merge. | merge |
+
+Not changed: anything under `apps/worker`; any migration; the publisher; D17's two methods; the
+pod listener's limits and admission order for its three existing routes; the edge table.
+
+**Every edit to an earlier package's test**, so that none is a surprise:
+
+| File | Edit | Commit |
+| --- | --- | --- |
+| `apps/runner/test/harness.ts:54`, `:117` | Pins `finalizeRequestWaitSeconds` to 0 in both `createTestConfig` calls, as W-019 pinned the cancel window. With the wait at 0 the runner offers no finalize, so no supervisor sends one and nothing races (C24). | 20b |
+| `tests/recovery/test/kit.ts:68-73`, `apps/runner/test/k8s/supervised.ts:29` | **No edit, and checked:** both build their runner through `harness.ts:117` (`kit.ts` through `@factory/runner/test-harness`, `apps/runner/package.json:9`), so they inherit the pin. W-019's `w019-lifecycle`, `ac-15-process-cancellation`, `ac-12-stale-live-writer`, `ac-10-duplicate-supervisor`, `w019-hint-flood` and its three k3s files therefore keep their expected outcomes, `stopping` with `harness_exited` where they assert it. W-020's own cross-app and k3s files set the wait to 20 explicitly. | 20b |
+| `apps/runner/test/w017-states.test.ts:55-59` | "A `finalizing` row is unchanged by a pass" becomes: a `finalizing` row with its proof stored, a child `running` and the deadline ahead is unchanged by a pass. **Control:** the same row with the deadline backdated moves to `stopping`. | 20b |
+| `apps/runner/test/w019-container-exit.test.ts:60-72` | The same change to its last assertion. Its harness-exit cases run with the wait at 0 and are otherwise unchanged. | 20b |
+| `apps/runner/test/w019-volume-disposition.test.ts:12` | `finalizing` with a qualifying proof is `quiescent`; without a proof still `in_use`; a live or quarantined child makes every state `in_use`. | 20b |
+| `apps/runner/test/w019-quarantine-record.test.ts` | One case added: the `finalizing` source. | 20b |
+| `packages/runner-protocol/test/w019-pod-api.test.ts` | The new denial code and the grant's optional field in the vectors. | 20b |
+| `apps/supervisor/test/w019-heartbeat.test.ts` | No edit expected: its grants carry no `finalizeOffered`, so no finalize is sent. Listed because it is the file that would show it. | 20b |
+| `packages/workspace/test/ac-12-stale-writer-fencing.test.ts:65-73` | With a `checkpoint_ref` set the request now answers the `restore` kind, and the host refuses to restore from an artifact that is not a `CheckpointManifest`; still no fresh clone. | 20c |
+| `apps/runner/test/w017-start-or-attach.test.ts:227-237` | A workspace with a `checkpoint_ref` is now allocated, and its first pass stops it as `not_supported_restore_source` with nothing cloned. | 20c |
+
+If the first run of a sub-part shows another edit is needed, it is added here before that review,
+not after.
+
+### 7.8 Tests, and which tier proves what
+
+Real Postgres wherever a row is involved; real Git for every fixture, bundle and restore. Time is
+moved by backdating row timestamps and running one pass. **Every refusal has, in the same setup, the
+accepted case.** A cross-app file keeps at most two pods alive at once and closes its kubelet in
+`afterEach`. 20a's eleven files are in 7.3.
+
+**20b: units and the runner, fake tier.**
+
+| Test file | Shows |
+| --- | --- |
+| `packages/runner-protocol/test/w020-checkpoint-api.test.ts` | Every checkpoint request and answer round-trips through the committed vectors; unknown keys, `__proto__`, an unknown part name, a part cap of 0 or past the configured cap are refused. **Control:** the vectors parse. The finalize route's request and `not_finalizable` are in the pod vectors. |
+| `packages/workspace/test/w020-checkpoint-build.test.ts` | From a reader snapshot of a real dirty fixture (a binary edit, staged and unstaged changes to one file, a deletion, an untracked file, a symlink, an execute-bit change, an intent-to-add entry, a skip-worktree entry): the bundle verifies in an empty repository with no prerequisites; the three refs name `HEAD`, the index commit and the working-tree commit; `write-tree` of the index commit equals the index manifest's tree; applying the two patches to a checkout of `HEAD` reproduces both trees. **Determinism:** two builds give byte-identical parts. Trailers are the server's values. **Attributes:** with `* -diff` and `diff=evil` (a driver that writes a canary) in the tree, no canary appears and the patch is binary-capable. **Control:** the same diff with `--attr-source=HEAD` and the driver configured does write the canary. A `snapshot.json` that is malformed or past its cap is refused. The builder's Git is unaffected by the hostile parent environment of `w018-hostile-environment.test.ts`. **Determinism with `pack.threads=1`:** two builds give byte-identical bundles (review, Livia 14). **A hostile export** (review, Furio M5), each refused or harmless: `/export/snapshot.json` as a symlink to a file standing in for the token (not followed; `path_unsafe`); a snapshot past its cap; a pre-made Git repository with a planted `config` (`fsck.*` severities, `alternates`) at `/work/repo` (the exclusive `mkdir` refuses it) and in `/export` (never used as a repository); a pack whose objects carry names that do not match their bytes (`index-pack --strict` computes the real ids, and the snapshot's references then fail). **Paths that are Git syntax** (review, Furio M1): index entries named `--pathspec-from-file=/etc/hosts` (a directory and a file) and `:(glob)*`, and a name containing LF, go through `update-index -z` and come out as exactly those entries. **Control:** the same names passed as arguments without the hardening read `/etc/hosts` and expand the glob (G4). |
+| `packages/workspace/test/w020-capture.test.ts` | D34: an untracked `node_modules/x` and `.env` are excluded and listed with their reasons; a **tracked** file under `node_modules` and a tracked `.env.example` are captured; a file named in `.gitignore` is captured (**control:** `git status` in the same tree hides it, so the ignore rule is live); a FIFO and a nested `.git` are excluded. Past the entry cap the checkpoint is refused, not trimmed. |
+| `apps/runner/test/w020-finalize-route.test.ts` | Granted only when the pod read shows the harness `terminated`; **control:** with it running, `not_finalizable` and nothing written. The lease clause: backdated past expiry, `lease_expired`, the row still `running`; **control:** fresh, `finalizing` with the deadline set. A fenced workspace is `stale_epoch`; another pod's token is refused; a repeat answers the same and writes nothing. The intent record holds the pod and the exit code from the pod read and nothing from the body. A renewal in `finalizing` answers `not_renewable`, `finalizing`. In `suspect`, `not_finalizable` with `suspect` and `retryable: true`; after a renewal returns the row to `running`, the retry is granted (C20). With no workspace, `not_finalizable`, `no_workspace` (C23). A grant offers finalize only with a workspace and the wait above 0; **control:** with the wait at 0 no grant offers it. A fenced workspace is `stale_epoch`, not `not_startable` (C22). |
+| `apps/runner/test/w020-harness-exit-wait.test.ts` | The harness exits with the supervisor running: no stop while the exit-seen record is under 20 s old (backdated 19 s: nothing); at 21 s, `stopping` with `harness_exited`. A finalize inside the window wins. A supervisor exit stops at once; no start record stops at once. **Control:** with the wait at 0 the first pass stops, as in W-019. With no workspace, the first pass stops at once (nothing was offered). |
+| `apps/runner/test/w020-finalizing-pass.test.ts` | With the fake kubelet: the authoring pod is deleted without a hold; the proof is stored in `finalizing`; the workspace goes `retained`. **Admission:** an unlabelled, unfinished pod naming the claim blocks the child; **control:** one naming another claim does not. The child row's fields, its receipt per attempt and its Job name. A foreign Job under the child's name quarantines the child and the parent gives up. **Give-up:** the deadline backdated, two failed attempts, an urgent stop: each `→ stopping → terminated` with the proof and the earlier `checkpoint_ref`. Not proved past the stop deadline: `quarantined` with source `finalizing`, the workspace `quiescing`. **One-way door:** proof stored, then a foreign pod appears; not quarantined. **Give-up with a live child** (review, Livia 6): a child `running` at the deadline is deleted, shown gone and marked `failed` before the parent leaves `finalizing`; no child row is live afterwards and `volumeDisposition` answers `quiescent`. **Control:** a child whose pod the fake keeps past the delete ends `quarantined`, and the claim is `in_use`. |
+| `apps/runner/test/w020-checkpoint-job.test.ts` | `renderCheckpointJob` against **every row of 7.4's shape table**: init container `read` and container `build` and no other; the `<prefix>profile: checkpoint` label; the account from `profiles.checkpoint`; the audience `factory-checkpoint:<childId>`, the projected token in `build` only; requests and limits on both from `profiles.checkpoint.resources`; `images.checkpoint`; no `fsGroup`; the claim read-only in its source and its mount and only in `read`; `export` writable in `read` and read-only in `build`; `work` only in `build`; uids 10001 and 10003; the deadlines and arguments, all from rows; no `StageInput`. Structural: no container mounts both the claim and the token. The committed `checkpoint-job.expected.json` equals the render. A Job with any template change is not attached (`templateDifferences`). |
+| `apps/runner/test/w020-checkpoint-listener.test.ts` | TLS and the limits of section 6 with 2 open connections per source. **AC-231 material:** an authoring supervisor's valid token is refused (subject, audience), and so is a token for another child and a pod of another Job; **control:** the child's token is admitted. `begin` from two pods: one wins. A part with no length (411), a length past the cap (413, nothing written), a wrong digest (refused, the upload `failed`), a body under 1 MiB/s for 30 s (cut), a second part while one is in flight (refused); the same name and digest again answers the same ref, another digest is `conflict`. A parent no longer `finalizing`, or past its deadline, refuses every writing route. **No transaction while streaming:** with an upload held by a fault, an `UPDATE` of the parent's row is not blocked. **Control:** the pod listener still answers 413 to a 17 KiB body. **Also missing before** (review, Furio): a child's valid token presented to the **pod** listener is refused (subject), and the pod listener's subject set contains no checkpoint account; **control:** the same token is admitted by the checkpoint listener. The checkpoint review bucket: 100 child reviews in a burst leave the pod listener's budget untouched. A part link after the parent's deadline has passed is refused. |
+| `apps/runner/test/w020-acceptance.test.ts` | One transaction: workspace `checkpointed` with the ref, allocation `completed`, child `completed`, `result_ref` set, capacity released; `getResult` returns a valid `StageResult` with `producerKind: 'runner'` and **`status: 'inconclusive'` whether the harness exited 0 or 3** (D30), the exit code only in the handoff and the intent record. The manifest and every part it names, and the index manifest, are linked under `checkpoint/<workspaceId>/g<generation>/...` (C21). Each manifest field that differs from the rows (workspace, generation, epoch, base, setup profile, `createdAt`, prerequisites), and a ref not linked to this child or linked to another, is refused. A duplicate identical finalize returns the stored result; a conflicting one is `conflict` and audited. An expired deadline fails inside the statement. A `failed` child is refused. **AC-231 material:** finalize with the runner identity, a control-plane identity, the supervisor's subject, or the checkpoint identity without a `ChildBinding` is refused and audited. **Cancel:** with a cancel record the checkpoint is stored and no result written, and `getRun` answers `cancelled`. A `result_ref` already set by someone else is `conflict`. **A retried finalize after the commit** (review, Livia 11), while the child's pod exists, returns the stored result although the parent is `completed` and the child `completed`. **Release** (C21): with one part's retention backdated past `now()`, release of the `checkpointed` workspace is `checkpoint_not_accepted`; **control:** all retained, it releases. |
+| `apps/runner/test/ac-14-unacknowledged-checkpoint.test.ts` | Seeded rows with an accepted checkpoint R1 and a new `finalizing` generation. The child uploads every part and the manifest; a fault at `before_acceptance_tx`; the runner is replaced **and the child's pod is killed** (AC-14's "runner/pod dies"; review, Livia 12: with the pod alive its retry against the new runner would win). The attempt fails, the parent gives up and ends `terminated`; `checkpoint_ref` is still R1, `checkpoint()` answers R1, and the next generation's request names R1. The failed attempt's parts exist as artifacts, and no `checkpoint/...` link names any of them. **Control:** without the fault, R2. **First checkpoint lost:** with no earlier checkpoint, `checkpoint()` is `no_checkpoint` and the next request is `remote` from the base: no recovery is promised that does not exist. **Control for the kill:** with the pod left alive, the retry is accepted and the result is R2, which is why the test kills it. |
+| `apps/runner/test/w020-sweep.test.ts` | A child Job whose row is `failed`, one `completed` longer than one reconcile interval, one no row records, and one whose parent is not `finalizing` are deleted with their UID; a `quarantined` child's Job is not. **Control:** a running child's Job is kept. A `completed` child's Job is kept for one interval. |
+| `apps/supervisor/test/w020-finalize.test.ts` | A grant reporting the harness `terminated` causes exactly one finalize; transport errors retry until the fence time; the answer, or `not_renewable` with `finalizing`, takes the `ending` path with no stop acknowledgement. **Control:** with the harness running no finalize is sent. With no `finalizeOffered`, nothing is sent. **After sending**, a `not_this_job` (the pod already being deleted), `not_renewable` with `stopping`, and any other final denial each take the `ending` path, never `fenced` (C17). |
+
+**20b: cross-app, fake tier** (`tests/recovery/test`; the real runner, both listeners, `FakeKube`
+and its kubelet, the real supervisor and launcher, and the child's two entries through test
+entries in `test/entry`). New scripted harnesses, each baked in as A-33 says: `dirty-edits` (the
+fixture changes of `w020-checkpoint-build`, then exit 0) and `plant-git` (plants every item of
+`w020-reader-hostile-metadata`, plus `.env` with a marker, then exit 0).
+
+| Test file | Shows |
+| --- | --- |
+| `ac-230-hostile-git-at-checkpoint.test.ts` | `plant-git` runs, finalizes, and the child is accepted. No canary exists anywhere; the source digest equals one the test computes itself from the raw bytes on the claim directory; the replace ref did not change any digest. **Control:** `git status` run by the test in the planted tree writes the canary. Material for W-134's claim, not the claim itself. |
+| `w020-lifecycle.test.ts` | `exit0`: finalize, proof, child, acceptance, `completed`, an `inconclusive` `StageResult` (D30). Exit 3: the same. **A lost finalize answer, with the pass running** (review, Livia 10): a proxy drops the first answer; the pass deletes the pod; the supervisor's retry is refused at the pod read and it ends, exit 0, not fenced. An allocation with no workspace: no finalize, `stopping` with `harness_exited` as in W-019. A cancel during `finalizing`: the checkpoint is stored and the run is `cancelled`. An urgent cancel: no checkpoint, `terminated`. A harness that never exits: the wall deadline ends it with no checkpoint. Time from intent to acceptance is recorded. |
+
+**20c: restore.**
+
+| Test file | Shows |
+| --- | --- |
+| `packages/workspace/test/w020-restore.test.ts` | `restore` refuses, each with its code: another `checkpoint_ref`, another generation or epoch, a row that is not `allocated`, a receipt already accepted, a manifest whose repository, base or setup profile differs. The materializer refuses a bundle with prerequisites, a head that is not the manifest's, a tampered patch, an index tree that differs, and a source digest that differs (`restore_mismatch`), and nothing is renamed into place. A crash at `workspace.after_restore_rename` is repaired on the next call. **C16:** with a store that fails every put, the row is unchanged and no receipt is linked; **control:** with it working, accepted. On macOS a checkpoint with case-only collisions is refused; **control:** with `foldPaths` off it restores. **One file changed in both the index and the working tree** restores exactly (review, Furio L5); **control:** with `--cached` in place of `--index` the same checkpoint is `restore_mismatch`. **Paths that are Git syntax** (review, Furio M1): a checkpoint whose index holds intent-to-add and skip-worktree entries named `--pathspec-from-file=/etc/hosts` and `:(glob)*` restores exactly those flags on exactly those paths, no file outside the staging directory is opened (an `fs` spy on the Git child's arguments and an `/etc/hosts` canary copy), and no error message carries a line of the canary. |
+| `tests/recovery/test/ac-13-dirty-checkpoint-restore.test.ts` | Restore mechanics, material for AC-13 (7.9). `dirty-edits` runs and its checkpoint is accepted. The test records the oracle from the original tree with Git (`ls-files -s`, the flags, the bytes of every file). The pod is lost; `replaceWriter`; `ensureRestored` into a fresh host directory. The restored `HEAD`, index (entries and flags) and every file's bytes and mode equal the oracle; `.env` is absent. **Control:** with the unstaged patch removed from the parts, the restore is `restore_mismatch`. |
+| `tests/recovery/test/ac-16-missing-native-session.test.ts` | Material for AC-16 (7.9). The restored generation's receipt says `nativeState: 'absent'` and `fallback: 'portable_handoff'`, the `workspace.restore_fallback` row exists, and the handoff it names is the checkpoint's. The manifest has no `nativeStateRef`, and the restore asked for none. |
+
+**k3s tier, opt-in** (run once at the end of 20b and once at the end of 20c, on AC power, under the
+local egress policies and TLS; the build-log line gives the date, the image digests and the results
+of the five questions of 7.9):
+
+| Test file | Shows |
+| --- | --- |
+| `apps/runner/test/w020-checkpoint.k8s.test.ts` | The real images. `dirty-edits` finalizes; the authoring pod object is gone before the child pod is scheduled; the child is admitted, reads and uploads; acceptance; the claim survives. `stat` in the node shows the tree's modes and owners unchanged by the child's mount (question 2). The bundle part's upload rate is recorded (question 4). `plant-git` in the same file: no canary in the node's tree. **The second port** (review, Furio M3): a probe pod with the authoring profile's labels cannot connect to the checkpoint listener's port; **control:** a probe pod with `<prefix>profile: checkpoint` can, and the pod listener's port stays reachable from both. (The supervisor's gate cannot show this: it would need a ninth deny target, `config.ts:134`.) |
+| `apps/runner/test/kube-conformance.k8s.test.ts` (rows 29 to 31) | **Cluster-only**, registered in the `opts.cluster` block as rows 13 and 15 are (`suite.ts:328-329`), since the plan's rule that the fake models every row (`m2-plan.md:131`) cannot hold for them. Until W-021's admission exists they run in the execution namespace with the checkpoint profile's account and label; once it does, they move with rows 1 to 21 to the namespace W-021 sets aside for conformance, where its admission model is off (X5). 29: a second pod mounts a `ReadWriteOncePod` claim once the first pod object is gone (question 3). 30: with `persistentVolumeClaim.readOnly` and a read-only mount, a write is `EROFS` (question 1). 31: with no `fsGroup` a second mount changes no mode or owner (question 2). Rows 22 to 28 are W-021's. |
+
+**Which tier proves what.**
+
+| Claim | F | K | Needs R |
+| --- | --- | --- | --- |
+| The reader reads objects, packs, deltas, the index and refs as Git does, and refuses hostile ones | Yes (differential, hostile and fuzz) | The same library | |
+| `treeDigest` reproduced byte for byte | Yes (differential) | | |
+| No candidate program runs at checkpoint | Yes (canaries, structural tests) | Yes (canaries in the node) | A sandboxed runtime |
+| The checkpoint mount is read-only | No (the fake kubelet does not enforce it) | Yes (row 30) | CSI storage |
+| No ownership pass on the child's mount | No | Yes (row 31) | |
+| One checkpoint per finalizing allocation; stale and duplicate children refused | Yes | The happy path | |
+| Only the child's identity finalizes | Yes | The happy path | |
+| Unacknowledged work is never offered (AC-14) | Yes | | |
+| Dirty state restored exactly (AC-13 mechanics; the claim waits for O1) | Yes, through `LocalMaterializer`, reached by a test | No (no pod restore, D36) | |
+| Fallback to the portable handoff recorded (AC-16 mechanics; the claim waits for O1) | Yes, with no native session ever present | | A real adapter (W-077) |
+| Authoring pods cannot reach the checkpoint port | No | Yes (local policy) | W-021's rendered policy on the real CNI |
+| Large parts stream from a pod | Units only | Yes, one size, one machine (question 4) | Real network |
+
+### 7.9 What W-020 claims, hand-offs, and what to confirm in the k3s tier
+
+**Claims.**
+
+- **AC-14.** Parts uploaded, acceptance not committed, the runner and the child's pod both lost: the last accepted checkpoint stays authoritative and none is promised that does not exist: fake tier.
+- **AC-13 and AC-16: material only** (coordinator's decision, review Livia 2). W-020 shows the **restore mechanics**: binary edits, staged and unstaged changes, a deletion and untracked files come back in a clean generation that reproduces the recorded head, index and source digests, with no deny-listed file; and the restore records its fallback to the portable handoff when no native session exists. Fake tier, real Git, through `LocalMaterializer` on the same workspace row, **reached only by a test** (7.5). The build-log line logs them as "AC-13, AC-16: restore mechanics (material); claim waits for O1 and D36". Only the "absent" native-session case can occur before W-077 (A-36). "Without secrets" rests on construction and the deny list (C12, W-116).
+- **The exit-evidence checkpoint.** Its lost-pod scenario (section 1: AC-10, AC-13, AC-14) **cannot be reached until O1 is decided**: no runner path today starts a stage from an acknowledged checkpoint, and a pod cannot yet read one (D36). AC-14's half can be shown; AC-13's cannot. The section 1 notes for the checkpoint should say so in those words.
+- **Built here, claimed elsewhere:** checkpoint child fencing (AC-206, W-129: C5); hostile Git metadata at checkpoint (AC-230) and checkpoint-only finalization (AC-231), both W-134's, for which 7.3 and 7.8 supply the material.
+- **Not built:** pod restore (D36); the cross-stage binding (O1); mid-stage and incremental checkpoints (P-30); the sweep of unfinalized checkpoint parts (`06:104`, W-024); secret scanning (W-116); setup rerun at restore (SI-39); native session state (W-077); proposals, outputs and a semantic status in the result (W-075, D30); log chunks (D26).
+- **Residual risks, for the READMEs:**
+  - The reader is new parsing code over hostile input in a process that runs as the tree's owner. The two containers and the read-only export (D33) keep the credential out of its reach and its output out of the credential's process except as data; the fuzz tests bound what has been looked at, not what exists.
+  - Node's SHA-1 has no collision detection. The reader's check is integrity against accident and simple forgery; the collision check is Git's `index-pack --strict` in `build`, which must never be skipped (rule 8; review, Furio L3).
+  - A self-contained bundle carries the whole history. A repository past the caps cannot be checkpointed at all, and its stage cannot complete; that is a cliff to know about before real repositories arrive (P-30).
+  - A candidate can make its own checkpoint fail (a 0000 file, a sparse index, a merge in progress, an escaping symlink, a zero-padded tree). It loses its own work and nobody else's.
+  - The deny list is a short interim list (A-38); it does not make a checkpoint secret-free.
+  - Restore holds the bundle in memory, up to 256 MiB (C18, P-31).
+  - The object store is needed to finish a stage, as it is to finish a stop (race rule 13).
+  - Until W-023 changes the worker, a fake-executor result can block a runner result (race rule 12).
+  - In the local tier every pod is one source (A-32), so the checkpoint listener's per-source cap is relaxed there; only the egress policy keeps authoring pods off its port.
+
+**Hand-offs.**
+
+- **W-021** (built after W-020, its D49). Answered in W-021's 21b ("The checkpoint profile", section 8), with the shape the coordinator fixed on 2026-11-21. What it must meet:
+  - Admit exactly the checkpoint child of 7.4's shape table: init container `read`, container `build`, the `<prefix>profile: checkpoint` label tied to `profiles.checkpoint.serviceAccount`, the audience `factory-checkpoint:<childId>` with the projected token in `build` only, requests and limits on both containers, `images.checkpoint` in the allowlist, the claim read-only and only in `read`, `export` read-only in `build`, `work` only in `build`, and no container mounting both a claim and a token (D33).
+  - Render the third policy, `factory-exec-egress-checkpoint`, selected by the checkpoint profile label and allowing only the checkpoint listener's address and port; leave `factory-exec-egress-listener` as it is, and name both ports in D50 (X3).
+  - Keep `review(req, { audience, subjects, bucket })` as 7.4 uses it: the pod listener's subject set never includes the checkpoint account (X2).
+  - Count the checkpoint listener's own review bucket in the review-ceiling product (X4).
+  - Showing authoring pods denied the checkpoint port through the supervisor's gate would need a ninth deny target (`config.ts:134` caps them at eight); W-020's k3s file shows it with probe pods instead.
+  - Move conformance rows 29 to 31 with rows 1 to 21 (X5).
+- **W-022 (or whoever owns the pod artifact read, W-021's D48):** the `restore` request kind in a pod; it is already a typed refusal there (D36).
+- **W-023:** the worker must not write `result_ref` for a runner stage, and must read the result through `getResult`; it is the caller that needs O1 answered; `getRun` now answers `finalizing`; a cancelled run may carry an accepted checkpoint and no result; a runner result is `inconclusive` until W-075 (D30).
+- **W-024:** the sweep of unfinalized parts: artifacts with a `checkpoint_part/...` link and **no** `checkpoint/...` link, older than the finalize deadline. Accepted parts always have the second link (C21), so the rule cannot match them; W-024's test must show that, with an accepted checkpoint whose bundle survives the sweep. Also: child Jobs and pods of `quarantined` children; a claim is deletable only when `volumeDisposition` is `quiescent` with no live or quarantined child.
+- **W-075:** `submit_result` as a second finalize trigger, and the source of a semantic status (D30); proposals and outputs in the minted result; the authenticated local tool routes stay off the checkpoint listener.
+- **W-077:** native session state and its compatibility check (`07:128`); a narrative in the handoff, labelled untrusted (`07:132`); the first writer after a restore reruns setup.
+- **W-116:** scan the staged and unstaged patches and the untracked additions before acceptance, and replace the deny list with its findings.
+- **W-129:** the operational projections of child Jobs over the rows W-020 writes.
+- **W-134:** AC-230 and AC-231 from 7.3's and 7.8's material, with the mount enforced at K.
+
+**To confirm in the k3s tier.** Five questions the design rests on, each with its fallback:
+
+| # | To show | If it does not hold |
+| --- | --- | --- |
+| 1 | On `local-path`, `persistentVolumeClaim.readOnly: true` with a read-only mount makes a write `EROFS` (row 30). | The reader is still read-only by construction and the `read` process runs under `node --permission` with no write outside `/export` (P1); the claim of a read-only mount narrows to the code. |
+| 2 | With no `fsGroup` the kubelet changes no mode or owner on the child's mount (row 31); uid 10001 reads the tree the harness left (0640 files, 0750 directories). | The reader already takes only the owner's execute bit (C9), and the kubelet's pass adds group bits without touching the owner's. If it does more, the `read` container gets `runAsGroup: 10001` and the finding goes to the build-log line. |
+| 3 | A `ReadWriteOncePod` claim is mountable by the child as soon as the authoring pod object is gone, with the authoring pod's volume torn down (row 29). | The child stays `Pending` until the kubelet releases the claim; the 60 s start allowance inside `childDeadlineSeconds` covers a short wait. If the wait is longer, the allowance is raised (the budget check moves with it) and the time recorded. |
+| 4 | A 100 MiB part streams from a pod through the podman gateway to the Mac at 1 MiB/s or better. | The minimum rate is lowered for the local tier only (a test-configuration setting, A-37) and the measured rate is recorded; production keeps 1 MiB/s. |
+| 5 | The separate policy `factory-exec-egress-checkpoint-local`, selected by the profile label, lets a checkpoint pod reach the second port while the select-all policy keeps an authoring pod off it, on this CNI. | The checkpoint port is not opened to any pod and every k3s checkpoint fails visibly; nothing widens the select-all rule. The finding goes to W-021's step 0. |
+
+Recorded, not relied on: the reader's time and peak memory on the largest fixture inside the
+1,800 MB node; whether the child's default requests (1 GiB for the pod, the larger of the init
+container's and the main container's) fit beside the system pods there, and if not, the local
+tier's lower values (A-37); the image's size; the time from intent to acceptance.
+
+### 7.10 Owner decisions, an open question, assumptions, spec issues and plan additions
+
+The owner accepted the recommended default of every decision here, D28 to D37, on 2026-11-22,
+including the security calls D28, D33 and D34, and D30 (always `inconclusive` until W-075). None
+blocks 20a. D30 and D36 change what the exit-evidence checkpoint can show. O1 starts a new series
+in section 3: open questions, which are not decisions with a default. **O1 stays open and is
+assigned to silvio.**
+
+| # | Decision | Recommended default |
+| --- | --- | --- |
+| D28 | The reader's scope and limits (7.3). | SHA-1 repositories only; loose objects, pack v2/v3 with idx v2, offset and reference deltas to depth 512; loose and packed refs, no reftable; index v2 to v4 with no split or sparse index and no unmerged entries; the limit table of 7.3; Git's own path rules plus a refusal of backslashes. Everything outside is a typed refusal, never a fallback to Git. Not taken: depth 4,095 (Git's maximum; the work budget would bound it, but nothing needs it); accepting backslashes (legal on Linux, unrepresentable on hosts the factory may restore to). |
+| D29 | What a cancel does to a checkpoint (C13, SI-29). | A cancel never starts one. A cancel that finds the allocation `finalizing` lets the checkpoint finish and be stored, and the stage ends `cancelled` with no result. An urgent cancel gives the checkpoint up at once. The hold of section 6 stays a courtesy for `running` stops. |
+| D30 | Who mints the `StageResult`, and with what status (C6). **Set by the coordinator on 2026-11-21 after the security review (Furio M4); accepted by the owner, 2026-11-22.** | W-020 builds `StageFinalizer.finalize` for the child's identity only. **The runner mints `inconclusive` with the checkpoint and no outputs. The harness exit code is a diagnostic only**, kept in the intent record and the handoff, until W-075's `submit_result` gives a source for a semantic status. Not taken: `completed` on exit code 0 (the brief's earlier default), which would let a hostile harness's own exit make a runner-authored `completed` (`06:7`, AC-231). SI-38. |
+| D31 | Retries of the checkpoint child (C7). | One receipt per attempt, at most two attempts, each admitted only after the previous one's pods are shown gone. |
+| D32 | How a child streams large parts (C8). | A second TLS listener on its own port with its own limits and the same admission order; parts streamed into the artifact service; the pod listener unchanged. Not taken: special-casing streamed routes on the pod listener (its limits are server-wide). |
+| D33 | The child's topology. A security call. | Two containers and two exchange volumes (7.4's shape table): `read` mounts the claim read-only, holds no credential and writes only `export`; `build` holds the token, never mounts the claim, mounts `export` read-only, keeps its repository in `work`, which only it mounts, and loads objects from `export` only as data through `index-pack --strict`. Not taken: one container (a reader bug would run beside the token); one shared scratch volume (the brief's earlier form: the process D33 distrusts would write the credential holder's working directory; review, Furio M5, Livia 9). |
+| D34 | What is captured (SI-37). | Every tracked path; untracked files except the root and nested `.git`, special files, five rebuildable directory names and the deny list of 7.4 (case-folded, an interim under A-38); repository ignore files not honoured; over a cap, refuse. Not taken: honouring `.gitignore` (a second parser over candidate data, and ignored files are where a harness may leave work). |
+| D35 | W-020 is larger than its estimate: 18 to 21 days against 4–6 (3–5 more for the reader); 7.11 shows the arithmetic. | Three commits, 20a, 20b and 20c, each with its own review; one build-log line after 20c. 20a lands as a library with no caller. |
+| D36 | Restore into a pod (C10, D13). | Not in W-020: a typed refusal until a pod can read an artifact (D13; W-021's D48, accepted by the owner on 2026-11-22, gives it to W-022, and its design goes to silvio first). AC-13 and AC-16 are logged as restore mechanics only, through `LocalMaterializer`. **Consequence:** the exit-evidence lost-pod scenario needs that read, and O1, before it can run end to end. |
+| D37 | How a stage reaches `finalizing` in M2. | The supervisor asks when the cluster reports the harness exited; the runner offers finalize in the grant only to an allocation with a workspace and a wait above 0, and waits up to 20 s for that request before stopping as W-019 does. Not taken: the runner alone moving `running → finalizing` on a harness exit (no route, no wait; but `06:112` has the supervisor record the request first, and W-019 handed over a route). |
+
+**Open question O1, assigned to silvio (open).** How does a later stage run start from an earlier
+stage run's accepted checkpoint? A workspace row is bound to one stage run by W-018's identity rule
+(`manager.ts:228`, `start.ts:87`), while `06:39` speaks of one clone per task and repository and
+`06:76` of replaying from the last acknowledged boundary; the reference `restore` takes a checkpoint
+and no target. The candidates are (a) a new row seeded with a source `checkpoint_ref`, which needs a
+field the row does not have, or (b) one row per task and repository across stage runs, which
+reverses W-018's identity rule and touches W-017's allocate step. Either changes W-018 and W-023
+together and is expensive to undo, so it is not decided here. W-020's mechanics serve both.
+**Until it is decided, the exit-evidence lost-pod scenario is not reachable**, and AC-13 and AC-16
+stay material (7.9).
+
+Assumptions W-020 writes to `docs/assumptions.md`:
+
+| ID | Package | Stands in for | Assumption | Until |
+| --- | --- | --- | --- | --- |
+| A-36 | W-020 | W-077 (adapter), INT-08 | No native session state exists; every restore takes the portable handoff, and the handoff holds factory records only. | W-077 |
+| A-37 | W-020 | INT-05 | In the k3s tier the checkpoint listener runs in the test process beside the pod listener, on a second port, with the same throwaway CA; the local egress file adds a separate policy for that port selected by the checkpoint profile label, and the select-all rule is not widened. Every pod there is one source (A-32), so the listener's per-source caps are relaxed by the test configuration. The local tier may lower the part's minimum rate and the child's resource requests (7.9). | INT-05 decided; a real cluster (D4) |
+| A-38 | W-020 | W-116 | No checkpoint is scanned for secrets. No factory credential is ever on the volume, and the deny list of 7.4 keeps a short list of well-known names out of untracked files. It does not make a checkpoint secret-free. | W-116 |
+| A-39 | W-020 | D4 (storage) | `local-path` is the only storage class: a read-only claim mount and the absence of an ownership pass are what 7.9 measures there; CSI storage is `unknown` to `volumeDisposition`, so no child is admitted on it. | D4 |
+
+Spec issues W-020 records in `docs/spec-issues.md`:
+
+| ID | Location | Problem | Proposed choice |
+| --- | --- | --- | --- |
+| SI-34 | `06:69`; `CheckpointManifest` (`additionalProperties: false`) | "Record original index state" is required, and the manifest has no field for it. | A factory index manifest, `factory-checkpoint-index/1`, linked by purpose beside the manifest. |
+| SI-35 | `contracts/interfaces.ts:92-94`; `06:112` | `WorkspaceManager.checkpoint` and `restore` read as if the manager snapshots and restores, but the snapshot is the child's and the manager never touches a filesystem; `restore` names no target workspace. | `checkpoint` reads the accepted ref; `restore` checks the binding and returns the record; the materializer does the work. |
+| SI-36 | `CheckpointManifest.handoffRef` (required); `07:128`, `:132` | A portable handoff is required and has no schema. | `factory-portable-handoff/1`, factory records only. |
+| SI-37 | `06:69`; `untrackedArchiveRef` | "Selected untracked files" names no selector and the archive no format. | D34's rule; untracked files travel in the working-tree commit and the unstaged patch; no archive. |
+| SI-38 | `06:7`; `StageResult.status`; AC-231 | Completion may not be inferred from an exit code alone, and without an adapter or a tool receipt nothing else describes the outcome. | D30: the runner mints `inconclusive` with the accepted checkpoint; the exit code is a diagnostic; W-075's `submit_result` supplies the semantic status. |
+| SI-39 | `06:82` | Restore must rerun declared setup, and no trusted executor may run setup recipes. | Not rerun at restore; the first writer runs it, and the receipt says so. |
+| SI-40 | `schema.sql:983` | `one_live_checkpoint_job` counts `quarantined` as live, so one quarantined child blocks every retry for its parent. | Kept: the parent gives up and ends `terminated`. |
+| SI-41 | `06:67` | Tool versions must match the setup profile's before acceptance, and no observed versions exist for a step that runs no candidate setup. | The child records its own Git and reader versions in the handoff; the comparison waits for a setup executor (W-077). |
+| SI-42 | `06:84` | Behaviour-release and recipe trailers must be written from server records; M2 has neither record. | Task, stage run and checkpoint trailers only. |
+
+Plan additions for `docs/plan-additions.md`:
+
+- **P-30**: incremental bundles with a retained prerequisite chain (`06:74`), before repositories outgrow self-contained bundles.
+- **P-31**: a streaming verified read in the artifact service, so that restore does not hold a bundle in memory.
+- **P-32**: a longer fuzz run of the reader outside the default suite, its corpus kept, run before any real tenant.
+
+### 7.11 Definition of done, estimate and split, confidence
+
+**Definition of done.**
+
+- **20a:** the eleven reader files of 7.3 pass; W-018's eleven and W-019's files pass unchanged; `pnpm check` is green; the reader has no caller. Independent review, with the reader's security review, before 20b starts.
+- **20b:** the twelve unit files and the two cross-app files of 7.8 pass, with the 20b edits of 7.7's table and no others; `pnpm check` is green. `pnpm test:k8s` passes once on this machine on AC power: W-017's and W-019's files (unchanged, through the pin of 7.7), conformance rows 29 to 31 and `w020-checkpoint.k8s.test.ts`, with the five questions of 7.9 each answered or met by its fallback. Independent review.
+- **20c:** `w020-restore.test.ts`, `ac-13-dirty-checkpoint-restore.test.ts` and `ac-16-missing-native-session.test.ts` pass with the 20c edits of 7.7's table; `pnpm check` is green; the k3s file runs once more. Independent review.
+- The build-log line logs **AC-14** as claimed at F, and **AC-13 and AC-16 as restore mechanics, material only, the claim waiting for O1 and D36**, naming W-129 for AC-206 and W-134 for AC-230 and AC-231, and saying that the exit-evidence lost-pod scenario is not reachable until O1 is decided. The k3s date, image digests and the five answers are in the same line.
+- No file under `apps/worker` changes; no migration; no new npm dependency; the checkpoint image adds Git, which the materializer image already carries.
+- `docs/assumptions.md` has A-36 to A-39; `docs/spec-issues.md` has SI-34 to SI-42; `docs/plan-additions.md` has P-30 to P-32; section 3 has D28 to D37 and O1, and D30 is marked as accepted by the owner, 2026-11-22.
+- The READMEs state rules 8 to 10, the reader's open list and limits, the child's shape table, the routes and their clauses, the captured and excluded lists, acceptance's lock order, restore's proof, the residual risks (the SHA-1 one among them) and what is not built. `packages/workspace/README.md` drops "checkpoint and restore" from "Not built".
+- Nothing is left behind by either tier: each file checks its process groups, both listener ports and its namespace at teardown.
+
+**Estimate and split** (D35). Livia's round-1 estimate (15) was 8 to 10 days for 20b and 14 to 18
+in all, against this brief's 12 to 15. The review then added work to every sub-part. Counted item
+by item, in days:
+
+| Sub-part | Items | Days |
+| --- | --- | --- |
+| 20a | zlib and loose objects 0.5; packs, idx and positioned reads 1.0; deltas, cache and the work budget 0.75; refs 0.25; the index, versions 2 to 4, 0.75; commits, trees, the walk and the digest 0.5; the working tree, `fs-safe` from the mount root and the path rules 0.75; eleven test files, the differential, fuzz, layout and limit tests among them, 1.5 | **6.0** (5 to 6.5) |
+| 20b | finalize route, the grant's offer, the supervisor's changes and the harness-exit wait 1.5; `passFinalizing`, child rows, give-up and the sweep 1.5; `renderCheckpointJob`, the image, the account and both egress files 1.0; the checkpoint listener, the child guard, `review` generalised, streaming and part links 2.0; the builder with its exclusive repository and `index-pack` 1.5; acceptance, `StageFinalizer`, the release check of C21 and the lock order 1.25; twelve unit and two cross-app files and the edits 2.0; the k3s file, rows 29 to 31 and the run 0.75 | **11.5** (10 to 12) |
+| 20c | the restore request kind, `restore`, `checkpoint` and C16 0.75; the materializer's restore kind with `--index` and the stdin forms 1.0; the host 0.25; three test files 0.75 | **2.75** (2.5 to 3.5) |
+| Total | | **20.25**, so **18 to 21** against the backlog's 4–6 (and section 1's 3–5 for the reader) |
+
+| Sub-part | Delivers | Can start |
+| --- | --- | --- |
+| 20a | The reader, its manifests' types, eleven test files | Now: it depends on W-018 only |
+| 20b | Finalize route and wait, `passFinalizing`, the child Job and image, the checkpoint listener, the builder, acceptance, the sweep, the k3s file | After 20a's review; after W-019's k3s tier has passed once (W-021's D49) |
+| 20c | Restore kind, `restore`, `checkpoint`, C16, the restore mechanics for AC-13 and AC-16 | After 20b |
+
+The day count assumes W-019's k3s tier passes unchanged first. W-021 (section 8) is built after
+W-020 (its D49); its admission is written against 7.4's shape table.
+
+**Confidence.**
+
+- **Verified by reading today:** every file and line cited; the layout of a generation directory; that `treeDigest` is computed by functions the reader can call unchanged; that `states.ts:16` has `running → finalizing` and no `suspect → finalizing`; that `checkpointRetained` checks one artifact; the lease clause in `transitionAllocation`; the cancel path's treatment of `finalizing`; the artifact service's streaming upload, its in-memory read and its active-stage check; that a workspace row is bound to one stage run (the root of O1); the `checkpoint_job` columns, index and grants; that the worker writes `result_ref` unconditionally; that `kit.ts` and `supervised.ts` build their runner through `harness.ts:117`; that `gitEnvironment()` sets no literal pathspecs; the tests that assert the old behaviour.
+- **Verified by running:** Node's zlib behaviour (Z1 to Z4), the permission model and `O_NOFOLLOW` (P1 to P3, run twice), Git's mode canonicalisation (G1), its attribute source in a bare repository (G2), its refusal of zero-padded trees at clone and `index-pack` (G3), and the pathspec reads (G4).
+- **Inferred, not run:** the five k3s questions of 7.9. The one I trust least is question 3 (when a `ReadWriteOncePod` claim is free again after a pod delete); the one with the widest effect if wrong is question 5, the second egress policy, because without it no k3s checkpoint can run at all.
+- **Inferred from Git's documentation and source behaviour, to be pinned by the differential tests:** index extensions and their required or optional rule; `check-ref-format`; `verify_path`'s HFS and NTFS rules; delta encoding; that `--literal-pathspecs` covers every command the builder and restore run.
+- **Judgement:** the estimate; the limits (they follow W-018's where they mean the same thing); the resource defaults; the 20 s wait; the deadlines (now derived, 7.4); D34's lists.
+- **Beyond research:** O1, recommended for silvio before W-023's brief. If the owner wants the lost-pod exit scenario end to end in M2, O1 and D36 are both on that path. D30 was accepted by the owner on 2026-11-22.
+- **Where I would point the next review:** the reader's pack and delta code and its fuzz control; the builder's handling of a hostile export; acceptance's lock order and its cancel branch; the finalize retry window of race rule 11.
+
+### 7.12 Response to the two reviews (round 1, 2026-11-21)
+
+The response to the design review and the security review is recorded as round 6 of section 10.
+
+## 8. Fifth package brief: W-021 Capability proxy and execution profiles
+
+Written 2026-11-19 against `a119964` (W-019b committed: the supervisor, launcher, images and k3s
+files, fake tier run), and revised on 2026-11-21 after a design review and a security review
+("Response to review", at the end of this section). No test, suite or cluster was run for this
+brief: every code fact below was read on those days, and every Kubernetes behaviour is a row of
+section 2, a result of W-019's step 0 (`docs/build-log.md:38`), a line of the Kubernetes source read
+on those days (cited where used), or marked **to confirm in the k3s tier**. Six of those carry
+design weight and are probed first (step 0). **W-019's own k3s tier has not run yet**
+(`docs/build-log.md:40-41`: "the k3s tier written and NOT run"), and this package replaces the
+policy those files run under; see C10 and D49.
+
+**Goal.** Make the runner the one place that decides what a stage's pod may do, and make the cluster
+refuse what the runner does not render. When W-021 is done:
+
+- a supervisor can ask the runner whether a named operation on a named resource is allowed, and the
+  answer comes from grants the runner derived from stored rows; nothing in a request, a `StageInput`
+  or a prompt adds authority, and every decision is audited (denials under W-019's cap);
+- a grant's call limit survives a runner restart and holds across two runner replicas;
+- a capability is refused the moment its allocation is not `running` or `suspect` with a live lease,
+  at its epoch, with its workspace still owned by that pod and its task `running`;
+- each stage role runs under the service account and execution profile of its role class (D42), and
+  the guard checks the reviewed identity against the one stored on the allocation;
+- the execution namespace has default-deny ingress and egress, with two allow rules: allocation
+  pods may reach the pod listener's port and nothing else, and the checkpoint child (W-020) may
+  reach the checkpoint listener's port and nothing else. A pod there cannot reach the API server,
+  the metadata address, the databases, the workflow engine, another port on the runner's host, the
+  node's kubelet, DNS or another task's pod;
+- admission in that namespace refuses any Job, pod or claim not created by the right identity, any
+  pod that breaks the chapter 09 hardening rules or its profile (the checkpoint child's included),
+  any container running an image other than the one its name is tied to, any image change on a
+  live pod, any pod delete or eviction that shortens the grace period (the kubelet and the pod
+  garbage collector excepted, D44), any ephemeral container, exec or attach, and any orphaning Job
+  delete.
+
+No Temporal, no workflow change, **no migration** (D40), no new npm dependency, no Claude, no factory
+tool server (W-075), no checkpoint child (W-020 builds it; this package admits it), no bundle reads
+from pods (D48). The one change in `apps/supervisor/src` is the deny-target cap, which moves to
+`@factory/runner-protocol` and rises from 8 to 16 (`args.ts:63`, `config.ts:134`; X3, L7).
+
+**Size.** More than the backlog's 4–6 days; I expect 10 to 12 (D38), after the two reviews.
+**Step 0**: the probe, most of a day, after W-019's k3s tier has passed once. **21a**: the grants,
+the durable counter, the capability route, the per-profile identity in the guard, and the
+retirement of the in-memory proxy, in the fake tier. **21b**: the execution profiles as typed
+manifests (three network policies, admission for four profiles, limits, image allowlist), the real
+deny-target list, the control namespace, the presence check, the move of conformance rows 1 to 21
+to the control namespace, and the k3s tier. Each commit has its own review. The acceptance lines
+are logged after 21b.
+
+**Words.** "Grant" is one `CapabilityGrant` as the contract defines it (`domain.schema.json` `$defs`
+`CapabilityGrant`, `:742`). "The proxy" is the runner's capability check service. "A check" is one
+call to it. "A slot" is the audit row that records one allowed check (D40). "Profile" is an
+execution profile: the service account, network policy, image set, resources and volume rules one
+kind of allocation pod runs under. "Role class" is the group of stage roles that share a profile.
+"The exec namespace" is `factory-exec-local`. "The control namespace" is the local-only
+`factory-exec-control` (D45). "Admission" means the ValidatingAdmissionPolicy set this package
+ships. "The listener", "the guard", "the gate" and "fenced" are as in section 6.
+
+**Spec to read.** `09-verification-security.md:69-77` (identities, role boundaries, the Kubernetes
+and network boundary), `:93` (incidents revoke capabilities); `07-harness-context.md:5`, `:38`
+(run input carries capability grants, never an admin token), `:74` (role instructions cannot grant
+credentials), `:92-96` (grants name operation, scope, environment, lifetime, maximum calls and
+side-effect class; network access is role/profile-specific); `06-runner-workspaces.md:25` (deny
+stale-epoch tool operations; no reusable publishing credential in the pod), `:90` (cancel revokes
+further tool actions), `:108-120` (pod boundary; the projected identity only in the supervisor;
+"NetworkPolicy ... are implementation-profile obligations"; grants are checked per call against the
+current epoch); `25-data-security-operational-safeguards.md:57-64` (the emergency stop cancels
+through the cancellation protocol); `22-reference-practice-adoption.md:91` (a rejected or undecided
+candidate leaves the specification in force: no Kyverno, Gatekeeper or agent-sandbox, A-26);
+`16-acceptance-catalogue.md:185-193` (AC-19), `:555-563` (AC-56); `01-scope-architecture.md:37`,
+`:42`, `:44` (INV-07, INV-12, INV-14); `14-build-backlog.md:263-271`.
+Code: `apps/api/src/auth/capability-proxy.ts` (whole file), `apps/api/test/ac-19-unauthorized-tool-request.test.ts`;
+`apps/runner/src/config.ts:26-38`, `:77-86`, `:134`, `:193-194`; `src/pod-guard.ts:30-39`, `:63-70`,
+`:96-140`, `:161-194`; `src/listener/pod-listener.ts:56-62`, `:96-149`; `src/job-manifest.ts:18-24`,
+`:26-38`, `:56-84`; `src/startup-checks.ts:25-45`; `src/records.ts`; `src/start.ts:103`; `src/token.ts:19`, `:108-112`;
+`packages/runner-protocol/src/pod-api.ts:4-31`; `packages/database/src/allocation.ts:175-185`,
+`:234-261`; `packages/database/migrations/0005_operations_delivery_ledgers.sql:165-174`,
+`0010_roles_ownership_grants.sql:146-147`, `:174-175`, `0013_retention_job_grants.sql:12`;
+`deploy/k8s/*.yaml`, `deploy/k8s/local/egress-listener-only.yaml`, `deploy/images/harness-scripted/Containerfile:4-7`;
+`apps/runner/test/conformance/suite.ts:39-47`; `apps/runner/test/k8s/cluster.ts:116-120`, `:150-170`;
+`scripts/k3s.sh:150-167`; `apps/runner/README.md:249-251`;
+`docs/assumptions.md` A-07, A-25, A-26, A-31, A-33, A-35. Kubernetes source:
+`staging/src/k8s.io/apiserver/pkg/admission/plugin/cel/condition.go:95-157` (master, read
+2026-11-19: the CEL `request` variable carries `Options: attr.GetOperationOptions()`, so a policy
+can read a DELETE's options).
+
+### What is already built, and is not rebuilt here
+
+- The role table and the rule that no stage role is minted a publish, merge, deploy or credential grant (`capability-proxy.ts:17-27`, A-07). It moves; it does not change (D41).
+- The audit shape of a capability decision: `capability.<operation>`, resource kind `capability`, a request digest and a small reason object, never the request text (`capability-proxy.ts:80-83`). Slots keep it.
+- The pod call guard and its admission order (section 6, "The listener", steps 1 to 7). The capability route is one more route behind it, with its own per-pod bucket (D43).
+- The lease clause in the locked statement of every route that grants (rule 4) and the workspace clause of the renewal (`allocation.ts:175-185`). The slot statement reuses both.
+- Deterministic `audit_event` records with pinned fields and `ON CONFLICT DO NOTHING` (D18, `records.ts`, `allocation.ts:239-244`). Slots are records of that kind.
+- Restricted pod security on the namespace (`deploy/k8s/namespace.yaml:9-14`), no Role for the supervisor's account (`service-accounts.yaml:1-4`), the runner's Role (`runner-rbac.yaml:1-16`), and the hardened Job the runner renders (`job-manifest.ts:18-24`, `:74-75`): admission checks what is already rendered, so no W-017 or W-019 Job changes shape except its service account and, for read-only roles, one mount (D42).
+- The network gate and the local listener-only egress policy (W-019, D24). Step 0 item 5 of W-019 showed k3s enforces egress here, refusing at once (`docs/build-log.md:38`).
+
+### Conflicts and corrections
+
+Each row was checked against the code or the spec today.
+
+| # | Where | What it says | What is actually there | Brief |
+| --- | --- | --- | --- | --- |
+| C1 | `backlog.json` W-021 `modules` | `apps/runner`, `deploy/helm`. | D8 decided plain manifests under `deploy/k8s`; there is no `deploy/helm`. The design also needs `packages/runner-protocol`, `packages/database`, `packages/domain`, `apps/api` (the retirement) and `scripts/k3s.sh`. | `deploy/k8s`, and every file is listed under "Files", as W-019 did. |
+| C2 | Section 6 hand-off "W-021 and W-090 (admission)"; A-33; `harness-scripted/Containerfile:4`, `:7` | Admission must refuse an image labelled `factory.harness=scripted` outside the local tier. | Admission sees the object in the request (the pod spec and its image string), not the image's configuration; nothing in the API server reads image labels. A policy cannot test that label. | D46: the tier's **image allowlist** is the rule. The production allowlist is digest-only and can never name a scripted image, because no production build makes one; the label stays as documentation. |
+| C3 | Section 5 hand-off; `capability-proxy.ts:59` | Narrow `starting` to `running`. | `suspect` is still a valid lease: renewals accept it (`allocation.ts:178`, `pod-guard.ts:38`). | Live means `running` or `suspect`, at the epoch, with the lease unexpired **in the statement that takes the slot**. `starting`, `stopping` and every terminal state are refused. |
+| C4 | `capability-proxy.ts:47`, `:79`, `:81` | Call counters. | An in-memory `Map` per proxy object, so a restart or a second replica resets every limit; and the counter is incremented before the audit insert, so a failed insert still spends a call. | The allowed audit row **is** the counter (D40): one slot per allowed call, written in the statement that decides it. |
+| C5 | `capability-proxy.ts:29-40` | Grants are minted per proxy. | `grantId` is `randomUUID()`, lifetime and limit are caller arguments, and the grants live only in the object. Two runners would mint two different sets. | Grants are a pure function of stored rows, with deterministic ids (D39). |
+| C6 | `pod-guard.ts:114`, `:134`; `start.ts:103`; `allocation.ts:19` | The guard checks the supervisor's identity. | It checks one subject from configuration. The allocation row stores `supervisor_identity`, and nothing reads it. | The local check accepts any configured profile account; after the row read the reviewed username must equal `a.supervisorIdentity` (21a). |
+| C7 | Section 5 hand-off (A-25 only); `09-verification-security.md:75` | Admission backs A-25: who creates Jobs, pods and claims. | Chapter 09 also requires, by "additional admission policy ... plus a LimitRange": `readOnlyRootFilesystem`, CPU, memory and ephemeral-storage requests and limits, `automountServiceAccountToken=false`, and no runtime socket mount. | All of it is W-021's (21b), with the A-25 rules. |
+| C8 | `suite.ts:39-47`, `:92`, `:117`, `:211`, `:293`; `kube-conformance.k8s.test.ts:13`; `cluster.ts:118`, `:160-161`; `w017-run.k8s.test.ts:92`, `:112`, `:120`, `:179`, `:208`, `:212`; `w019-supervised-run.k8s.test.ts:52`, `:57`; `w019-network-gate.k8s.test.ts:63`, `:71` | The k3s tier's own helpers. | **Corrected after review (design finding 1):** the conformance suite creates its objects through the **runner's** client (`runnerKube`, `kube-conformance.k8s.test.ts:13`), not as the admin; the other files do use the admin. Either way they break 21b's rules: suite containers are named `c`, `polite`/`stubborn`, `app`, `keeper`/`leaver`; templates carry no allocation or profile label; claims are 64Mi; row 5's control is `ReadWriteOnce`; rows 3 and 14 make an orphaning Job delete and a force delete on purpose; helpers delete pods with grace 0; and `w017-run.k8s` reads files with `kubectl exec` in the exec namespace, which `factory-exec-no-debug` refuses. | Rows 1 to 21 are facts about Kubernetes: they move to the control namespace (D45) and run with the fake's admission model off. The `kubectl exec` reads become node-side `crictl exec` reads through `inNode` (`cluster.ts:137`), which do not go through the API server. Every edit is in the edits table under "Files". |
+| C9 | D13; A-31; W-020's draft ("Restore into a pod waits for ... W-021") | A scoped artifact read from inside a pod arrives with W-021. | The pod's identity is mounted only in the supervisor (`06:110`), and the materializer is an init container with no credential (`job-manifest.ts:53-54`). Serving a bundle to it needs either a credential in the init container, which `06:110` forbids, or the supervisor writing into the shared volume before start, which is a new trusted path. Neither is designed. | Not built here (D48, accepted by the owner, 2026-11-22; the design goes to silvio before W-022's brief). First user is W-022. |
+| C10 | `docs/build-log.md:40-41` | W-019's k3s tier is written. | It has not run. This package changes the policy, the admission and the helpers those files run under. | D49: W-019's k3s tier passes once, unchanged, before W-021's step 0. A failure there is W-019's to fix first. |
+| C11 | Section 6 residual "local-path does not enforce a claim's size (W-021, W-024)" | W-021 may close it. | Container `ephemeral-storage` limits and `emptyDir.sizeLimit` cover the writable layer and scratch, not a `local-path` claim, which is a host directory. A ResourceQuota counts requested sizes, not use. | Not closed. It stays with W-024 and D4 (a CSI class with enforced capacity). |
+| C12 | Section 5 residual; section 6 hand-off ("an admission rule against grace 0") | Refuse a pod delete with grace 0. | The kubelet removes every pod object, after its containers end, with its own delete at grace 0. A rule that refuses grace 0 for everyone leaves every pod Terminating for ever. | The rule refuses a delete whose grace is below the pod's `terminationGracePeriodSeconds` unless the requester is in `system:nodes` (D44); step 0 item 1 shows both halves. |
+| C13 | `config.ts:31`, `:108` | One per-pod bucket: burst 5, one every 2 s. | It was sized for one renewal every 10 s. A harness's tool calls through the supervisor would be throttled at once, and would starve the same pod's renewals if they shared it. | The capability route has its own per-pod bucket, and the review budget's sizing counts both (D43). |
+| C14 | The assignment's "H4/H6 hand-offs from W-017b" | | No item labelled H4 or H6 exists in the repository, the plan or the commit history (searched today). The W-017b hand-offs to W-021 that do exist are `apps/runner/README.md:249-251` and `m2-plan.md:854`, `:863`: the egress policy for internal and cluster addresses, the ValidatingAdmissionPolicy that backs A-25, and the grace-0 rule. | Treated as those three; all are answered here. **The coordinator should confirm** that H4 and H6 meant these and not items of a review kept outside the repository. |
+| C15 | Section 6 hand-off (grace 0); this brief's first `factory-exec-delete` | A pod-`DELETE` rule stops a force delete. | An **eviction** (`CREATE` on `pods/eviction`, with `deleteOptions`) is admitted as a create of the subresource (`pkg/registry/core/pod/storage/eviction.go:152-153`) and then deletes the pod internally with `rest.ValidateAllObjectFunc` (`:193`, `:382`): no pod-`DELETE` policy sees it (security finding M1; read in the Kubernetes source on 2026-11-21, master). | `factory-exec-delete` also matches `CREATE` of `pods/eviction` and refuses `object.deleteOptions.gracePeriodSeconds` below 15, the kubelet's group excepted; step 0 item 1 and conformance row 24 show it, with `deletecollection`. |
+| C16 | 21a, grant derivation ("a role with no workspace gets its repository-scoped entries") | Repository grants come from rows. | Neither `execution_allocation` nor `stage_run` has a repository column (`0003_tasks_execution.sql`, both tables); only the workspace row has `repository_id` (`packages/database/src/workspace.ts:12`). And `validateStartRequest` is pure (`start.ts:30-44`), so it cannot see a repository (design finding 3). | Repository grants take `workspace.repositoryId`; **no workspace, no grants** (`knowledge_curator`, whose entries are all repository-scoped, gets none until a later package names a source, P-38). The input-grants check moves into the allocate transaction, after the workspace row is read. |
+| C17 | Security finding L2 ("no container mounts both a claim and a projected token") | | W-019's supervisor mounts the claim read-only **and** the token (`job-manifest.ts:64`): the workspace view needs both (section 6). The rule as worded refuses every allocation pod. | The rule is per profile: in an allocation profile only `supervisor` may hold the token, and only with a read-only claim mount; no container holds a read-write claim and a token; in the `checkpoint` profile no container holds both (W-020's D33). "Response to review" says why. |
+| C18 | D45 ("a RoleBinding of the runner's Role" in the control namespace) | | A RoleBinding can name a Role of its own namespace or a ClusterRole, never a Role of another namespace (`runner-rbac.yaml:1-25`; design finding 6, security L6). | The control namespace gets its own Role with the same rules, in `deploy/k8s/local/control-namespace.yaml`. |
+| C19 | `pod-guard.ts:191` | A workspace denial maps to a code by route. | Only `renew` and `stop-ack` map to `stale_epoch`; any other route, the capability route included, gets `not_startable` (design finding 6). | `capability` joins the `stale_epoch` list; `w021-capability-liveness` asserts the code. |
+| C20 | `config.ts:134`; `apps/supervisor/src/args.ts:63` | At most eight deny targets. | Both the runner's configuration and the supervisor's argument parser cap the list at eight. This tier now needs ten, W-023 adds one, and production needs more (design X3, security L7). | The cap moves to one constant, `MAX_DENY_TARGETS = 16`, in `@factory/runner-protocol`, imported by both. That is the one change in `apps/supervisor/src`. |
+
+### Rules
+
+W-017's three rules and W-019's four stand, and W-020's draft adds 8 to 10. Three more:
+
+11. **Authority is derived, never carried.** A grant is a pure function of the allocation, its
+    stage run, its workspace and its writer-start record. Nothing a caller sends (a request body, a
+    `StageInput`, a grant id, a prompt) can add an operation, widen a resource, lengthen a lifetime
+    or raise a limit. Two runners derive the same grants with the same ids.
+12. **An allowed call is a row.** A check is allowed only by the commit of its slot, written in one
+    statement that also carries the lease, epoch, writer, workspace, task and expiry conditions. No
+    count, cache or answer in memory is authority; an in-memory hint may only make a check cheaper.
+13. **The cluster refuses what the runner does not render.** Every Job, pod and claim in the exec
+    namespace must match a profile the runner renders, created by the identity that renders it.
+    Admission is a second line under the runner's own rules, not a replacement for them; each
+    admission rule has a test showing the runner never needs the refused request.
+
+### Step 0: the probe
+
+Most of a day on AC power, **after W-019's k3s tier has passed once** (D49), with the pinned k3s image,
+W-019's images and hand-written throwaway policies; no W-021 code. Items 1 to 3 and 5 shape the
+admission rules of 21b, item 4 the network policy, item 6 the presence check. Each has a named
+fallback. If item 1 or item 2 fails, the owner is told before 21b starts.
+
+| # | To show | If it does not hold |
+| --- | --- | --- |
+| 1 | A ValidatingAdmissionPolicy on `DELETE` of pods sees `request.options`: an admin delete with `gracePeriodSeconds: 0` and one with `1` are refused with the policy's message; one with `15` and one with no options are accepted; **the kubelet's own final delete passes** (the pod object is gone about 15 s after an accepted delete, and no refusal names a `system:node:` requester). The same for `DELETE` of Jobs: no `propagationPolicy`, `Orphan` and `orphanDependents: true` refused; `Background` and `Foreground` accepted. **Eviction** (security M1, C15): an admin `CREATE` on `pods/eviction` with `deleteOptions.gracePeriodSeconds: 0` is refused by the policy bound to that subresource; with `15`, and with no options, the eviction is accepted and the pod ends after its grace. **Control:** with the eviction binding removed, the grace-0 eviction removes the pod object at once while its TERM-ignoring process is still alive (the hazard). **`deletecollection`:** `DELETE` on the pod collection with grace 0 is refused item by item (the policy sees `oldObject` and the options per pod); with grace 15 it is accepted. | Delete or eviction options not visible: that rule cannot be built as a policy on this version; it is dropped from 21b, the residual risks of sections 5 and 6 stand, and a webhook (a new server and its own TLS) is raised with the owner, not built (recommend silvio). `deletecollection` not consulted per item: RBAC (no collection delete for the runner, `runner-rbac.yaml:1`) is the only control, and the residual list says so. |
+| 2 | Who the API server says created a Job's pod, who deletes the pods of a Job deleted with `Background`, and **who the pod garbage collector is** (design finding 4): a policy that refuses every pod create, delete and eviction in a throwaway namespace with `messageExpression` naming `request.userInfo.username` and groups shows the Job controller's identity in the Job's `FailedCreate` event and the garbage collector's in the refused delete. For the pod garbage collector: a pod whose node object is deleted (a second, fake `Node` object created by the admin and named in the pod's `nodeName`; the pod never runs) is force-deleted by it at grace 0; record its identity and the refusal. | If the Job controller and the pod garbage collector share one identity (`system:kube-controller-manager`), the pod-create rule names it and also requires a controlling owner reference to a Job, and the grace exemption for it covers every controller; A-41 records both. If the fake-node scenario cannot be produced on one node, the pod garbage collector's identity is taken from the k3s controller-manager's arguments (`--use-service-account-credentials`) and marked inferred. |
+| 3 | A policy is consulted for `CONNECT` on `pods/exec` and `pods/attach` and for `UPDATE` on `pods/ephemeralcontainers`: each, by the admin, is refused in the exec namespace. **Control:** the same in the control namespace succeeds. | The rule that is not consulted is dropped; RBAC (the runner has no such right, the supervisor's account has no Role) is the only control, and the residual list says so. |
+| 4 | Under a default-deny policy for both `Ingress` and `Egress` on every pod, plus the listener allow rule: from pod A in the exec namespace, a TCP connect to pod B's port in the same namespace, to the cluster DNS service (`10.43.0.10`, UDP and TCP 53) and to `10.88.0.1:55432` and `:57233` all fail; a pod in the control namespace cannot connect to pod B either (ingress); the listener still completes a handshake. **Two listeners** (X3): with a third policy that selects only pods labelled `<prefix>profile: checkpoint` and allows a second port, a pod without that label cannot connect to the second port and a pod with it can, and the labelled pod cannot connect to the first port. The node's own address on 10250 (kubelet) and 6443 is refused from every exec pod. **Control:** the same probes between two pods of the control namespace connect, and DNS answers there. Record refused or timed out for each, and for UDP how a lost answer looks. | If pod-to-pod or DNS is not enforced by this CNI, AC-56's other-task half is not shown at K; the build-log line says so, and the gate gains the reachable targets that a literal list can name. |
+| 5 | A policy with `paramKind: ConfigMap` and a binding with `paramRef` reads a space-separated image list (`params.data.images.split(' ')`), refuses a pod whose image is not in it, and accepts one that is; a missing param ConfigMap with `parameterNotFoundAction: Deny` refuses everything. Record the CEL cost the API server reports, if any. | Inline the allowlist into the policy's expressions, rendered per tier (the typed renderer of 21b does this either way); the params ConfigMap is dropped. |
+| 6 | The runner's account can `get` the named ValidatingAdmissionPolicies and bindings (cluster scope), the exec namespace object, and the named NetworkPolicies, LimitRange and params ConfigMap in the exec namespace, once a ClusterRole and a Role name them by `resourceNames`; it cannot `list` any of them, cannot `get` another by name, and still cannot write a ConfigMap (row 20). | The presence check is **not built**: 21b adds no `profileCheck` key and `createConfig` requires nothing of it (design finding 5's contradiction removed). The residual "a cluster without the policies can still run pods" stays, covered only by the gate for the network half, and the build-log line says so. |
+
+Recorded, not relied on: whether the LimitRange's `max` without a `default` sets a pod's missing
+limits to the maximum before validation runs (mutating admission runs first). The runner renders
+every request and limit itself and the policy requires them, so the answer changes what a pod
+created by someone else would look like, not what is admitted from the runner.
+
+### The parts, and where each runs
+
+| Part | Runs in | Touches |
+| --- | --- | --- |
+| Role table (`@factory/domain`, `capabilities.ts`): role to operations and side effects, role to role class | Imported by the runner (and, until it is deleted, nothing else) | Nothing. Pure. |
+| Grant derivation (`apps/runner/src/capability/grants.ts`) | The runner process | The allocation, stage run, workspace and writer-start rows it is given. Pure over them. |
+| The proxy (`src/capability/proxy.ts`) and its slot statements (`packages/database/src/capability.ts`) | The runner process | `audit_event` (insert and primary-key reads), a row share lock on the allocation, a transaction advisory lock per grant. |
+| The capability route (`POST /pod/v1/capability/check`) | The listener | The guard, then the proxy. |
+| Profile identity in the guard | The runner process | The reviewed username against `execution_allocation.supervisor_identity`. |
+| Profile renderer (`src/profiles/render.ts`) and its print entry | The runner process at start-up (presence check); `scripts/k3s.sh` through the entry (apply) | Nothing; a pure function of `RunnerConfig`. |
+| Admission policies, network policies, LimitRange, service accounts | The cluster's API server and CNI | Every request in the exec namespace. |
+| Start-up and periodic presence check | The runner process | `get` by name on four objects. |
+| `FakeKube` admission model | The test process | Memory. Off by default; must agree with the cluster on every conformance row it models (rows 22 to 26). |
+
+### 21a: grants, the durable counter and the capability route
+
+**The role table** moves from `apps/api/src/auth/capability-proxy.ts:17-27` to
+`packages/domain/src/capabilities.ts`, unchanged in content, keyed by the contract's `Role` enum
+(`domain.schema.json` `$defs` `Role`: the same nine roles as `StageRole`). It adds, per role, its
+role class (D42) and, per operation, the default `maxCalls` (A-45). A function
+`assertNoDeliveryGrant(table)` throws if any entry has a side effect other than `read` or
+`workspace_write`, or an operation matching `push|merge|deploy|credential|release`; the domain test
+runs it on the real table and on a planted bad one.
+
+**Grant derivation** (`deriveGrants(rows)` in `src/capability/grants.ts`, pure):
+
+- Input: the allocation row, its stage run (for `role`), its workspace row (for `id` and `repositoryId`), and its writer-start record (`records.ts:31-35`, `created_at` read with it). No writer-start record: no grants. That is the "no supervisor was ever granted" case of section 6, so a check in `starting` has nothing to match even before the state test refuses it.
+- One grant per role-table entry: `grantId = v8Uuid(['factory-capability-grant/1', org, allocationId, String(ownerEpoch), operation, resourceId])` (`names.ts:32-38`); `resourceIds: [workspaceId]` or `[repositoryId]` as the entry says; `environmentScope: 'task-workspace'`; `sideEffect` from the entry; `allocationEpoch: ownerEpoch`; `maxCalls` from the entry, capped by `capabilities.maxCallsCap` (default 10,000); `expiresAt` = the writer-start record's `created_at` plus the stage run's `limits.wallSeconds`, computed in SQL and returned as text, never from the process clock.
+- **No workspace, no grants** (C16, design finding 3). Repository-scoped entries take `repositoryId` from the workspace row (`packages/database/src/workspace.ts:12`); neither the allocation nor the stage run has a repository column. An allocation with `workspace_id` null gets no grants at all, so `knowledge_curator`, whose entries are all repository-scoped, gets none in M2 (P-38 records where a source would come from).
+- `CapabilityGrant` validation: every derived grant passes `validateContract('CapabilityGrant', g)`; a failure is a hard error.
+- Two runner instances, or one before and after a restart, derive equal arrays (deep equality, ids included). A new epoch derives new ids, so a replaced writer's counters start at zero and the old epoch's slots can never be spent again (race rule 7).
+
+**`StageInput.capabilityGrants`** (D39). The contract requires the field (`domain.schema.json:844`,
+`:886`) and `07:38` says run input carries the grants. From W-021 it carries no authority:
+the allocate step gains one check, **inside the allocate transaction, after the workspace row is
+read** (`allocateOnce`, `start.ts:58`, after the workspace's share lock at `:86`; `validateStartRequest`, `:30-44`, is pure and cannot see a
+repository, C16). Every listed grant must name an `operation`, `sideEffect` and `environmentScope`
+that the role table gives the input's `role`, with resources drawn from the workspace row's `id`
+and `repositoryId`; otherwise `invalid_request` ("the input lists a capability the role does not
+have"), and the transaction rolls back with nothing created. With no workspace, only an empty list
+is accepted. An empty list is always accepted. The ids, `expiresAt` and `maxCalls` in the input are ignored; the derived grant is what
+the proxy uses. So a caller that lists too much is refused before anything is created, and one that
+lists too little narrows nothing (SI-43). `ac-11-run-identity-conflict.test.ts:58` (3,000 grants) is
+still refused first by the size cap.
+
+**The slot** (D40). One allowed call is one `audit_event` row:
+
+| Field | Value |
+| --- | --- |
+| `id` | `v8Uuid(['factory-capability-slot/1', org, grantId, String(n)])`, `n` from 1 to `maxCalls` |
+| `actor_id` | the reviewed username (the profile's service account subject) |
+| `action` | `capability.<operation>` (as W-008) |
+| `resource_kind`, `resource_id` | `capability`, the requested resource id |
+| `outcome` | `allowed` |
+| `correlation_id` | `capability-slot:<grantId>` |
+| `request_digest` | the caller's 64-hex digest of its tool request (never interpreted) |
+| `details_ref` | `{ grantId, slot: n, callId, epoch, podUid, role, environment }` |
+
+Beside each slot, in the same statement's transaction, one **call marker**: an `audit_event` row at `v8Uuid(['factory-capability-call/1', org, grantId, callId])`, action `capability.call`, outcome `allowed`, `details_ref` `{ grantId, slot: n }`. `callId` is the caller's UUID for one tool call (W-075's `factory_tool_call.call_id`). A retry with the same `callId` finds the marker by primary key and gets the same slot back, spending nothing (race rule 4).
+
+The proxy takes a slot in **one short transaction of its own** (`withTenant`, as `capability-proxy.ts:71`), which does nothing but steps 0 to 4 and commits. **Lock order: the grant's advisory lock, then the allocation row.** No transaction anywhere takes the allocation row and then a grant's advisory lock: cancel, the passes and renewals never take the advisory lock, so no cycle exists (design finding 2).
+
+0. The call marker, by primary key: present means this `callId` already holds a slot; answer it again (allowed, same slot) and stop. Read again under the lock in step 1 before any insert.
+
+1. `pg_advisory_xact_lock(hashtextextended('factory-capability/' || org || '/' || grantId, 0))`, as the capacity stand-in locks a pool (`allocation.ts:212-214`). Checks of one grant are then serial across replicas; checks of different grants are not.
+2. Find the first free slot by primary-key probes only (`audit_event` has no other index, `0005:165-174`, and this brief adds none): with an in-memory hint `h` for the grant, probe `h` (must exist) and `h + 1` (must not); on any surprise, or no hint, binary-search `[1, maxCalls]`, at most `ceil(log2(maxCalls)) + 1` probes. Slots are only ever taken in order under the lock, so the boundary is exact. All slots used: `call_limit`, no row.
+3. **The slot statement**: `INSERT INTO factory.audit_event (...) SELECT ... FROM factory.execution_allocation a JOIN factory.stage_run s ... JOIN factory.task t ... WHERE a.org_id = $1 AND a.id = $2 AND a.owner_epoch = $3 AND a.pod_uid = $4 AND a.state IN ('running','suspect') AND a.controller_lease_until > clock_timestamp() AND t.status = 'running' AND (a.workspace_id IS NULL OR EXISTS (<the renewal's workspace clause, allocation.ts:180-181>)) AND clock_timestamp() < $expiresAt::timestamptz FOR SHARE OF a ON CONFLICT (org_id, id) DO NOTHING`. One row written: allowed. Rule 4 is applied as W-019 applies it: the lease condition is in the statement that grants. `FOR SHARE OF a` makes a concurrent transition wait for this commit, so a cancel is ordered strictly before or after the call (race rule 4).
+4. No row written: re-read the row in the same transaction to classify, in this order: gone or another pod (`not_this_job`), epoch (`stale_epoch`), state (`not_live`, with the state), lease (`lease_expired`), workspace (`stale_epoch`, `workspace`), task (`task_not_running`), expiry (`grant_expired`). A conflict on the slot id under the lock is a hard error (`record_conflict`): the lock was bypassed.
+
+`FOR SHARE` needs `UPDATE` on at least one column, which the runtime role has on
+`execution_allocation` (it makes every transition today); `audit_event` stays insert-only for it
+(`0010:146-147`), so a slot cannot be updated or deleted by the runtime, and the retention role
+can only insert there (`0013:12`).
+
+**A denied check** writes one `audit_event` row with a random id, outcome `denied`, through the
+guard's per-pod audit bucket (`pod-guard.ts:142-148`); over the cap it is counted in memory, as
+W-019's denials are (SI-46). It never writes a slot. Matching is exact: `operation`, a `resourceId`
+in `resourceIds`, and `environmentScope`; no grant matches: `no_grant` with the operation, never a
+hint of what would match.
+
+**The capability route.** `POST /pod/v1/capability/check`, behind the same admission order as the
+permit routes (section 6, steps 1 to 7), through the generalised review (decided 2026-11-21, X2):
+`review(req, { audience, subjects, bucket })`. Each listener passes its own subject set: the pod
+listener the three allocation profiles' accounts, **never the checkpoint account**; W-020's
+checkpoint listener the checkpoint account only. The bucket names which per-pod bucket the call
+spends (`renew`, `capability`, or the checkpoint listener's).
+
+- `@factory/runner-protocol` gains `ROUTES.capability`, `CapabilityRequest { orgId, allocationId, epoch, callId, operation, resourceId, environment, requestDigest }` (`callId` a UUID, required) (operation and environment `^[a-z][a-z0-9._-]{0,63}$`, resource id at most 256 bytes, digest 64 lower-case hex), `CapabilityAnswer` (`{ allowed: true, grantId, slot, remaining }` or `{ allowed: false, code, reason? }`), `CapabilityDenialCode` (`no_grant`, `grant_expired`, `call_limit`, `not_live`, `lease_expired`, `task_not_running`, plus every `PermitDenialCode` the guard can answer), parsers with the same own-keys rule, committed vectors, and `statusOf` for the new answer (200 allowed, 403 a refused decision, the guard's statuses as today).
+- The guard runs with `NEED_CAPABILITY = { route: 'capability', states: ['running','suspect'], stateDenial: 'not_renewable', claimable: false, workspace: 'writer_active' }`. Its row reads are advisory; the slot statement decides.
+- **Its own per-pod bucket** (D43), `capabilityPodRate` (default burst 20, one every 400 ms), keyed by the reviewed pod UID, after local verification and before the shared review budget, so a pod's tool calls cannot spend its own renewals' allowance.
+- **The shared review budget counts every listener** (X4). `reviewRateForWriters` (`config.ts:63-69`) becomes `2 × (podRate + capabilityPodRate) × liveWriters + 2 × checkpointPodRate × liveChildren`, where `checkpointPodRate` is the checkpoint listener's per-pod rate (W-020's setting) and each pass counts live children as it counts live writers. Configuration refuses `2 × (podRate + capabilityPodRate) × P + 2 × checkpointPodRate × P > review.ceilingPerSecond`, with `P = pools.authoring + pools.verifier` (at most one live child per finalizing parent, and parents are within the pools). With the defaults and a checkpoint rate of one every 2 s: `2 × (0.5 + 2.5) × 20 + 2 × 0.5 × 20 = 140`, under the ceiling of 200. The ceiling goes to P-14's load test with the other rates, and P-33 records what W-075 must measure.
+- Every check is reviewed; there is no review cache (D43).
+- The route answers and does nothing after: no reconcile pass is set off.
+
+**The in-process proxy** (`CapabilityService.check(req)` and `takeSlot(req)`, both in
+`src/capability/proxy.ts`; corrected after both reviews: design 2, security M2). The route calls
+the first; a later runner route that performs a remote side effect itself (W-075's tools and
+proposals, W-022) calls the second. **`takeSlot` takes the slot in its own short transaction and
+commits before it returns; no caller may pass its own transaction, and none may perform an effect
+inside it.** That is rule 1 (no remote call inside a transaction), and it keeps the allocation's
+share lock as short as the slot statement, so a cancel, a stop or W-119's emergency stop is never
+held behind a remote call the harness can slow down. The rule W-075 must follow is under
+"Hand-offs": slot first, keyed by `factory_tool_call.call_id`; effect after the commit; outcome in a
+separate transaction.
+
+**Profile identity in the guard** (D42).
+
+- `RunnerConfig` gains `profiles: Record<ProfileName, { serviceAccount: string }>` for `authoring`, `read_only`, `verifier` and `checkpoint`, defaulting to `factory-allocation-supervisor`, `factory-sup-read-only`, `factory-sup-verifier` and `factory-checkpoint`. **`profiles.checkpoint` is the one key for the checkpoint account**, which W-020 uses too (decided 2026-11-21, X2); W-020's `config.checkpoint.serviceAccount` does not exist. `supervisorServiceAccount` becomes the `authoring` entry (kept as an alias so W-017's and W-019's tests read the same value).
+- `start.ts:103` stores the subject of the stage role's profile in `supervisor_identity`; `job-manifest.ts:74` renders that profile's `serviceAccountName`.
+- `verifyTokenLocally` (`token.ts:19`, `:108-112`) and the TokenReview check (`pod-guard.ts:134`) take the subject set the listener passes to `review` instead of one subject. For the pod listener that set is the `authoring`, `read_only` and `verifier` accounts and never `checkpoint`, so a child's token is refused on every pod route by subject, before its audience is even compared (a test shows it).
+- The workspace-denial mapping (`pod-guard.ts:191`) gains `capability` beside `renew` and `stop-ack`, so a fenced workspace answers `stale_epoch` on the capability route (C19).
+- After the row read, `who.username !== a.supervisorIdentity` is `not_this_job`, reason `identity`, audited under the cap. A token of the right audience minted for another profile's account (only an admin can mint one) is therefore refused, as is a pod rendered under one profile and admitted under another.
+- **Read-only profile:** the harness's workspace mount is `readOnly: true`; the materializer init container's stays read-write. W-019's container-exit and proof rules are unchanged.
+
+**Retirement of the W-008 proxy** (D41). `apps/api/src/auth/capability-proxy.ts` and its export
+(`apps/api/src/index.ts:6`) are deleted; `apps/api/test/ac-19-unauthorized-tool-request.test.ts`
+is replaced by `apps/runner/test/ac-19-capability-proxy.test.ts`, which keeps every one of its
+cases (the six injected attempts, the never-minted delivery grants, limit, lifetime, epoch and
+state) against the runner's proxy, and adds restart and replica. A structural test shows no file
+under `apps/*/src` other than `apps/runner/src/capability/` defines a capability check, with a
+planted file as its control. Nothing else imports the deleted module (searched today: only the
+test and the index).
+
+**Config added** (`src/config.ts`): `profiles`, `capabilityPodRate`, `capabilities: { maxCallsCap }`,
+and, in 21b, `profileTier`, `listenerReach`, `profileCheckIntervalMs` (there is no switch to turn
+the presence check off: if step 0 item 6 fails it is not built at all). Validation gains: every
+profile account a valid DNS label and distinct; `maxCallsCap` between 1 and 10,000; the product
+above; and `createConfig` refuses the namespace `factory-exec-control` (security L6), so a
+production runner can never be pointed at the control namespace.
+
+### 21b: the execution profiles
+
+**Profiles** (D42). A profile is chosen by the stage role's class in the role table, or, for
+`checkpoint`, by W-020's child renderer; the runner renders it and nothing else can choose it.
+
+| Profile | Roles (from the role table) | Service account (`profiles.<name>`) | Containers and images | Workspace mounts | First real user |
+| --- | --- | --- | --- | --- | --- |
+| `authoring` | `criteria_author`, `implementer`, `adversarial_tester` (roles with `workspace.write`) | `factory-allocation-supervisor` (unchanged) | init `materialize` (`images.materializer`); `supervisor` (`images.supervisor`); `harness` (`images.harness`) | `materialize` read-write; `supervisor` read-only; `harness` read-write | W-077 |
+| `read_only` | `discovery`, `planner`, `reviewer`, `publisher`, `knowledge_curator` | `factory-sup-read-only` | as `authoring` | as `authoring`, but `harness` read-only | W-025 onward |
+| `verifier` | `verifier` | `factory-sup-verifier` | as `authoring` | as `read_only` | W-022 |
+| `checkpoint` | none: W-020's child | `factory-checkpoint` | init `read` and container `build`, both `images.checkpoint` (`factory-checkpoint`, by digest) | `read`: the claim read-only; `build`: none | W-020 |
+
+The renderer adds one label, `<prefix>profile: <name>`, to every Job and its template (W-020's
+child Job included); admission ties it to the account, the containers, the images and the network
+policy. The account for each profile has one home, `profiles.<name>` (decided 2026-11-21, X2).
+W-020 renders the child Job itself; it reads `profiles.checkpoint`, `images.checkpoint` and the
+label key from this configuration.
+
+**The checkpoint profile, exactly** (X1; the child shape W-020 specifies, fixed by the coordinator
+on 2026-11-21). Every rule below is checked by `factory-exec-create` for a pod or Job whose profile
+label is `checkpoint`, and only for those:
+
+- Service account `profiles.checkpoint`; `automountServiceAccountToken: false`; **no `fsGroup`** (W-020's C9); `runAsNonRoot`, `RuntimeDefault` seccomp; grace 15; `restartPolicy: Never`; `enableServiceLinks: false`; `shareProcessNamespace` absent or false.
+- Exactly one init container, `read`, and exactly one container, `build`. Both run `images.checkpoint` and nothing else (the name-to-image tie below).
+- Both have `readOnlyRootFilesystem`, no privilege escalation, all capabilities dropped, and requests and limits for `cpu`, `memory` and `ephemeral-storage` (`profiles.checkpoint.resources`, which W-020 sizes from its caps; design finding 8 on W-020).
+- Volumes, and only these: the claim (`persistentVolumeClaim` with `readOnly: true`), `export` and `work` (`emptyDir` with `sizeLimit`), one private `/tmp` per container (`emptyDir`), and `factory-identity` (`projected`: a `serviceAccountToken` and the CA `configMap`).
+- `read` mounts the claim (`readOnly: true`), `export` read-write and its own `/tmp`. It mounts no token.
+- `build` mounts `export` **read-only**, `work`, its own `/tmp` and `factory-identity`. It mounts no claim.
+- The token's audience is `'factory-checkpoint:' + <the child id label>` (the coordinator's form; see "Response to review", open item 1), `expirationSeconds` at most 600, and only `build` mounts it.
+- Claim name: the one W-020's renderer names for the parent's generation. Admission cannot recompute it (the name is a hash, and a policy has no SHA-256), so it is tied by consistency only: the claim volume is the pod's only `persistentVolumeClaim` volume. This is the same limit as for allocation pods (security L5).
+
+**The renderer** (`src/profiles/render.ts`, `renderProfiles(config)`, pure, D47). It returns the
+objects below, named and ordered, and `src/profiles/print-entry.ts` writes them as one JSON `List`
+for `kubectl apply -f -`. A committed fixture, `apps/runner/test/fixtures/profiles.expected.json`,
+pins the output for the default test configuration, as `job.expected.json` does for the Job,
+**including the checkpoint profile's rules, its egress policy and its allowlist entries**.
+Configuration gains `profileTier: 'local' | 'cluster'` and `listenerReach`: `{ kind: 'ipBlock',
+address }` (local: the podman host gateway, A-32) or `{ kind: 'pods', namespace, labels }` (a
+runner inside the cluster, A-43). `createConfig` refuses `profileTier: 'local'`.
+
+| Object | Content |
+| --- | --- |
+| ServiceAccounts `factory-sup-read-only`, `factory-sup-verifier` | `automountServiceAccountToken: false`, no Role, as `service-accounts.yaml:12-17`. The checkpoint account is W-020's file (`deploy/k8s/checkpoint-sa.yaml`), whose name must equal `profiles.checkpoint`'s default; `w021-profiles-render` checks it. |
+| NetworkPolicy `factory-exec-default-deny` | `podSelector: {}`, `policyTypes: [Ingress, Egress]`, no rules. Every pod of the namespace is isolated both ways: no other task's pod can reach it, it can reach nothing. |
+| NetworkPolicy `factory-exec-egress-listener` | `podSelector` with `<prefix>profile In [authoring, read_only, verifier]`, `policyTypes: [Egress]`, one rule: `listenerReach` (an `ipBlock` `/32`, or a `namespaceSelector` and `podSelector`) **and** `podListener.port`, TCP. Never a whole host, so W-023's port and the checkpoint port on the same runner stay denied to allocation pods (section 6 hand-off; security M3). It replaces `deploy/k8s/local/egress-listener-only.yaml`, which is deleted with the line W-020 adds to it. |
+| NetworkPolicy `factory-exec-egress-checkpoint` | `podSelector` with `<prefix>profile: checkpoint`, `policyTypes: [Egress]`, one rule: `listenerReach` **and** the checkpoint listener's port (W-020's `checkpointListener.port`), TCP. A checkpoint pod reaches that port and nothing else, not even the pod listener (X3, decided 2026-11-21). A harness pod cannot wear the label: admission ties it to the checkpoint account and the checkpoint image. |
+| LimitRange `factory-exec-limits` | `Container` `max` of CPU, memory and ephemeral storage at the largest configured container limit across the four profiles; `PersistentVolumeClaim` `max` storage at `pvcSize`. No `default` (recorded at step 0). |
+| ValidatingAdmissionPolicy and binding `factory-exec-create` | `CREATE` of `jobs`, `pods`, `persistentvolumeclaims`. Rules below. |
+| ValidatingAdmissionPolicy and binding `factory-exec-update` | `UPDATE` of `pods` (not its `status` subresource): every container's and init container's image equals `oldObject`'s (security L3). Labels, annotations and finalizers may still change (the Job controller removes its tracking finalizer that way). |
+| ValidatingAdmissionPolicy and binding `factory-exec-delete` | `DELETE` of `pods` and `jobs`, and `CREATE` of `pods/eviction` (C15). Rules below. |
+| ValidatingAdmissionPolicy and binding `factory-exec-no-debug` | `CONNECT` of `pods/exec`, `pods/attach`, `pods/portforward`; `UPDATE` of `pods/ephemeralcontainers`. Refuses every request. |
+| ConfigMap `factory-exec-admission-params` | The image allowlist, one key per container name (below). Written by whoever installs the profiles, never by the runner. |
+
+Every binding: `matchResources.namespaceSelector` on `kubernetes.io/metadata.name` equal to the
+exec namespace, `validationActions: [Deny]`, and the policy's `failurePolicy: Fail` (a CEL error or
+a cost overrun refuses). `factory-exec-create` and `factory-exec-update` take `paramKind:
+ConfigMap` with a binding `paramRef` to `factory-exec-admission-params` and
+`parameterNotFoundAction: Deny` (step 0 item 5). The ConfigMap is written by whoever installs the
+profiles (`scripts/k3s.sh` here; the operator on a real cluster), never by the runner, which keeps
+no ConfigMap write right (conformance row 20).
+
+**`factory-exec-create`, rule by rule.** One variable, `spec`, is the pod spec of a pod or the
+template spec of a Job, so the pod rules are checked at both: at the Job, so a bad Job is refused
+when the runner creates it instead of leaving it without pods; at the pod, because that is what runs.
+A second variable, `profile`, is the profile label; a pod or Job without one, or with an unknown
+one, is refused.
+
+- **Who** (A-25, D44): a Job or a claim only from the runner's account (`request.userInfo.username`); a pod only from the Job controller's identity (step 0 item 2), with exactly one controlling owner reference, of kind `Job`.
+- **Job:** `backoffLimit == 0`, `activeDeadlineSeconds` set, `manualSelector` not true, template labels carry the profile label and either the allocation label (allocation profiles) or the child label (`checkpoint`).
+- **Pod spec:** `serviceAccountName` is `profiles[profile]`; `automountServiceAccountToken == false`; `terminationGracePeriodSeconds == 15`; `restartPolicy == 'Never'`; `enableServiceLinks == false`; `shareProcessNamespace` absent or false; `fsGroup` 10001 in allocation profiles and absent in `checkpoint`.
+- **Pod security, repeated here** (security L4): `hostNetwork`, `hostPID` and `hostIPC` absent or false; `runAsNonRoot` true at pod level; `seccompProfile.type == 'RuntimeDefault'`; and for every container `privileged` absent or false, `capabilities.drop == ['ALL']`, no `capabilities.add`. The namespace's Restricted labels still apply; this makes them a second line, not the only one.
+- **Containers by name, and each name tied to its image** (security L2): the container and init-container names are exactly the profile's set (table above), and each container's image is in the allowlist entry **for its own name** (`params.data['images.' + c.name].split(' ')`). A `supervisor` container running the harness image, or a `harness` running the supervisor image, is refused.
+- **Every container and init container:** `readOnlyRootFilesystem == true`, `allowPrivilegeEscalation == false`; requests and limits for `cpu`, `memory` and `ephemeral-storage`; no `hostPort`; no `envFrom`, and no `env` entry with a `valueFrom.secretKeyRef`.
+- **Volumes:** only `persistentVolumeClaim`, `emptyDir` (default medium, with `sizeLimit`) and `projected`, whose sources are only a `serviceAccountToken` and a `configMap` source of the CA. That excludes `hostPath`, `secret`, `csi`, `ephemeral` and any runtime socket by construction (`09:75`). At most one `persistentVolumeClaim` volume.
+- **The token** (security L5): an allocation pod's audience equals `'factory-allocation:' + <org label> + ':' + <allocation label>` (the labels hold the full ids, `job-manifest.ts:26-33`), so a token cannot be rendered for another allocation's audience; `expirationSeconds` at most 600.
+- **Who may hold the token and a claim** (security L2, as amended in C17): in an allocation profile only `supervisor` mounts the token, and its claim mount is read-only; no container anywhere mounts a read-write claim and the token; in `checkpoint` no container mounts both (above).
+- **Profile mounts:** in a `read_only` or `verifier` pod the harness's workspace mount is read-only.
+- **Claim:** `accessModes == ['ReadWriteOncePod']`, the configured class, the configured size; and `volumeName`, `dataSource`, `dataSourceRef` and `selector` absent (security L5), so a claim can neither bind a chosen volume nor be cloned from another.
+- **Tier:** in a `cluster` rendering one more rule requires every allowlisted entry to match `^[^@]+@sha256:[0-9a-f]{64}$` (security L4), so a tag cannot be admitted even from a hand-edited allowlist (D46).
+
+**`factory-exec-delete`.**
+
+- A pod delete whose `request.options.gracePeriodSeconds` is below the pod's `oldObject.spec.terminationGracePeriodSeconds` is refused unless the requester is in the group `system:nodes` (C12; the kubelet's final delete) **or is the pod garbage collector** (design finding 4; identity from step 0 item 2). Why the exemption, not a refusal: the garbage collector force-deletes only pods whose node is gone, or that are terminating on a node marked out of service. Refused, such a pod object would stay for ever, and nobody else could remove it, since admission refuses the administrator too; W-019's proof already treats a pod gone with its node as not proved (`writer_node_missing`, section 6), so the exemption changes no proof. The out-of-service case stays in section 6's residual list.
+- The same rule for `CREATE` of `pods/eviction` (C15, security M1): refused when `object.deleteOptions.gracePeriodSeconds` is below 15 (every pod in the namespace has grace 15, so the policy needs no lookup), with the same exemptions. An eviction with no options, or with 15, is admitted: a drain still works, and the pod ends through its grace period like any other stop.
+- `deletecollection` of pods reaches the same rule once per pod (to confirm, step 0 item 1).
+- A Job delete whose `request.options.propagationPolicy` is absent or `Orphan`, or whose `orphanDependents` is true, is refused.
+- The runner's own deletes already send grace 15 and `Background` (section 2, conformance rows 3 and 14; `w017-kube-client.test.ts:130-131`), so no runner path is refused (rule 13).
+
+**What admission does not police**, stated in the README: `UPDATE` of Jobs and claims, and of pods
+beyond their images and ephemeral containers (a cluster admin can still lower a deadline or relabel
+a pod); claim deletes; anything outside the exec namespace; and **`nodes/proxy`**, through which a
+caller with that right can exec into a container through the kubelet without touching
+`pods/exec` (security L3). Nothing in the factory holds `nodes/proxy`; the README says an operator
+must not grant it.
+
+**Image allowlist** (D46). The renderer writes `factory-exec-admission-params`: one key per
+container name, `images.<name>`, each a space-separated list. `cluster` tier: the params keys `images.supervisor`,
+`images.harness`, `images.materialize`, `images.read` and `images.build` each hold exactly one
+configured digest (`config.ts:172` already requires digests; `images.read` and `images.build` both
+hold `images.checkpoint`). `local` tier: the same keys, plus the stub, materializer-test and
+scripted-harness images `scripts/k3s.sh` builds, each under the container name it runs as (the
+scripted images under `harness` only; A-44). The scripted label of A-33 is therefore enforced by
+where those names can appear: only in a `local` rendering, which `createConfig` refuses.
+
+**Start-up and periodic presence check** (D47). In production, at start and every
+`profileCheckIntervalMs` (default 300,000), the runner `get`s by name: the four policies and their
+bindings, the **three** network policies, the LimitRange, the exec namespace object (its Pod
+Security labels) and the params ConfigMap (its data; security L4). It compares each to the rendered
+one after the API server's defaults (as `templateDifferences` does for a Job,
+`job-manifest.ts:226-231`). **Failure modes** (design finding 5):
+
+| Answer | At start | While running |
+| --- | --- | --- |
+| Every object present and equal | Start | Nothing |
+| 404, or a spec, label or data difference | Refuse to start, naming the object | `startOrAttach` refuses new work with `profiles_missing`, and the pass warns. **For a network policy only**, every live allocation is also stopped (`→ stopping`, reason `policy_missing`), because its pods are then exposed. A missing admission object stops nothing: admission acts on new requests only. |
+| 403, 5xx, timeout or transport error | Refuse to start (the runner cannot show the cluster is protected) | Warn and retry at the next interval. Three failures in a row refuse new work as above; **nothing is ever stopped on an error that is not a 404 or a difference**, so an API blip cannot stop every writer. |
+
+The port gains `getAdmissionPolicy`, `getAdmissionPolicyBinding`, `getNetworkPolicy`,
+`getLimitRange`, `getNamespace` and `getConfigMap`; RBAC gains `get` with `resourceNames` on
+exactly those objects (a ClusterRole rule for the two policy kinds and the namespace, a Role rule
+for the network policies, the LimitRange and the one ConfigMap). The runner still has no ConfigMap
+write right (row 20). If step 0 item 6 fails, none of this is built (its fallback).
+
+**The real deny-target list.** On this machine: the API service (`10.43.0.1:443`),
+`169.254.169.254:80`, `192.168.127.254:55432` and `:57233` (W-019's four, `supervised.ts:13-16`),
+`10.88.0.1:55432` and `:57233` (reachable from a pod with no policy, W-019 step 0 item 1), the
+cluster DNS service on TCP 53 (read from the `kube-dns` Service by the test rig), the node's own
+address on 10250 (kubelet) and 6443 (security L7; read from the node's status by the rig), and
+the checkpoint listener's address and port, which allocation pods must not reach (X3): **ten**.
+The cap rises from 8 to 16 (C20), so W-023's port fits too. Production: `createConfig` with the
+gate `required` also refuses a deny list without `169.254.169.254:80`; the rest are INT-05's
+addresses (databases, workflow frontend, the node's kubelet, every other port of the runner's
+host), and W-023 adds its own port (hand-off). **What cannot be shown:** the gate tests only what
+it lists, and sixteen literal targets cannot list every port of every host; a cluster with more
+than sixteen addresses to deny relies on the policy for the rest, and the gate shows only that
+listed rules are active (D11). The checkpoint child runs no gate (it has no supervisor), so its
+egress policy is shown only by `w021-network.k8s` and step 0 item 4.
+
+**D24's `disabled`.** Step 0 item 5 of W-019 held, so the fallback that allowed `disabled` at K is
+not needed. A structural test (`w021-no-disabled-gate`) fails if any `*.k8s.test.ts`, or anything
+under `apps/runner/test/k8s/`, sets the gate to `disabled`, with a planted file as its control.
+`disabled` remains for the fake tier only.
+
+**The control namespace** (D45, local only). `deploy/k8s/local/control-namespace.yaml`:
+`factory-exec-control`, Restricted pod security as the exec namespace, `factory-allocation-supervisor`
+there, **its own Role `factory-runner` with the same rules as the exec namespace's** and a
+RoleBinding to it (a RoleBinding cannot name another namespace's Role, C18). No network policy, no
+admission binding, no profile, no params. Only the k3s test driver uses it: **conformance rows 1 to
+21**, which are facts about Kubernetes and break the exec namespace's rules on purpose (C8; the
+cluster-only RBAC rows 13, 15, 19, 20 and 21 still ask their questions about the exec namespace,
+and row 13 is asked again for the control namespace's Role), and every positive control that needs
+a pod the exec namespace would refuse or isolate. `scripts/k3s.sh up` applies it; `createConfig`
+refuses it as a namespace (security L6); nothing outside `deploy/k8s/local/` and the k3s test
+helpers names it, and a test checks that.
+
+**The fake's admission model** (`kube/fake.ts`). Off by default, so the fake tier's existing W-017 and W-019
+files, which build pods and Jobs of their own shape, are untouched (design finding 1). It is on in the
+W-021 files that need it and in conformance rows 22 to 26. A property test shows that every Job and
+claim the runner renders, for every profile (W-020's child Job included, from its renderer), passes
+the model, so turning it off elsewhere hides nothing the runner makes.
+
+**`scripts/k3s.sh up`** gains, after the CA ConfigMap: run the print entry with `profileTier:
+local`, both listeners' addresses and ports, and the images it built; apply the List (the params
+ConfigMap with it); apply the control namespace; wait for the new service accounts as it waits for
+the old (`k3s.sh:153`). The old `sed` of the local policy (`:166-167`) goes, with W-020's second
+port line in it; the checkpoint port now reaches the cluster through the rendered
+`factory-exec-egress-checkpoint`. `down` is unchanged.
+
+### Threat model: a hostile harness in the pod
+
+The attacker runs arbitrary code as uid 10001 in the `harness` container, from the moment the
+launcher starts the program, for the rest of the pod's life. It shares the pod's network with the
+supervisor, writes the workspace, and can read everything the harness container mounts. It does
+not hold the supervisor's token, which is mounted only in the supervisor container
+(`job-manifest.ts:64`), and it cannot see the supervisor's processes (`shareProcessNamespace:
+false`, `:75`). Out of scope: a cluster administrator, a compromised node or kernel, and the
+container escape that `09:75` says containers alone do not prevent (a sandbox runtime, D4).
+
+| # | It tries to | What stops it | Shown by |
+| --- | --- | --- | --- |
+| T1 | Call the capability route itself | No token: 401, charged to its source before any review (section 6, step 3). | `w021-capability-route` |
+| T2 | Get the supervisor to ask on its behalf for something the role lacks (through W-075's local tools later, or by text in a request) | Grants come from rows (rule 11); the request's text is only a digest; no role has a delivery grant. | `ac-19-capability-proxy` |
+| T3 | Spend another task's limits, or reach another allocation's grants | A token is bound to one allocation's audience; grant ids include the allocation and epoch; slots are per grant. | `w021-durable-counter`, `w021-profile-identity` |
+| T4 | Exhaust its own grant | It can: that is the limit doing its job. The stage then fails its own tool calls; no other stage is affected. | `w021-durable-counter` |
+| T5 | Flood the route to starve renewals or the shared review budget | Its own per-pod capability bucket before the review budget; the renewal bucket is separate (D43). | `w021-capability-route` |
+| T6 | Make a stale or cancelled writer's call count | The slot statement carries the lease, epoch, writer, workspace and task conditions and a share lock (rule 12). | `w021-capability-liveness` |
+| T7 | Reach the API server, metadata, Postgres, Temporal, DNS, the node's kubelet or another port of the runner's host | Default-deny egress with one allow rule for its profile (the pod listener's address or runner pods, and that port only). The start-up window (SI-15) is covered by the gate, which now lists ten targets here. | `w021-network.k8s`, W-019's gate files |
+| T8 | Reach, or be reached by, another task's pod | Default-deny ingress and egress on every pod of the namespace. | `w021-network.k8s` |
+| T9 | Write where it should not | Read-only root; read-only workspace in `read_only` and `verifier` profiles; `emptyDir` size limits; ephemeral-storage limits. Not the claim's size on `local-path` (C11). | `w021-profiles.k8s`, residuals |
+| T10 | Exhaust process ids or memory of the node | Memory and CPU limits per container. Process ids are bounded only by the node's `podPidsLimit`, which this brief does not set (P-35). | Residual |
+| T11 | Use a leaked or copied token from a log or the workspace | The token is never in the harness's mounts, never logged (section 6), expires in 600 s, and is refused once its pod is gone (section 2's review timing). | Section 6's tests |
+| T12 | Get a pod of its choice created, kept alive or changed | It holds no Kubernetes credential (automount off, `09:75`). In the namespace, even an administrator's pod create, force delete, grace-0 eviction, orphaning Job delete, image change on a live pod, exec or ephemeral container is refused (rule 13). Not covered: `nodes/proxy`, which nothing in the factory holds ("What admission does not police"). | `w021-admission.k8s` |
+| T13 | Have a test image run in production, or the right image in the wrong container | Only digest-pinned images listed for the `cluster` tier are admitted, each only under its own container name, at create and at update (D46). | `w021-profiles-render`, `w021-admission.k8s` |
+| T14 | Grow the audit table without bound | Allowed rows are at most the sum of the grants' `maxCalls` per allocation epoch; denied rows are capped per pod (W-019). | `w021-durable-counter`, `w019-pod-rate` |
+| T15 | Reach the checkpoint listener, to hold its few connections and starve every child's upload (security M3 on W-020) | Allocation pods are not selected by `factory-exec-egress-checkpoint`, and the default-deny refuses the port; the gate lists it as a deny target. A pod cannot wear the checkpoint label without the checkpoint account and image. | `w021-network.k8s`, step 0 item 4 |
+| T16 | Use a checkpoint child's token on the pod listener, or a supervisor's on the checkpoint listener | Each listener reviews only its own subject set (X2): the pod listener's never includes the checkpoint account, and the audiences differ. | `w021-profile-identity`, W-020's child-guard tests |
+
+### Race and crash rules
+
+1. **Two replicas check one grant at once.** The transaction advisory lock serializes them; each
+   finds the free slot under the lock, so exactly `maxCalls` checks are ever allowed. A slot id that
+   already exists under the lock is a hard error, never a second allowance.
+2. **A runner restarts.** Grants are derived again, with the same ids; the slots are in Postgres;
+   the in-memory hint is empty, so the first check of each grant binary-searches. Nothing resets.
+3. **A crash after the slot insert and before the commit.** The transaction rolls back: no slot, no
+   allowance, and the next check takes the same number.
+4. **A crash after the commit and before the answer is written**, or an answer lost in transport.
+   The slot and its call marker are committed together. The retry carries the same `callId`,
+   finds the marker by primary key and gets the same slot back: a lost answer costs nothing and
+   can never add a call. A retry with a new `callId` is a new call. W-075's `callId` is
+   `factory_tool_call.call_id`, which is unique per stage run (`0005:176-196`).
+5. **A cancel races a check.** The slot statement holds a share lock on the allocation row for the
+   life of the slot's own short transaction and no longer. If the cancel's transition commits
+   first, the check sees `stopping` and is refused. If the check's statement runs first, the
+   transition waits for that commit, which does no remote work; the call was decided while the
+   writer was live, and every later check is refused (`06:90`: cancel revokes further tool
+   actions). A remote effect runs after the slot's commit, outside any transaction, so a slow effect
+   never holds the row (design 2, security M2). Its outcome is recorded in a separate transaction,
+   which W-075 must refuse to count as accepted if the allocation has left `running` or `suspect`
+   at its epoch by then.
+5a. **Lock order.** Every transaction that takes a grant's advisory lock takes it before the
+   allocation row, and nothing takes the allocation row first and the advisory lock after. A
+   deadlock between a check and a transition therefore cannot form.
+6. **The lease expires during a check.** The condition is `controller_lease_until >
+   clock_timestamp()` in the slot statement itself, so a check is refused from the moment of expiry,
+   whether or not a pass has moved the row yet.
+7. **The writer is replaced.** The new epoch derives new grant ids: its counters start at zero, and
+   no call of the old epoch can be counted against, or allowed by, the new one.
+8. **A stage run moves to a new generation after a quarantine.** Same as rule 7: a new allocation,
+   new grants. So a harness that kills its own pod earns a fresh budget and a fresh wall clock
+   (security L1). The bound already exists: a logical stage run has at most `maxGenerations`
+   allocations (3, `config.ts:21`, `:99`; D14), so its calls are at most three times the per-epoch
+   limits. A new stage run (a new semantic attempt) is the workflow's retry, not the runner's, and
+   W-023 must not use one to recover an infrastructure failure (hand-off).
+9. **A profile changes between a Job's render and a later attach.** The service account and the
+   profile label are part of the Job spec, which an attach compares exactly
+   (`job-manifest.ts:226-231`): the allocation quarantines, as with any other spec change.
+10. **The policies are deleted or changed while the runner runs.** The periodic presence check
+    refuses new work and, for a network policy, stops live allocations within one interval
+    (5 minutes by default), on a 404 or a difference only; a 403, a 5xx or a timeout warns and
+    retries, and three in a row refuse new work without stopping anything. Between the change and the check, pods already running are not
+    protected by the missing rule; the gate does not run again after start. That window is a
+    residual risk.
+11. **Admission itself fails** (a CEL error, a cost overrun, an absent params ConfigMap). Every
+    policy fails closed: the request is refused, the runner's create fails, and the allocation's
+    existing error path applies (W-017's `desired` pass and its quarantine at the start deadline).
+12. **The kubelet's final delete, and the pod garbage collector.** Both are allowed by identity, so
+    pods leave as before, and a pod on a lost node is removed as Kubernetes removes it; W-019's
+    node check then answers `writer_node_missing` and the stop is quarantined, not proved. If a node identity
+    were compromised it could force-delete pods on its own node only (the API server's node
+    restriction); that is outside the threat model (D4).
+
+### Files
+
+| File | Content |
+| --- | --- |
+| `packages/domain/src/capabilities.ts`, `src/index.ts` | The role table, role classes, default `maxCalls`, `assertNoDeliveryGrant` (21a). |
+| `packages/database/src/capability.ts`, `src/index.ts` | The grant lock, the call-marker read, the primary-key probe, the slot and marker statements, the classifying re-read; the writer-start `created_at` read (21a). |
+| `packages/runner-protocol/src/pod-api.ts`, `src/index.ts`, `test/vectors.json`, `README.md` | `ROUTES.capability`, the request (with `callId`) and answer types, denial codes, parsers, `statusOf`; `MAX_DENY_TARGETS = 16` (21a). |
+| `apps/supervisor/src/args.ts:63`, `apps/supervisor/test/w019-network-gate.test.ts` | The cap imported from `@factory/runner-protocol` instead of the literal 8; one new case: sixteen targets are accepted, seventeen refused (exit 64). No existing test asserts the old cap (searched). The only change in `apps/supervisor` (21b, C20). |
+| `apps/runner/src/capability/grants.ts`, `src/capability/proxy.ts` (new) | Derivation; `CapabilityService.check`, `takeSlot` (its own transaction, never the caller's), the hint table (21a). |
+| `apps/runner/src/pod-guard.ts`, `src/token.ts` | `review(req, { audience, subjects, bucket })` (shared with W-020, X2); `NEED_CAPABILITY`; the capability per-pod bucket; the pod listener's subject set; the reviewed username against `supervisor_identity`; `capability` in the `:191` mapping (21a). |
+| `apps/runner/src/listener/pod-listener.ts` | The fourth route; no pass after it (21a). |
+| `apps/runner/src/config.ts`, `src/start.ts`, `src/job-manifest.ts`, `src/names.ts`, `src/runner.ts`, `src/index.ts` | `profiles` (with `checkpoint`), `capabilityPodRate`, `capabilities`, the sizing product with the checkpoint listener's share; the profile's subject at insert (`start.ts:103`) and the input-grants check in `allocateOnce`; the profile's account and label and the read-only mount; `grantId`, `slotId`, `callMarkerId`; `checkCapability`; exports (21a). `profileTier`, `listenerReach`, `profileCheckIntervalMs`, the metadata deny-target rule, the refusal of `factory-exec-control` (21b). |
+| `apps/api/src/auth/capability-proxy.ts` (deleted), `apps/api/src/index.ts:6`, `apps/api/test/ac-19-unauthorized-tool-request.test.ts` (deleted) | The retirement (21a, D41). |
+| `apps/runner/src/profiles/render.ts`, `src/profiles/print-entry.ts` (new) | The renderer, four profiles, three network policies, four admission policies, the params, and its entry (21b). |
+| `apps/runner/src/startup-checks.ts`, `src/main.ts`, `src/reconcile.ts` | The presence check at start, with its failure table; the env entry's new variables (`FACTORY_PROFILES`, `FACTORY_LISTENER_REACH`); the periodic check and the `policy_missing` stop (21b). |
+| `apps/runner/src/kube/api.ts`, `https-client.ts`, `fake.ts` | The six `get` calls; the fake's stored policy objects and its admission model, off by default (21b). |
+| `packages/test-support/src/faults.ts` | `runner.before_capability_slot`, `after_capability_slot_commit` (21a). |
+| `deploy/k8s/runner-rbac.yaml` | `get` by name on the policy kinds, the namespace, the network policies, the LimitRange and the params ConfigMap (21b). |
+| `deploy/k8s/local/egress-listener-only.yaml` (deleted, with W-020's added line), `deploy/k8s/local/control-namespace.yaml` (new), `deploy/k8s/README.md` (new) | The rendered policies replace the local file; the control namespace, its own Role and binding; the profile table, every admission rule, what admission does not police and the isolation limits of AC-56 (21b). |
+| `scripts/k3s.sh` | Render with both listeners, apply, params, control namespace, new accounts; the local policy's `sed` removed (21b). |
+| `apps/runner/README.md` (`apps/api` has no README) | The rules, the slot and its transaction, the route, the profiles, residual risks, what is not built. |
+
+Not changed: any migration; `apps/worker`; `packages/workspace`; `apps/supervisor/src` beyond
+`args.ts:63`; W-019's proof, quarantine and hold code; any image.
+
+**Every edit to a W-017, W-019, W-020 or W-008 file**, so that none is a surprise. W-020's rows
+assume D49's order (W-020 committed first):
+
+| File | Edit | Commit |
+| --- | --- | --- |
+| `apps/runner/test/fixtures/job.expected.json` | The profile label on the Job and its template. The account is unchanged for the default `implementer` (`harness.ts:79`). | 21a |
+| `apps/runner/test/w017-names-manifest.test.ts` | The new fixture. | 21a |
+| `apps/runner/test/w017-permit.test.ts`, `w019-pod-guard.test.ts` | None expected: their tokens are minted for the pod's own account (`fake.ts:285-288`). If a case mints for a fixed account and a non-authoring role, it gains the matching account. | 21a |
+| `apps/runner/test/w019-pod-rate.test.ts`, `w019-config.test.ts` | The sizing product now counts `capabilityPodRate` and the checkpoint share; a case that sets the per-pod rate to exactly the ceiling's share sets the other two as well. | 21a |
+| `apps/api/test/ac-19-unauthorized-tool-request.test.ts` | Deleted; every case moves to `apps/runner/test/ac-19-capability-proxy.test.ts` (D41). | 21a |
+| W-020's `src/pod-guard.ts` review and `src/child-guard.ts` | If W-020 lands first with `review` generalised to a subject and an audience, 21a adds the subject **set** and the bucket to that one signature; it does not write a second review. | 21a |
+| `apps/runner/test/conformance/suite.ts` | Rows 1 to 21 take their namespace from a second driver bound to the control namespace (C8); their helpers are unchanged, because the control namespace has no admission. Rows 13 and 15 gain the three new accounts (no Role; nothing else uses them; design finding 6), and row 13 is asked once more for the control namespace's Role. Rows 22 to 28 are new and use the rendered Jobs and claims. | 21b |
+| `apps/runner/test/kube-conformance.k8s.test.ts:13` | A second `runnerKube` for the control namespace, passed to rows 1 to 21. | 21b |
+| `apps/runner/test/kube-conformance.fake.test.ts` | Rows 1 to 21 with the fake's admission model off (its default); rows 22 to 26 with it on. | 21b |
+| `apps/runner/test/k8s/cluster.ts:116-120`, `:150-170` | `clean` deletes pods with grace 15 and waits, instead of grace 0, in both namespaces; the driver gains the control-namespace client, used by `rawDeleteJob` and `forceDeletePod`; `leftovers` checks both namespaces. | 21b |
+| `apps/runner/test/w017-run.k8s.test.ts:92`, `:120`, `:179` | The hand-made second pod and the foreign Job are created **through the runner's client** as hardened Jobs with a profile label (they still are not the allocation's), and deleted with grace 15. The assertions stand. | 21b |
+| `apps/runner/test/w017-run.k8s.test.ts:112`, `:208`, `:212` | The three `kubectl exec` reads (the projected token, `/tmp/stalled`, `/proc/1/comm`) become `crictl exec` in the node through `inNode` (`cluster.ts:137`), which does not pass through the API server and so not through `factory-exec-no-debug` (design finding 1). The assertions stand. | 21b |
+| `apps/runner/test/w019-supervised-run.k8s.test.ts:52`, `:57` | The same as `w017-run`'s second pod. | 21b |
+| `apps/runner/test/w019-network-gate.k8s.test.ts:63`, `:71` | The probe pod is a hardened Job created through the runner's client in the exec namespace (it must be under the policy), and is deleted with grace 15; the deny list comes from the rig, now ten targets. | 21b |
+| `apps/runner/test/w017-main.test.ts:41`, `w019-main-env.test.ts:36`, `:57`, `:70`, `w017-review-fixes.test.ts:350` | Their production deny lists (`['10.96.0.1:443']` and the like) gain `169.254.169.254:80`, which `createConfig` now requires with the gate `required`; `:70`'s refusal for a mistyped API address must still be the API-address refusal, so its list gains the metadata target too. | 21b |
+| `apps/runner/test/k8s/supervised.ts:13-16` | `standingDenyTargets` adds the bridge address's two ports, the DNS service, the node's 10250 and 6443, and the checkpoint listener. | 21b |
+| W-020's `apps/runner/src/checkpoint-job.ts` and its fixture | The child Job gains the `<prefix>profile: checkpoint` label and `profiles.checkpoint.resources`, if W-020 has not already rendered them; its account comes from `profiles.checkpoint`. | 21b |
+| W-020's `deploy/k8s/local/egress-listener-only.yaml` line and `scripts/k3s.sh` port | Removed; the checkpoint port is in the rendered `factory-exec-egress-checkpoint` and in `.k3s/env` as before. | 21b |
+| W-020's child k3s file and conformance rows 29 to 31 | They run in the exec namespace under the rendered policies and the `checkpoint` profile (design X5); they must pass unchanged, which `w021-checkpoint-profile.k8s` shows first. | 21b |
+
+If the first run of 21a or 21b shows another edit is needed, it is added to this table before the
+review, not after (section 6's rule).
+
+**Overlap with W-020** (its file table, 7.7 of its brief, read 2026-11-21):
+
+| Area | W-021 touches | W-020 touches | Conflict |
+| --- | --- | --- | --- |
+| `packages/workspace` | **Nothing** | The reader, the manifests, the builder, `quarantine-record.ts`, `volume-disposition.ts`, the manager and materializer (20c) | None |
+| `apps/runner/src/pod-guard.ts`, `src/listener/pod-listener.ts`, `packages/runner-protocol/src/pod-api.ts` | The capability route, a `Need`, a bucket, the subject set, the identity rule | The finalize route, `not_finalizable`, the review generalised to a subject and audience | **Same functions.** One `review` signature (X2); whoever lands second extends it. |
+| `apps/runner/src/listener/checkpoint-listener.ts`, `src/child-guard.ts` | Only the subject set it passes (the checkpoint account) and its share of the review budget | Both files | Small; X2 and X4. |
+| `apps/runner/src/config.ts`, `src/job-manifest.ts`, `src/checkpoint-job.ts`, `test/fixtures/*.expected.json` | `profiles` (with `checkpoint`), the account, the label, the read-only mount | The child Job, its settings | **Same files**: one key, `profiles.checkpoint` (X2). |
+| `apps/runner/src/start.ts`, `src/runner.ts`, `src/names.ts`, `src/index.ts`, `src/reconcile.ts`, `src/main.ts` | One line, the input check, exports, three id functions, the presence stop, two env variables | Cancel and `getResult`, receipts per attempt, `passFinalizing`, the second listener | Same files, different functions |
+| `apps/runner/src/kube/fake.ts`, `test/conformance/suite.ts`, `test/k8s/*` | Admission model, rows 22 to 28, the control-namespace driver | The child's Job, rows 29 to 31 | Same files |
+| `deploy/k8s/local/egress-listener-only.yaml`, `scripts/k3s.sh` | Deletes the file; rewrites the policy step | Adds the second port to both | **W-021 removes W-020's lines** and renders them instead (X3) |
+| `apps/supervisor/src` | `args.ts:63` | `heartbeat.ts`, `runner-client.ts`, `state.ts` | None |
+| `apps/runner/src/states.ts`, `src/records.ts`, `src/workspaces.ts`, `src/finalizer.ts`, `src/checkpoint-pod/*` | Nothing | Edges, records, acceptance, the child's entries | None |
+
+Recommendation (D49): build in plan order: **W-020 first, then W-021 on top**. 21b then admits the
+child exactly as W-020 built it, and W-020's own k3s file is the first check that the checkpoint
+profile is right. If the owner wants them in parallel, only 21a's new files (`packages/domain`,
+`packages/database/src/capability.ts`, `apps/runner/src/capability/`) are free of conflict; every
+other 21a edit rebases onto W-020.
+
+### Tests
+
+Real Postgres everywhere a row is involved. Time is moved by backdating row timestamps, as in
+section 6. **Every refusal has, in the same setup, the accepted case.**
+
+**21a: fake tier.**
+
+| Test file | Shows |
+| --- | --- |
+| `packages/domain/test/w021-capability-roles.test.ts` | Every role of the contract's `Role` enum has an entry and a class; `assertNoDeliveryGrant` passes on the real table. **Control:** it throws on a planted `git.push` entry and on a planted `publish` side effect. |
+| `packages/runner-protocol/test/w021-capability-api.test.ts` | The vectors round-trip; unknown key, `__proto__`, a 257-byte resource id, an upper-case digest, an operation with a space, a missing field: each refused. **Control:** the vector parses. Every capability denial code has a status. |
+| `packages/database/test/w021-capability-slots.test.ts` | The slot statement writes one row with the pinned fields when every condition holds. **Each condition broken alone writes none:** epoch, writer pod, state (`starting`, `stopping`), lease (backdated), workspace fenced, task `paused`, expiry passed. The probe finds the boundary for 0, 1, 7 and `maxCalls` slots used, in at most `ceil(log2(maxCalls)) + 1` reads. The runtime role cannot `UPDATE` or `DELETE` a slot (**control:** it can insert one). Another organization's session sees no slot (RLS). **Call marker:** the slot and its marker are written in one transaction or not at all; a second take with the same `callId` writes nothing and returns the first slot; **control:** a new `callId` takes the next slot. |
+| `apps/runner/test/w021-grants.test.ts` | Two runner instances derive deep-equal grants, ids included; a third after a restart too. A new epoch changes every id; a `read_only` role gets no `workspace.write`; no writer-start record, no grants; `expiresAt` is the record's time plus `wallSeconds`. Every grant validates against the contract. **Input grants:** a `StageInput` listing `git.push`, or `workspace.write` for a `reviewer`, or a resource that is not its workspace, is `invalid_request` with nothing created; **control:** an empty list and an exact subset are accepted, and a subset with an absurd `maxCalls` changes no derived limit. **No workspace, no grants:** a `knowledge_curator` or any role with `workspace_id` null derives an empty set; with a workspace, `telemetry.query` for `discovery` names the workspace row's `repositoryId` (C16). The input-grants check runs inside the allocate transaction: a refused input leaves no allocation, no capacity row and no audit row of a start. |
+| `apps/runner/test/ac-19-capability-proxy.test.ts` | W-008's cases, against the runner: the implementer may read and write its workspace; `git.push`, `git.merge`, `deploy.apply`, `credentials.issue`, a production environment and another workspace are each refused with the injected prompt text in the request, each audited with a digest and no text; no role is ever minted a delivery grant. Limit, lifetime, epoch and state, as W-008 had them. **Plus:** a structural check that `@factory/api` exports no capability check and that only `apps/runner/src/capability/` defines one, with a planted file as its control. |
+| `apps/runner/test/w021-durable-counter.test.ts` | `maxCalls` 3: three allowed, the fourth `call_limit`. **Restart:** a new runner instance on the same database answers `call_limit` at once. **Replicas:** two instances, 20 concurrent checks against `maxCalls` 5: exactly 5 allowed, exactly slots 1 to 5 exist. **Control:** a second grant of the same allocation is unaffected throughout. **Crash:** a fault at `before_capability_slot` that throws leaves no slot and the retry takes slot 1; a fault at `after_capability_slot_commit` leaves the slot spent and the retry takes slot 2 (race rule 4). A stale hint (a slot written by the other instance) is detected and the search is exact. **Lost answer, same call:** after `after_capability_slot_commit`, the retry with the same `callId` gets slot 1 back and slot 2 is never written (race rule 4); **control:** a retry with a new `callId` takes slot 2. |
+| `apps/runner/test/w021-capability-liveness.test.ts` | Each refused with its own code, each next to its accepted twin: `starting`; `suspect` with a live lease (**allowed**); the lease backdated past expiry with the row still `running` and no pass run (refused: the clause is in the statement); `stopping`; `terminated`; `replaceWriter` called while `running` (`stale_epoch`); the task paused; the grant expired. **Cancel order:** a check held at `before_capability_slot` after its guard; a cancel then waits on the share lock; the check commits allowed and the cancel commits after it; the next check is `not_live`. The mirror: the cancel commits first and the held check is refused. A fenced workspace answers `stale_epoch`, not `not_startable` (C19). **A slow effect does not hold the row** (security's missing test): `takeSlot` returns; a test effect then sleeps 10 s holding nothing; a cancel issued during it commits within one second, and a check after it is `not_live`. **Control:** a test-only variant that holds the slot's transaction open across the sleep delays the cancel by the sleep, which is what the rule forbids. **Lock order:** a check held after its advisory lock and a transition held after its row lock, released in both orders, never deadlock (twenty runs). |
+| `apps/runner/test/w021-capability-route.test.ts` | Through the listener: allowed and refused answers with their statuses; no token is 401 and charged to the source, never reviewed; a token for another allocation is refused. **The flood:** 200 checks from pod A in one burst: at most the capability burst reach the review, the rest `throttled` with no `reviewToken` call; pod A's own renewal and pod B's checks, sent in the middle, are granted. **Control:** with the capability bucket off (a test switch) the same burst empties the shared budget and B is `throttled`. Denials are audited under the per-pod cap. No pass is set off by the route. Config refuses a capability rate whose product with the pools passes the ceiling. |
+| `apps/runner/test/w021-profile-identity.test.ts` | A `reviewer` stage renders `factory-sup-read-only`, the `read_only` label and a read-only harness mount, and stores that subject in `supervisor_identity`; its supervisor stub is granted. A token of the right audience minted for `factory-allocation-supervisor` instead (`mintToken` with `serviceAccount`) is `not_this_job`, `identity`, audited. **Control:** the pod's own account is granted. An account outside the profiles fails local verification and is charged to the source. **A checkpoint child's token** (subject `factory-checkpoint`, audience `factory-checkpoint:<childId>`) presented on each pod route is refused at local verification by subject and charged to the source (security's missing test on W-020); **control:** the same token is accepted by the checkpoint listener's review with its own subject set. |
+
+**21b: fake tier.**
+
+| Test file | Shows |
+| --- | --- |
+| `apps/runner/test/w021-profiles-render.test.ts` | The rendering for the default test configuration equals `profiles.expected.json`. The default-deny selects every pod, has both types and no rule. **Three egress policies, each with exactly one peer and one port:** the listener policy selects the three allocation profiles and names `podListener.port`; the checkpoint policy selects only `<prefix>profile: checkpoint` and names the checkpoint listener's port; neither names the other's port (X3). A `cluster` rendering has the digest-regex rule and, per container name, only the configured digest: `images.read` and `images.build` hold `images.checkpoint`, and **no scripted, stub or materializer-test name appears** (checked against the list `scripts/k3s.sh` builds, read from the script). The checkpoint profile's rules are present: containers `read` and `build`, no `fsGroup`, the token in `build` only, `export` read-only in `build`, `work` only in `build`, the claim read-only in `read` only. `profiles.checkpoint`'s default equals the account name in W-020's `deploy/k8s/checkpoint-sa.yaml`. `createConfig` refuses `profileTier: 'local'`. **Control:** the test configuration renders `local` with those names. The `pods` form of `listenerReach` renders a namespace and pod selector and no `ipBlock`. |
+| `apps/runner/test/w021-fake-admission.test.ts` | The fake's model, rule by rule, each with a rendered object as its accepted control. **Allocation profiles:** a pod created outside the Job controller; a Job from another account; each hardening and pod-security field broken alone; a container name outside the profile's set; **the `supervisor` container running the harness image** (security L2's missing test), and the harness running the supervisor's; the token mounted in `harness`; the token mounted with a read-write claim; an audience naming another allocation; the authoring account under a `read_only` label; a pod with no profile label. **Checkpoint profile** (X1): W-020's rendered child Job is admitted; each of these alone is refused: an `fsGroup`; a third container; `build` mounting the claim; `read` mounting the token; `export` read-write in `build`; `work` mounted in `read`; a missing limit on either container; an image other than `images.checkpoint`; the checkpoint label with an allocation account, and an allocation label with the checkpoint account. **Claims:** `ReadWriteOnce`; `volumeName`; `dataSource`; `dataSourceRef`; `selector` (security L5). **Updates:** a pod `UPDATE` that changes a container's image (security L3); **control:** an update that removes a finalizer. **Deletes:** grace 0 by the driver (refused), by the fake kubelet (accepted) and by the pod-garbage-collector identity (accepted); an eviction with grace 0 (refused) and with none (accepted); a Job delete with no propagation. Then the property: every Job and claim the runner renders, for every profile and for W-020's child, passes the model. |
+| `apps/runner/test/w021-presence-check.test.ts` | With every object present and equal the runner starts. Each object missing (404), then each changed in one field, refuses the start with its name, the namespace's Pod Security labels and the params ConfigMap's data included (security L4's missing test: labels removed). A 403, a 500 and a timeout at start also refuse it. **While running, the failure table row by row:** a 404 or a difference on a network policy refuses `startOrAttach` with `profiles_missing` and moves a `running` allocation to `stopping` with `policy_missing`; the same on an admission policy refuses new work and stops nothing; **a 500 or a timeout on any object stops nothing and refuses nothing** on the first and second interval, and refuses new work, still stopping nothing, on the third (design finding 5). **Control:** restored, new work is accepted. There is no configuration that turns the check off. |
+| `apps/runner/test/w021-deny-targets.test.ts` | `createConfig` with the gate `required` refuses a deny list without `169.254.169.254:80`; **control:** with it, it starts. Sixteen targets are accepted and seventeen refused, by the runner's configuration and by the supervisor's parser, from one constant. `createConfig` refuses the namespace `factory-exec-control` (security L6's missing test); **control:** `factory-exec-local` is accepted. `w021-no-disabled-gate`: no k3s file sets `disabled`; a planted file fails it. Nothing outside `deploy/k8s/local/` and the k3s test helpers names `factory-exec-control`. |
+| `apps/runner/test/kube-conformance.fake.test.ts` (rows 22 to 26) | See below. |
+
+**Conformance additions** (`apps/runner/test/conformance/suite.ts`). Rows 1 to 21 now run in the
+control namespace at K and with the fake's model off at F (C8). Rows 22 to 28 run in the exec
+namespace with the model on.
+
+| # | Behaviour asserted | Tiers |
+| --- | --- | --- |
+| 22 | A pod create by any identity but the Job controller is refused; the rendered Job's pod is created, for each of the four profiles (W-020's child Job for `checkpoint`). | Both; K confirms step 0 item 2 |
+| 23 | A Job breaking any one hardening, pod-security, name-to-image or profile rule is refused at the Job, for an allocation profile and for `checkpoint`; the rendered Job is admitted. | Both |
+| 24 | A pod delete below the pod's grace by a non-node identity is refused; at 15 it is accepted and the pod is gone about 15 s later (the kubelet's delete passed). **An eviction** with grace 0 is refused and one with no options is accepted and ends the pod through its grace (security M1). **`deletecollection`** with grace 0 is refused. **The pod garbage collector's** grace-0 delete of a pod whose node object is gone is accepted (design finding 4). Each half has its fallback in step 0 items 1 and 2: if a half cannot be shown, the row asserts the fallback's documented behaviour and the residual list grows. | Both; K confirms step 0 items 1 and 2 (the garbage-collector half is cluster only if the fake cannot model the identity) |
+| 25 | A Job delete without `Background` or `Foreground` is refused; with `Background` it is accepted and its pods end. | Both; K confirms step 0 item 1 |
+| 26 | A claim that is not `ReadWriteOncePod`, of another class, from another account, or with `volumeName`, `dataSource`, `dataSourceRef` or `selector`, is refused; the rendered claim is created. | Both |
+| 27 | Exec, attach, port-forward, an ephemeral container and an image change on a live pod are refused in the exec namespace. **Control:** in the control namespace exec succeeds. | Cluster only (step 0 item 3) |
+| 28 | Under the rendered policies, the probes of step 0 item 4, including both sides of the checkpoint port. | Cluster only |
+
+**k3s tier, opt-in.** Run once at the end of 21b and at its review, on AC power, never beside the
+full suite, after W-019's k3s tier has passed once (D49). Every run is under the rendered policies
+and admission.
+
+| Test file | Shows |
+| --- | --- |
+| `apps/runner/test/w021-admission.k8s.test.ts` | Each refusal of the four policies by the real API server, with its message, each beside its accepted twin: the admin's pod; an admin Job; the runner's Job with one rule broken; a `supervisor` container running the harness image; an image the allowlist does not name; an image `UPDATE` on a running pod; grace 0 and grace 1 against grace 15; **a grace-0 eviction against an eviction with no options; a grace-0 `deletecollection`** (security M1); an orphaning Job delete against `Background`; exec and an ephemeral container against the same in the control namespace; a PVC with `ReadWriteOnce`, and one with `dataSource`. A rendered Job of each allocation profile is admitted and its supervisor granted. |
+| `apps/runner/test/w021-network.k8s.test.ts` | From a probe Job in the exec namespace (created through the runner's client, allocation profile): the API service, `169.254.169.254:80`, the gateway's and the bridge's Postgres and Temporal ports, the DNS service (UDP and TCP), the node's 10250 and 6443, a second probe pod's port, **and the checkpoint listener's port** all fail; the pod listener completes a handshake. From a checkpoint-labelled probe (checkpoint account and image): the checkpoint listener completes a handshake and the pod listener's port fails (security M3's missing test, both pod kinds). From the control namespace, a connect to the exec probe's port fails (ingress). **Control:** the same probes between two control-namespace pods connect, and DNS answers. Records refused or timed out per target. The metadata target is not claimed (A-35). |
+| `apps/runner/test/w021-profiles.k8s.test.ts` | A `reviewer` stage with the `write-file` harness: the write fails (read-only file system) and the tree is unchanged; **control:** an `implementer` with the same script writes. Each profile's supervisor reads its own token and is granted, with the stored identity. The supervisor's gate passes with the ten targets. |
+| `apps/runner/test/w021-checkpoint-profile.k8s.test.ts` | W-020's child, as its renderer makes it, is admitted and runs under `factory-exec-egress-checkpoint`: `read` sees the claim read-only and no token file; `build` sees the token and `export` read-only, and no claim (checked by node-side `crictl exec`, never `pods/exec`). Each one-field change of the child from `w021-fake-admission`'s checkpoint list is refused by the real API server. It runs before W-020's own k3s file in the same run, so a profile defect is named here and not as a checkpoint failure. |
+
+### Which tier proves what
+
+| Claim | F | K | Needs R |
+| --- | --- | --- | --- |
+| Prompt text and request fields grant nothing; delivery grants are never minted (AC-19) | Yes | Not needed | |
+| Call limits survive a restart and hold across replicas | Yes (two instances, one database) | Not needed | Two runners on the real deployment |
+| A stale, cancelled, fenced or expired writer's call is refused | Yes | Not needed | |
+| Per-profile identity is checked against the row | Yes (fake tokens) | Real tokens of three accounts | Workload identity on the organization's issuer |
+| Read-only profiles cannot write the workspace | Manifest only | **Yes** | |
+| Admission refuses every listed request, evictions and image updates included | The fake's model | **Yes, on k3s 1.36.6** | The real API server's version and controller identities |
+| W-020's child is admitted exactly as rendered, and nothing else wears its profile | The fake's model and the property test | **Yes** (`w021-checkpoint-profile.k8s`) | |
+| Only checkpoint pods reach the checkpoint port; allocation pods only the pod listener's | No | **Yes, on this CNI** | The real CNI |
+| Default-deny egress and ingress; each profile reaches its own listener's port only | No (no network in the fake) | **Yes, on this CNI** | The real CNI, its start-up window, metadata on a cloud node (AC-56) |
+| Metadata access is denied | No | No: refused here with no policy (A-35) | **Yes** |
+| A cluster without the policies starts no work; an API error stops nothing | Yes (presence check and its failure table) | The presence check against the real objects | |
+| Isolation is sufficient for hostile multi-tenant work | No | No | A sandbox runtime or isolated nodes (`09:75`, D4) |
+
+### What W-021 claims, and what it does not
+
+- **AC-19.** An author's request for publishing or production credentials is refused by the runner's proxy and audited; prompt text and request fields cannot grant authority; the limit, lifetime and epoch of a grant hold across a restart and two replicas: fake tier, in full. This replaces W-008's line, whose proxy is retired (D41). Not claimed: the same through W-075's tool server (its own line will cite this one).
+- **AC-56, local tier only.** Candidate code in the exec namespace cannot reach the API server, the workflow engine, the databases, DNS, another port of the runner's host, or another task's pod, and cannot be reached by one; its own listener's port alone is reachable (the pod listener for allocation pods, the checkpoint listener for W-020's child); the cluster refuses pods, Jobs, claims, deletes, evictions, image changes, exec and ephemeral containers the runner does not render: k3s, with each refusal next to its accepted twin. The **qualified isolation limits are documented** in `deploy/k8s/README.md` (no sandbox runtime; containers alone not sufficient, `09:75`; a single node; NAT in front of the listener, A-32; `local-path` size; no process-id limit; the policy's start-up window, SI-15, behind the gate; the presence check's interval; what admission does not police). **Not claimed:** "enforced on the real cluster" (R, D4), and metadata denial, which this machine cannot show (A-35). The build-log line says "local tier only", as D4 requires.
+- Built here, claimed elsewhere: the admission and network material for **AC-236** and **AC-233** (W-134); the slot that **W-075**'s tool calls and proposals take before their effects (`takeSlot`); the per-profile account that **W-115**'s scoped gateway credential will be bound to; the `verifier` profile **W-022** fills in.
+- Not built: bundle or artifact reads from pods (D48); any factory tool (W-075); the checkpoint child itself (W-020; this package admits it); routes for package mirrors, Git mirrors, the model gateway or task dependencies (`09:77`, D50, P-36); an egress proxy or FQDN policy; a review cache (P-33); the `factory_tool_call` rows and outcomes (W-075); a process-id limit (P-35); a runner deployment inside the cluster (P-37); anything on a real cluster (D4).
+- Residual risks, for the READMEs:
+  - Between a policy's deletion and the next presence check (5 minutes by default), running pods lack the deleted rule (race rule 10).
+  - Admission does not police updates other than a pod's images and ephemeral containers, nor claim deletes, nor `nodes/proxy`; a cluster administrator can still lower a deadline, relabel a pod, delete a claim or exec through the kubelet.
+  - A presence check that keeps failing with errors (not 404s) refuses new work after three intervals but stops nothing; a cluster whose API answers 5xx for a long time therefore keeps its running pods running under whatever policies it has.
+  - The pod garbage collector may force-delete a pod whose node is gone or out of service (D44); W-019's node check covers the first case, and section 6's residual covers the second.
+  - Admission cannot tie a pod's claim name to its allocation (a policy has no hash); only the runner's account can create either.
+  - The pod-create rule trusts the Job controller's identity; if step 0 item 2 shows one identity for every controller, any controller could create a pod that passes the shape rules (A-41).
+  - Capability checks cost a TokenReview and a pod read each; at tool-call rates that is the API server's load, bounded by the review ceiling, and not measured (P-33, P-14).
+  - The kubelet's group is exempt from the grace rule; a compromised node is outside the model.
+  - A cluster operator can add any digest to the production allowlist, including a scripted image pushed to a registry (D46): the allowlist is an operational control there.
+  - Everything in section 6's residual list that this brief does not answer stands, including NAT and the gate's "listed rules only".
+
+### Hand-offs
+
+- **W-020:** the `checkpoint` profile is specified in 21b, for the child shape fixed on 2026-11-21. W-020's renderer must emit exactly that shape: the `<prefix>profile: checkpoint` label; `profiles.checkpoint` as the account (no `config.checkpoint.serviceAccount`); `read` and `build` with `profiles.checkpoint.resources`; the volumes `export` and `work` as listed; the token in `build` only, with the audience form agreed (open item 1 under "Response to review"). Its review uses the one `review(req, { audience, subjects, bucket })`, with the checkpoint account as the checkpoint listener's only subject. Its egress comes from `factory-exec-egress-checkpoint`; its local policy line and `sed` go. Its conformance rows 29 to 31 run in the exec namespace under the rendered policies (X5).
+- **W-022:** fill the `verifier` profile (images, containers, whether the harness mount stays read-only for canonical runs), and design the scoped artifact read from a pod with D48's answer.
+- **W-023:** its worker-facing listener is another port on the runner: add `<runner address>:<port>` to the deny list (there is room, C20) and to `createConfig`'s required targets; no egress policy names it. Its wire types go in `@factory/runner-protocol` beside the capability route's. **Do not recover an infrastructure failure with a new semantic attempt** (a new stage run): limits are per allocation epoch, and a stage run's bound is `maxGenerations` times them (race rule 8, security L1); a new stage run would reset it.
+- **W-075, a rule and not an option** (decided 2026-11-21; design 2, security M2). For every tool call with a remote effect:
+  1. **One short transaction, then commit:** insert the `factory_tool_call` row (`reserved`, keyed by its `call_id`, unique per stage run) and call `takeSlot` with that `call_id` as `callId`. The lock order inside is the grant's advisory lock, then the allocation row's share lock; nothing W-075 adds may take the allocation row before a grant's advisory lock. A retry with the same `call_id` finds both and takes no second slot.
+  2. **The effect, after the commit, outside any transaction.** No Postgres transaction is open while a remote call runs (rule 1), so a cancel, a stop or W-119's emergency stop is never held behind it.
+  3. **The outcome, in a separate transaction:** the `factory_tool_call` row moves on (`finalized` or `failed`), and an effect whose result the factory itself accepts (a proposal) is accepted only if the allocation is still `running` or `suspect` at the same epoch with an unexpired lease, in that statement.
+  Also: measure tool-call rates against the capability bucket and the review ceiling before W-077 (P-33), and never forward a request from the local tool routes that the proxy has not allowed.
+- **W-077:** the production harness image is the first entry of the `cluster` allowlist for the `authoring` profile; anything it needs from the network beyond the listener (the model gateway) is a new allow rule and a new profile field, with its own test (D50).
+- **W-090:** role admission and revocation of compiled role content build on the role table in `@factory/domain`; a revoked role grants nothing from the next derivation.
+- **W-115:** the scoped gateway credential is minted for the allocation's stored `supervisor_identity` and profile, never for a request field.
+- **W-119:** the emergency stop revokes capabilities through the cancellation protocol (`25:62`): every allocation it moves to `stopping` is refused by the next check (race rule 5). No new rule is needed.
+- **W-134:** the admission refusals, the network probes and the identity tests are the material for AC-233 and AC-236.
+- **D4 qualification:** rerun `w021-admission.k8s`, `w021-network.k8s` and step 0 items 1 to 4 on the real cluster; replace A-41 and A-43 with what it shows; add the metadata target there.
+
+### To confirm in the k3s tier
+
+The six step 0 items, each confirmed or answered by its fallback, and four more that nothing rests
+on: the LimitRange defaulting (recorded); the time from a NetworkPolicy's creation to enforcement on
+this CNI, measured as section 2 did for the start-up window; the CEL cost of the create policy
+against the API server's budget; and that a refused pod create shows on its Job as a `FailedCreate`
+event naming the policy, which the runner does not read today (recorded for diagnosis).
+
+### Owner decisions, assumptions, spec issues and plan additions
+
+The owner accepted the recommended default of every decision here, D38 to D50, on 2026-11-22,
+including the security calls D44, D46 and D50. None blocks step 0 or 21a's start. D48 changes a
+plan decision (D13) and is accepted; **its follow-up stays open and is assigned to silvio**: the
+design of the pod artifact read goes to him before W-022's brief.
+
+| # | Decision | Recommended default |
+| --- | --- | --- |
+| D38 | W-021 is larger than its estimate: 10 to 12 days against 4–6, after the two reviews. | Step 0, then 21a, then 21b, each commit with an independent review; one build-log line after 21b. 21b's review includes a security reviewer. |
+| D39 | Where grants come from (C5, SI-43). `07:38` puts grants in the run input; `StageInput` carries them, unhashed and unstored. | The runner derives them from rows, with deterministic ids (rule 11). A `StageInput` that lists anything outside the derived set is refused; one that lists less narrows nothing. Not taken: honouring the input's grants (the runner would trust its caller's authority), or requiring an exact match (W-023 would have to rebuild the runner's derivation). |
+| D40 | Where durable counters live (C4). | **No migration.** One `audit_event` row per allowed call, at a deterministic id, written by the statement that decides it, under a per-grant advisory lock, found by primary-key probes. The runtime role can only insert there, so a spent call cannot be given back. Not taken: a `capability_slot` table with `UNIQUE (org_id, grant_id, n)` (a migration, a grant change and a retention rule, for the same guarantee), or a counter column on the allocation (one counter per allocation, not per grant). |
+| D41 | What happens to W-008's proxy in `apps/api`. | Delete it, with its test, and move the role table to `@factory/domain`; AC-19's cases move to the runner. It has no caller (searched today) and keeps the very counters this package exists to replace; two proxies would be two answers. |
+| D42 | Granularity of "per-role identities" (SI-45). | One service account per **profile**, four profiles (`authoring`, `read_only`, `verifier`, and `checkpoint` for W-020's child), with **one configuration home, `profiles.<name>`** (X2, decided 2026-11-21); the role table maps each of the nine roles to one of the first three. The authoring account keeps its name. Each listener accepts only its own subjects: the pod listener never the checkpoint account. Not taken: nine accounts, one per stage role (the audience already binds a token to one allocation, so nine accounts add names, not authority); one account for everything (the status quo, which the backlog item exists to end). |
+| D43 | What a capability check costs, and how it is limited (C13, X4). | Every check is reviewed and reads the pod, as the permit calls do; its own per-pod bucket (burst 20, one every 400 ms); the shared review budget counts the renewal, capability and checkpoint listeners' buckets together; no review cache. P-33 records that W-075 must measure. Not taken: caching a successful review for a few seconds (cheaper, but section 2 measured that the API server already keeps a review alive after its pod is gone, and a second cache would widen that window); a separate budget for the checkpoint listener (two budgets would let their sum pass the ceiling that protects the API server). |
+| D44 | **Security call.** The admission rule set, its exemptions and its failure mode. | The rules of 21b, four policies, `failurePolicy: Fail`, bound to the exec namespace only. Exemptions: the kubelet's group and the pod garbage collector for the grace rule (deletes and evictions), and the Job controller's identity for pod creation only. No exemption for cluster administrators. Evictions are held to the same grace rule (C15). Not taken: refusing the pod garbage collector (its pods would stay for ever, with no one able to remove them). |
+| D45 | Where the k3s tier shows Kubernetes doing what the exec namespace now refuses (C8, C18). | A local-only control namespace, `factory-exec-control`, with its own copy of the runner's Role, no policy and no admission, used only by the test driver: conformance rows 1 to 21 and the positive controls. `createConfig` refuses it. Not taken: binding admission with an exception for the admin (then the admin could do in the exec namespace what a test needs, and so could anyone with that certificate); making rows 1 to 21 conform to admission (they show Kubernetes behaviour, several by breaking the rules on purpose). |
+| D46 | **Security call.** How "refuse the scripted label outside the local tier" is enforced (C2). | By the tier's image allowlist, **per container name**: a `cluster` rendering admits under each container name only its one configured digest, a CEL rule refuses anything not matching `^[^@]+@sha256:[0-9a-f]{64}$`, and an image cannot be changed on a live pod. The label stays as documentation. Not taken: a mutating or validating webhook that pulls image configuration (a new server, registry credentials in the admission path, and a new dependency). |
+| D47 | How the profiles are packaged, and how the runner knows they are installed. D8 chose plain manifests and typed code for the Job. | The profile objects are rendered by typed code from `RunnerConfig`, as the Job is, with a committed fixture, and applied through a print entry; the namespace, the accounts that never vary and RBAC stay plain YAML. The runner checks at start and every 5 minutes that the policies, the three network policies, the LimitRange, the namespace's Pod Security labels and the params equal what it renders. **Only a 404 or a difference stops anything**, and only for a network policy; any other error warns and retries (design finding 5). Not taken: plain YAML for everything (the namespace, account names, label prefix, listener ports, images and sizes would be written twice, with nothing to catch drift). |
+| D48 | **Changes D13.** Who builds the scoped artifact read from inside a pod (C9). | Not W-021. W-022 is its first user and should own it; the design (how a pod gets a bundle when only the supervisor holds an identity, `06:110`) needs its own brief. **Accepted by the owner, 2026-11-22.** **Follow-up, open:** the design goes to silvio before W-022's brief. Until then W-020's restores run through `LocalMaterializer`, as its draft already says. |
+| D49 | Order. W-019's k3s tier has not run (C10), and W-020 and W-021 share files (overlap table). | W-019's k3s tier passes once, unchanged, before W-021's step 0. Then plan order: W-020, then W-021 on top of it, with 21b filling in the `checkpoint` profile. If the owner wants them in parallel, only 21a's new files are built ahead. |
+| D50 | **Security call.** Which of `09:77`'s explicit routes the M2 profiles allow (SI-44). | Two, each to one port of the runner only: allocation pods may reach the pod listener's port, and the checkpoint child the checkpoint listener's port (`factory-exec-egress-checkpoint`, X3); neither reaches the other's. Nothing in M2 resolves a name (every target is a literal address, `config.ts:184-191`) or needs a mirror or the model gateway (A-27, A-33). Each later route (DNS, mirrors, the gateway) is a profile field with its own allow rule and its own test, added by the package that needs it. |
+
+Assumptions W-021 writes to `docs/assumptions.md`:
+
+- **A-40** (INT-05, W-005; extends A-25): one execution namespace, with one service account per profile (`factory-allocation-supervisor`, `factory-sup-read-only`, `factory-sup-verifier`, and W-020's `factory-checkpoint`), all named under `profiles` in the runner's configuration, and the role-to-profile table of 21b. None of them has a Role.
+- **A-41** (INT-05): the Job controller's, the garbage collector's and the pod garbage collector's identities on the local cluster are those step 0 item 2 recorded; the pod-create rule and the grace exemption name them. A real cluster's must be measured again (D4).
+- **A-42** (INT-05; extends A-35): the local tier's ten deny targets are the API service, `169.254.169.254:80`, the podman gateway's and the podman bridge's Postgres and Temporal ports, the cluster DNS service on TCP 53, the node's 10250 and 6443, and the checkpoint listener's address and port; the metadata target still shows no rule active here. The cap is sixteen.
+- **A-43** (INT-05): on a real cluster the runner runs inside it, and the egress allow rule names the runner's namespace and pod labels and the listener port. That form is rendered and unit-tested only; nothing on this machine runs it.
+- **A-44** (W-077, INT-08; extends A-33): the local tier's image allowlist names the stub, materializer-test and scripted-harness images by their `:local` names, each under the container name it runs as (scripted images under `harness` only); the `cluster` allowlist holds one configured digest per container name (`images.checkpoint` for both `read` and `build`) and nothing else.
+- **A-45** (W-005, ADR-12; extends A-07): a grant's lifetime is the writer-start record's time plus the stage's `wallSeconds`, and each operation's `maxCalls` is a code default (`source.read` and `workspace.write` 2,000, `factory.verify` 20, `telemetry.query` and `knowledge.read` 200), capped at 10,000. Judgement, not from the spec.
+- **A-46** (INT-05): the control namespace `factory-exec-control` exists only on the local cluster, is created by `scripts/k3s.sh`, has no network policy and no admission, and is used only by the k3s test driver.
+
+Spec issues W-021 records in `docs/spec-issues.md`:
+
+| ID | Location | Problem | Proposed choice |
+| --- | --- | --- | --- |
+| SI-43 | `07-harness-context.md:38`, `:92`; `domain.schema.json` `StageInput.capabilityGrants` | Run input "includes ... capability grants", and the proxy "checks each call against ... current capability", without saying whether the input's grants are authority or a statement of it. | The runner derives the grants; the input's list may only restate a subset and carries no authority (D39). |
+| SI-44 | `09-verification-security.md:77`; `07-harness-context.md:94` | Default deny "with explicit DNS, artifact, Git mirror, package mirror, model gateway, task-dependency routes", while network access is "role/profile-specific". It is not said whether every profile gets every route. | Routes are per profile and added only when a profile needs one; M2's allocation profiles allow the pod listener's port only and the checkpoint profile the checkpoint listener's port only (D50). |
+| SI-45 | `09-verification-security.md:71`; `14-build-backlog.md:269` | Chapter 09 names service identities per component (authoring runner, verifier, finalizer, publisher, deployer); the backlog asks for "per-role identities". | One account per execution profile, mapped from the stage role (D42). |
+| SI-46 | `16-acceptance-catalogue.md:191` (AC-19); `09-verification-security.md:93` | "Call is denied and audited" with no bound on audit volume from a hostile caller. | Every allowed call is audited (its slot); denials are audited under W-019's per-pod cap and counted beyond it. |
+| SI-47 | `09-verification-security.md:75`; `06-runner-workspaces.md:90`, `:116` | Admission and a LimitRange are required, but nothing says who may delete pods, with what grace, or how a Job may be deleted, although the whole-pod stop (`06:90`) and quiescence rest on both. | Pod deletes below the pod's grace are refused except for the kubelet; orphaning Job deletes are refused; exec, attach and ephemeral containers are refused (D44). |
+| SI-48 | `16-acceptance-catalogue.md:559-561` (AC-56) | "Qualified isolation limits are documented" names no document and no owner. | `deploy/k8s/README.md` carries them, per tier, and the D4 qualification replaces the local list with the real cluster's. |
+
+Plan additions for `docs/plan-additions.md`:
+
+- **P-33**: measure capability-check rates under W-075's tool server against the capability bucket and the review ceiling; if too costly, design a review cache or a batched check with its own security review. Open.
+- **P-34**: a secondary index or a dedicated table for capability slots if primary-key probing ever shows in a profile. Open; the probe count is logarithmic in `maxCalls`.
+- **P-35**: a process-id limit for allocation pods (the node's `podPidsLimit`, or a per-pod limit where the cluster offers one). Open; INT-05.
+- **P-36**: the explicit routes of `09:77` (DNS, artifact, Git mirror, package mirror, model gateway, task dependencies) as profile fields, and an egress proxy or FQDN policy where a domain must be named. Open; each with the package that first needs it.
+- **P-37**: a runner deployment inside the cluster (its namespace, Deployment, Service and the pod labels the allow rule names). Open; needed before A-43 can be tested, with INT-05.
+- **P-38**: a source for repository-scoped grants of an allocation with no workspace (`knowledge_curator`, `discovery`'s telemetry without a checkout): today no row names a repository there (C16). Open; with W-090 or the first package that runs such a role.
+
+### Estimate and split
+
+| Part | Days | What is in it |
+| --- | --- | --- |
+| Step 0 | 0.5 to 1 | Six probes and the recorded one, after W-019's k3s tier has passed once. Items 1, 2 and 4 grew in review: evictions, `deletecollection`, the pod garbage collector (a fake node), two listeners and the node's ports. |
+| 21a | 4.5 to 5 | Role table and its move; derivation (no workspace, no grants); the slot, the call marker and the probe in their own transaction; the proxy and the route; the protocol types and vectors; the shared `review` signature and per-profile identity; the input-grants check in the allocate transaction; the retirement; nine test files and the edits table's 21a rows. |
+| 21b | 5 to 6 | The renderer and entry; four profiles (the checkpoint profile in full), three network policies, four admission policies, the LimitRange and the per-container params; the fake's admission model and its property test; the presence check with its failure table, the namespace and params reads; RBAC; the deny list and the cap; the control namespace with its own Role; moving conformance rows 1 to 21 there and replacing `kubectl exec`; `scripts/k3s.sh`; four fake files, conformance rows 22 to 28, four k3s files and the k3s helper edits. |
+| **Total** | **10 to 12** | Against the backlog's 4–6 (D38), and up from 8 to 10 before review. The overrun is admission (chapter 09's full list, the checkpoint child, evictions and updates) and the k3s tier's own helpers, which the policies refuse. |
+
+Each commit has an independent review. 21a can be reviewed without a cluster. 21b's review includes
+a security reviewer for D44, D46 and D50.
+
+### Definition of done
+
+- **Step 0:** the six items run, each confirmed or answered by its fallback, with the script and output kept as W-019's were, in `docs/design/` rather than a session scratchpad; the owner is told before 21b if item 1 or 2 failed.
+- **21a:** the nine new 21a files pass on the fake; W-017's and W-019's files pass with the 21a rows of the edits table and no other; W-018's eleven pass unchanged; `apps/api`'s suite passes without the deleted file; `pnpm check` is green. Independent review.
+- **21b:** the four new fake files and conformance rows 22 to 26 pass on the fake, rows 1 to 21 pass on the fake with the model off, and `pnpm check` is green. `pnpm test:k8s` passes once on this machine on AC power, under the rendered policies: W-017's and W-019's k3s files with the 21b edits, W-020's k3s file and rows 29 to 31 unchanged, conformance rows 1 to 21 in the control namespace and 22 to 28 in the exec namespace, and the four new files. Independent review, with a security reviewer.
+- **AC-19** is logged as fake tier, in full, replacing W-008's evidence. **AC-56** is logged as "local tier only", with the date, the k3s image digest, the refused-or-timed-out result per target, and the line "metadata denial not shown on this machine (A-35); real cluster not qualified (D4)".
+- No migration; no new npm dependency; no file under `apps/worker` or `packages/workspace` changes, and in `apps/supervisor` only `args.ts:63` and its one test case. `apps/api/src/auth/capability-proxy.ts` is gone and nothing names `CapabilityProxy`. Nothing runs `kubectl exec` in the exec namespace.
+- `docs/assumptions.md` has A-40 to A-46, and A-07 names W-021 as its closing package with "closed: grants derived by the runner"; `docs/spec-issues.md` has SI-43 to SI-48; `docs/plan-additions.md` has P-33 to P-38.
+- The READMEs (`apps/runner`, `deploy/k8s`) state rules 11 to 13, the slot, its own transaction and the lock order, the W-075 rule, the route and its bucket, the profile table with the checkpoint profile, every admission rule, what admission does not police (`nodes/proxy` included), the presence check and its failure table, the deny list and what it cannot show, the control namespace's purpose and limits, the isolation limits of AC-56, the residual risks and what is not built.
+- Nothing is left behind by either tier: each k3s file checks both namespaces at teardown, and `scripts/k3s.sh down` removes the control namespace with the cluster.
+
+### Confidence
+
+- **Verified by reading the repository (2026-11-19 and 2026-11-21):** every file and line cited; that the counters are an in-memory map incremented before the audit insert (`capability-proxy.ts:47`, `:79`, `:81`); that grant ids are random and grants live in the object; that only the AC-19 test and the index import the proxy; that `supervisor_identity` is stored and never read by the guard; that `audit_event` has no index but its primary key, is insert-only for the runtime role and insert-only for the retention role; that the fake mints tokens for the pod's own account; **that the conformance suite creates through the runner's client and the other k3s files through the admin** (corrected, C8), and that `w017-run.k8s` uses `kubectl exec`; that neither the allocation nor the stage run has a repository column; that the supervisor's parser also caps deny targets at eight and no test asserts that cap; that five existing tests build a production deny list without the metadata target; the default test role; W-020's file table and child shape as of 2026-11-21.
+- **Verified by reading the Kubernetes source (master):** the CEL `request` variable carries the operation's options (`condition.go:154-156`); an eviction is admitted as a create of `pods/eviction` and deletes the pod without a pod-`DELETE` admission call (`eviction.go:152-153`, `:193`, `:382`). Not yet seen on k3s 1.36.6: step 0 item 1.
+- **Inferred, not run:** all six step 0 items. The ones I trust least are item 2 (which identities k3s gives the Job controller and the pod garbage collector; if one identity is shared by all controllers, both the pod-create rule and the grace exemption are wider than intended) and item 1's `deletecollection` half (whether the policy is consulted per item). That `INSERT ... SELECT ... FOR SHARE ... ON CONFLICT` is accepted as written is Postgres grammar as I know it, not run; the first 21a test settles it. That Kubernetes CEL has no hash function (so a claim name cannot be recomputed) is from my knowledge of its libraries, not checked today.
+- **From the Kubernetes documentation, not run:** that ValidatingAdmissionPolicy supports `CONNECT` and the `pods/ephemeralcontainers` subresource (item 3); that a LimitRange `max` without `default` may default limits (recorded only).
+- **Judgement:** the 10-to-12-day estimate; the four profiles; the capability bucket (burst 20, one every 400 ms), the checkpoint listener's assumed one every 2 s, and their share of the review ceiling; the `maxCalls` defaults; the 5-minute presence interval and the three-error threshold. All rates go to P-14's load test with W-019's.
+- **Where I would point the next review:** the checkpoint profile against W-020's revised renderer (open items 1 and 2 below); the slot's own transaction and the W-075 rule; the admission exemptions (D44); and whether anything a harness controls can make the presence check stop allocations (I found nothing: it reads only cluster objects the harness cannot reach).
+
+### Response to review
+
+Both reviews of 2026-11-21 (design: Livia; security: Furio) were checked item by item against the
+repository and, for Kubernetes behaviour, the Kubernetes source. Taken unless the row says
+otherwise.
+
+| Item | Disposition | Where |
+| --- | --- | --- |
+| Design 1: the k3s tier breaks under 21b's own admission | **Taken, and C8 corrected**: the suite does create through `runnerKube` (`kube-conformance.k8s.test.ts:13`); its container names (`suite.ts:92`, `:211`, `:293`), missing labels, 64Mi claims and row 5's `ReadWriteOnce` control (`:117`) all fail the rules; `w017-run.k8s.test.ts:112`, `:208`, `:212` use `kubectl exec`. Rows 1 to 21 move to the control namespace with the fake's model off; the exec reads become node-side `crictl exec`. **One refinement:** the cluster-only RBAC rows 13, 15, 19, 20 and 21 keep asking about the exec namespace, because moving them would test the copy of the Role, not the real one; row 13 is asked once more for the copy. | C8, 21b, edits table, D45 |
+| Design 2 / security M2: `takeSlotTx` inside the effect's transaction | **Taken as the coordinator decided**: `takeSlot` owns a short transaction keyed by `call_id`; the effect runs after the commit; the outcome is recorded separately; lock order advisory, then allocation. Written as a rule for W-075. | 21a, race rules 4, 5 and 5a, hand-offs |
+| Design 3: repository grants have no source | **Taken**: no workspace, no grants; repository from the workspace row; the input check runs in the allocate transaction. P-38 records the gap. | C16, 21a |
+| Design 4: the grace rule refuses the pod garbage collector | **Taken, by exemption rather than residual.** Refused, a pod on a lost node could never be removed by anyone (admission refuses the administrator too); W-019's node check already makes such a stop unproved. Its identity is probed in step 0 item 2, with a fallback. | D44, 21b, step 0, row 24 |
+| Design 5: presence-check failure modes; the `profileCheck: 'off'` contradiction | **Taken, with one addition**: only a 404 or a difference stops, and only for a network policy; errors warn and retry. Added: at **start** an error refuses to start (the runner cannot show the cluster is protected), and three errors in a row refuse new work without stopping anything. The `'off'` switch is gone; item 6's fallback is "not built". | 21b failure table, step 0 item 6 |
+| Design 6: the RoleBinding; `pod-guard.ts:191`; rows 13 and 15 | **Taken**: a Role of its own in the control namespace (C18); `capability` in the mapping (C19); rows 13 and 15 cover the new accounts. | C18, C19, edits table |
+| Design 7: stale text | **Taken**: the overlap table is rebuilt from W-020's file table; Confidence and the numbering note are updated. | Files, the numbering of this merge |
+| Design X1 / X2 / X3 / X4 | **Taken as the coordinator decided**: the checkpoint profile in full; one key, `profiles.checkpoint`, and one `review(req, { audience, subjects, bucket })` with per-listener subject sets; a third policy, `factory-exec-egress-checkpoint`; the checkpoint listener's share inside the one review ceiling (not a separate budget, which would let the sum pass the ceiling). | 21a, 21b, D42, D43, D50 |
+| Design X5 | **Taken**: rows 29 to 31 run in the exec namespace under the `checkpoint` profile, after `w021-checkpoint-profile.k8s`. | Edits table |
+| Design numbering | **Taken as decided**: D38 to D50, A-40 to A-46, SI-43 to SI-48, P-33 to P-38 (P-38 is new in this revision), no holes. | The numbering of this merge |
+| Security M1: eviction | **Taken, confirmed in the source** (`eviction.go:152-153`, `:193`, `:382`). Of the two fixes offered, the grace rule on `pods/eviction` is taken rather than refusing all evictions, so a node drain still works and ends pods through their grace; `deletecollection` is probed too. | C15, step 0 item 1, row 24 |
+| Security M3 | **Taken** (X3), with both sides tested. | 21b, T15, `w021-network.k8s` |
+| Security L1: limits reset per epoch | **Partly disputed.** The bound the finding asks for already exists: a stage run has at most `maxGenerations` (3) allocations (`config.ts:21`, `:99`; D14), so a stage run's calls are at most three times the per-epoch limits. No new cap is added; the W-023 hand-off forbids resetting it with a new semantic attempt. | Race rule 8, hand-offs |
+| Security L2: name-to-image tie; no container with both claim and token | **First half taken. Second half amended:** as worded, it refuses W-019's own supervisor, which mounts the claim read-only and the token (`job-manifest.ts:64`) because the workspace view needs both. The rule is per profile: only `supervisor` may hold the token, and only with a read-only claim; no container holds a read-write claim and the token; in `checkpoint`, no container holds both. | C17, 21b |
+| Security L3: image updates; `nodes/proxy` | **Taken**: `factory-exec-update`; `nodes/proxy` documented under "what admission does not police". | 21b |
+| Security L4: namespace labels and allowlist not checked; digest regex | **Taken, both ways**: the pod-security fields are repeated in the create policy, and the presence check reads the namespace and the params; the regex replaces "contains `@sha256:`". | 21b, D46, D47 |
+| Security L5: claim and volume gaps | **Partly taken.** `volumeName`, `dataSource`, `dataSourceRef` and `selector` are refused, and the token audience is tied to the allocation labels. **Not taken:** tying `claimName` to the allocation label. The name is `factory-ws-` plus a base32 SHA-256 prefix (`names.ts:24`, `:28`), and to my knowledge Kubernetes CEL has no hash function, so a policy cannot recompute it. The residual list says so; only the runner's account can create either object. | 21b, residuals |
+| Security L6 / L7 | **Taken**: `createConfig` refuses the control namespace; the node's 10250 and 6443 join the list; the cap rises to 16 in one constant (C20). That puts one line into `apps/supervisor/src`, against the brief's earlier "no change there". | C20, 21b |
+| Security missing tests | **All added**: eviction and `deletecollection` (`w021-admission.k8s`, row 24); image `UPDATE` (`w021-fake-admission`, row 27); the supervisor running a non-supervisor image; claim `volumeName` and `dataSource`; Pod Security labels removed (`w021-presence-check`); `createConfig` with the control namespace (`w021-deny-targets`); checkpoint-port egress from both pod kinds (`w021-network.k8s`); a cancel against a slow effect (`w021-capability-liveness`); a child token on the pod listener (`w021-profile-identity`). | Tests |
+
+**Open, for the coordinator or the owner:**
+
+1. **The checkpoint audience: resolved.** W-020's revised master uses `factory-checkpoint:<childId>` (7.4, "The child's identity"), the same form as this brief's admission rule.
+2. **The checkpoint resources key: resolved.** W-020's revised master uses `profiles.checkpoint.resources` (7.4 shape table and 7.5 config), the same key as this brief.
+3. **D48** changes the plan's D13 and was accepted by the owner on 2026-11-22. Its follow-up is open: the pod artifact-read design goes to silvio before W-022's brief.
+4. **C14: resolved.** The coordinator confirmed on 2026-11-21 that "H4/H6" was a mislabel in the assignment; the three W-017b hand-offs found in the repository are the intended ones.
+5. **`checkpointPodRate`** is assumed at one every 2 s for the ceiling product; W-020 sets the real value, and the product is checked in configuration either way.
+
+## 9. Risks
 
 ### Temporal replay, and the W-023 design constraints
 
@@ -1625,7 +3372,7 @@ Plan additions for `docs/plan-additions.md`:
 | SI-32 | `contracts/interfaces.ts:83`; `06-runner-workspaces.md:88`; `schema.sql` | `watchEvents` and sequenced log chunks are required, and no table stores a harness event or a log chunk. | Not built in W-019 (D26). |
 | SI-33 | `06-runner-workspaces.md:25`, `:102`, `:104`; `domain.schema.json` `cleanupObligationRefs` | A quiescence proof, a quarantine record and an operator obligation are required or referenced, and none has a schema or a table. | Two local artifact schemas, `factory-quiescence-proof/1` and `factory-quarantine-record/1`, linked by purpose. |
 
-## 8. Response to the adversarial review
+## 10. Response to the adversarial review
 
 All high and medium items were checked against the spec, the code and, for Kubernetes and Git
 behaviour, by running them. All are taken, with these differences:
@@ -1743,10 +3490,53 @@ blocker, in the listener's admission; the security review added two findings for
 
 Both reviewers gave GO. Applied from round 3: the `w019-cancel-window` row now treats a pod already Terminating from outside the runner as a hold of at most 30 s with `stop-ack` refused (adversarial review); the review burst is twice the refill; `createConfig` refuses the test-only keys; `sourceOf` lives only in the test configuration; and the `w019-testing-boundary` structural test (security review).
 
+Round 6 (the W-020 brief, section 7). A design review and a security review of 2026-11-21, checked against `a119964`. The content is that of 7.12 of the brief, which points here.
+
+Livia's design review (W-020 findings 1 to 15, X5) and Furio's security review (M1 to M5, L1 to
+L5, "Also missing") were each checked against `a119964` before anything changed. All were taken,
+three in a form other than proposed. The coordinator settled D30, the checkpoint account, the
+child's shape, egress, the AC-13 and AC-16 claims and the probes' home (decisions 1 to 7 of that
+day); they are applied as given.
+
+| Finding | Checked | Change |
+| --- | --- | --- |
+| Livia 1 (sweep eats accepted parts) | `workspace.ts:151-155` checks one artifact | C21; every part linked under `checkpoint/...`; release checks each; W-024's test |
+| Livia 2 (AC-13, AC-16 unreachable) | `start.ts:69-70`; no caller of `replaceWriter` on a completed stage | Material only; exit-evidence text (7.9); O1 |
+| Livia 3 (`suspect → finalizing`) | `states.ts:16`, `reconcile.ts:39` | C20, **in another form**: finalize from `running` only, `suspect` retryable; no new edge |
+| Livia 4 (W-019 files) | `kit.ts:68-73`; `w019-lifecycle.test.ts:22-39` | C24, the grant's `finalizeOffered`; edits table, **in another form** (below) |
+| Livia 5 (no workspace) | `job-manifest.ts:47`, `pod-guard.ts:182` | C23 |
+| Livia 6 (live child after give-up) | 7.4 step 3 as it was | Give-up ends the child first; race rule 16; test |
+| Livia 7 (budgets) | Arithmetic as stated | Derived deadlines and two validation checks (7.4) |
+| Livia 8, Furio M2 (memory, resources) | Whole-file reads at 7.3; no `resources` | Positioned pack reads, streamed trailer hash, `maxWorkBytes` counting delta output, per-object deadline, resources in the shape table; `w020-reader-limits` |
+| Livia 9, Furio M5 (`/scratch`) | By POSIX, uid 10003 cannot unlink 10001's files in 0755 directories; `claimFactoryOwned` checks nothing (`git.ts:26-28`) | `export` and `work`; exclusive repository; `index-pack --strict`; hostile-export tests |
+| Livia 10 (repeat finalize) | `pod-guard.ts:156`, `heartbeat.ts:98` | Any final denial after sending is `ending` (C17); lifecycle test with the pass |
+| Livia 11 (duplicate finalize) | Guard needed `finalizing` | `result_ref` checked first; sweep keeps the Job one interval; race rule 11, **with a limit** (below) |
+| Livia 12 (AC-14 test) | The live child would win | The test kills the child's pod; control |
+| Livia 13 (lock order) | `start.ts:172`, `:185` | Rule 9; guard unlocked and advisory |
+| Livia 14 (smaller items) | Each | C22; "Where each recorded digest lives"; deleted `sha256`; digest after exclusions; `pack.threads=1`; rows 29 to 31 cluster-only |
+| Livia 15 (estimate, notes, probes) | `m2-plan.md:898` (the Risks table, now in section 9); the Summary does not mention it | 18 to 21 with arithmetic; the renumbering of sections 7 and 8; `docs/design/w020-probes/` |
+| X5 (rows' namespace) | `suite.ts:328-329` | Rows 29 to 31 in the cluster block; move with W-021's rows |
+| Furio M1 (pathspecs) | G4 reproduced; `git.ts:85-97` | Rule 8; `GIT_LITERAL_PATHSPECS=1`; stdin, NUL-separated; `-z` in the builder; tests |
+| Furio M3 (second port) | `egress-listener-only.yaml` selects every pod | A separate policy by profile label; k3s test both ways |
+| Furio M4 (exit code decides `completed`) | `06:7`, AC-231 | D30 `inconclusive`, accepted by the owner, 2026-11-22 |
+| Furio L1 (`maxOutputLength: 0`) | Z4 reproduced | Cap of 1 for size 0; packed empty blob and tree in the fixtures |
+| Furio L2 (walk from the mount root) | `job-manifest.ts:65` | `fs-safe` from `/workspace`; Buffer paths; layout test; FIFO and non-UTF-8 tests |
+| Furio L3 (SHA-1 collisions) | Node has no SHA-1DC | Rule 8 and the residual risks; `index-pack --strict` is mandatory |
+| Furio L4 (deny list) | As listed | Extended and case-folded, interim under A-38 |
+| Furio L5 (`--cached`; deadlines) | The unstaged patch's base is the index | `git apply --index`; the deadlines of Livia 7 |
+| Furio, "Also missing" | — | Child token at the pod listener; the checkpoint port from an authoring pod |
+
+**Where this brief takes a finding differently, and why:**
+
+- **Livia 3.** Adding `suspect → finalizing` would widen W-017's edge table for a state in which the runner already doubts the writer. A renewal returns `suspect` to `running` in the same supervisor's next beat (`allocation.ts:176`), so a retryable denial costs one beat and changes no table.
+- **Livia 4.** The finding says `kit.ts` does not pin the wait, which is true of the file, but `kit.ts` builds its runner through `harness.ts:117` (`@factory/runner/test-harness`, `apps/runner/package.json:9`), so a pin there reaches it, and `apps/runner/test/k8s/supervised.ts` too. The race at a wait of 0 is real; the fix is the runner's offer in the grant, since the supervisor cannot know the runner's setting.
+- **Livia 11.** A retried finalize can be answered only while the child's pod exists: once it is deleted, a fresh token review fails (section 2: "service account token has been invalidated"), and requiring the reviewed token is the finding's own condition. The brief keeps the Job for one reconcile interval after acceptance; a retry later than that is refused, the result is stored either way, and nothing depends on the child hearing it.
+- **Furio M5's `--strict`.** I expected `index-pack --strict` to refuse trees that W-018's clone accepts. G3 shows it does not for the two cases checked (a `100664` mode is a warning in both, a zero-padded mode is refused by both), so `--strict` is taken as proposed. G3 also showed that this brief's earlier text, which accepted zero-padded trees, was wrong; 7.3 now refuses them.
+
 ## Confidence
 
 - **Verified by running or reading today:** the package list, order, dependencies and acceptance IDs; every row of the section 2 table; the hard-link and relative-worktree behaviour of Git 2.50.1; the code and schema facts cited in sections 4 and 5.
-- **Inferred, not tested:** that kind and k3d offer nothing extra here; the size column; the reader's 3–5 days; that durable capability counters fit without a new table (a W-021 design question); the SI-13 and SI-14 choices.
+- **Inferred, not tested:** that kind and k3d offer nothing extra here; the size column; the reader's 3–5 days; that durable capability counters fit without a new table (answered by design in section 8, D40: they fit in `audit_event` with no migration; not yet shown by a run); the SI-13 and SI-14 choices.
 - **Measured on one cluster only:** the network-policy start-up window. It says nothing yet about any other CNI.
 - **Section 5 (W-017), verified by reading today:** the `execution_allocation` columns, indexes and grants and the conclusion that no migration is needed; W-018's interfaces as committed; the boundary rule that apps are not importable; the worker's stage-run insert, input hash and budget key; the spec lines cited.
 - **Section 5, run on k3s in the third session:** the termination-message receipt and the pod-bound token review, which the design rests on. One assumption of mine was wrong and is corrected: a review does not fail the moment its pod is deleted.

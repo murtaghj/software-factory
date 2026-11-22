@@ -1,0 +1,17 @@
+const fs=require("node:fs"); const T=process.argv[2]; const O=process.argv[3]; const C=fs.constants;
+const t=(n,f)=>{ try{ const r=f(); console.log(n,"ALLOWED",r===undefined?"":String(r).slice(0,40).replace(/\n/g,' ')); }catch(e){ console.log(n,"denied:",e.code); } };
+t("read inside", ()=>fs.readFileSync(T+"/a.txt","utf8"));
+t("read abs symlink out", ()=>fs.readFileSync(T+"/esc","utf8"));
+t("read rel symlink out", ()=>fs.readFileSync(T+"/rel","utf8"));
+t("read via dir symlink", ()=>fs.readFileSync(T+"/dirlink/hosts","utf8"));
+t("readlink esc", ()=>fs.readlinkSync(T+"/esc"));
+t("lstat esc isSymlink", ()=>fs.lstatSync(T+"/esc").isSymbolicLink());
+t("open esc O_NOFOLLOW", ()=>fs.openSync(T+"/esc", C.O_RDONLY|C.O_NOFOLLOW));
+t("open dirlink/hosts O_NOFOLLOW (intermediate)", ()=>fs.openSync(T+"/dirlink/hosts", C.O_RDONLY|C.O_NOFOLLOW));
+t("open fifo O_NONBLOCK|O_NOFOLLOW", ()=>{const fd=fs.openSync(T+"/fifo", C.O_RDONLY|C.O_NOFOLLOW|C.O_NONBLOCK); const s=fs.fstatSync(fd); fs.closeSync(fd); return "isFIFO="+s.isFIFO();});
+t("lstat fifo isFIFO", ()=>fs.lstatSync(T+"/fifo").isFIFO());
+t("write out dir", ()=>fs.writeFileSync(O+"/x","x"));
+t("write tree", ()=>fs.writeFileSync(T+"/y","y"));
+t("spawn", ()=>require("node:child_process").spawnSync("/bin/echo",["hi"]).status);
+t("worker", ()=>{ new (require("node:worker_threads").Worker)("1",{eval:true}); return "made"; });
+t("opendir+readdir", ()=>fs.readdirSync(T).sort().join(","));

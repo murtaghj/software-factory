@@ -77,6 +77,15 @@ runners are attached.
 | P-27 | `packages/runner-protocol`, the wire contract between the runner and its callers, outside the module list of `01-scope-architecture.md:84-99`. Built in W-019; W-023 adds the worker-facing half. |
 | P-28 | A grace rule for leases after a runner API outage, so that a restart of the only runner does not stop every stage. Open; needs a design that survives two controllers. |
 | P-29 | Run the pod-facing listener in a worker thread, so that TLS work and the reconciler do not share an event loop. Open; the admission limits are what W-019 builds. |
+| P-30 | Incremental bundles with a retained prerequisite chain (`06-runner-workspaces.md:74`), before repositories outgrow self-contained bundles. |
+| P-31 | A streaming verified read in the artifact service, so that restore does not hold a bundle in memory. |
+| P-32 | A longer fuzz run of the reader outside the default suite, its corpus kept, run before any real tenant. |
+| P-33 | Measure capability-check rates under W-075's tool server against the capability bucket and the review ceiling; if too costly, design a review cache or a batched check with its own security review. Open. |
+| P-34 | A secondary index or a dedicated table for capability slots if primary-key probing ever shows in a profile. Open; the probe count is logarithmic in `maxCalls`. |
+| P-35 | A process-id limit for allocation pods (the node's `podPidsLimit`, or a per-pod limit where the cluster offers one). Open; INT-05. |
+| P-36 | The explicit routes of `09-verification-security.md:77` (DNS, artifact, Git mirror, package mirror, model gateway, task dependencies) as profile fields, and an egress proxy or FQDN policy where a domain must be named. Open; each with the package that first needs it. |
+| P-37 | A runner deployment inside the cluster (its namespace, Deployment, Service and the pod labels the allow rule names). Open; needed before A-43 can be tested, with INT-05. |
+| P-38 | A source for repository-scoped grants of an allocation with no workspace (`knowledge_curator`, `discovery`'s telemetry without a checkout): today no row names a repository there (C16). Open; with W-090 or the first package that runs such a role. |
 
 ## Decision recorded while building P-01
 

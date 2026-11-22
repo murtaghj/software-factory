@@ -1,0 +1,1 @@
+Probe run by hand with git commands; the commands and results are recorded in the probe table of docs/m2-plan.md section 7.2. The scratch repositories it produced are not committed (see ../README.md).
