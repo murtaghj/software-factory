@@ -63,11 +63,11 @@ fixture() { # a deterministic bare repository: the same commit id on every machi
 }
 
 stage_materializer() {
-  c="$OUT/ctx/materializer"; rm -rf "$c" && mkdir -p "$c/app/apps/runner/src/pod" "$c/app/packages/workspace/src" "$c/app/packages/domain" "$c/app/stubs" "$c/app/node_modules/@noble"
+  c="$OUT/ctx/materializer"; rm -rf "$c" && mkdir -p "$c/app/apps/runner/src/pod" "$c/app/packages/workspace/src/internal" "$c/app/packages/domain" "$c/app/stubs" "$c/app/node_modules/@noble"
   cp "$ROOT/apps/runner/package.json" "$c/app/apps/runner/package.json"
   for f in materialize-entry.ts materialize-run.ts receipt.ts; do cp "$ROOT/apps/runner/src/pod/$f" "$c/app/apps/runner/src/pod/$f"; done
   cp "$ROOT/packages/workspace/package.json" "$c/app/packages/workspace/package.json"
-  for f in pod-exports materializer errors git paths tree-digest; do cp "$ROOT/packages/workspace/src/$f.ts" "$c/app/packages/workspace/src/$f.ts"; done
+  for f in pod-exports materializer errors git paths tree-digest internal/pod-mode; do cp "$ROOT/packages/workspace/src/$f.ts" "$c/app/packages/workspace/src/$f.ts"; done
   cp "$ROOT/packages/domain/package.json" "$c/app/packages/domain/package.json"; cp -R "$ROOT/packages/domain/src" "$c/app/packages/domain/src"
   cp -R "$ROOT/deploy/images/materializer/stubs/database" "$c/app/stubs/database"
   noble="$(ls -d "$ROOT"/node_modules/.pnpm/@noble+hashes@*/node_modules/@noble/hashes | head -1)"
@@ -115,7 +115,7 @@ make_pki() {
   openssl req -x509 -new -key "$d/ca.key" -sha256 -days 3 -config "$d/ca.cnf" -out "$d/ca.crt"
   openssl ecparam -name prime256v1 -genkey -noout -out "$d/listener.key"
   openssl req -new -key "$d/listener.key" -config "$d/leaf.cnf" -out "$d/listener.csr"
-  openssl x509 -req -in "$d/listener.csr" -CA "$d/ca.crt" -CAkey "$d/ca.key" -CAcreateserial -sha256 -days 3 -extfile "$d/leaf.cnf" -extensions san -out "$d/listener.crt" 2>/dev/null
+  openssl x509 -req -in "$d/listener.csr" -CA "$d/ca.crt" -CAkey "$d/ca.key" -CAserial "$d/ca.srl" -CAcreateserial -sha256 -days 3 -extfile "$d/leaf.cnf" -extensions san -out "$d/listener.crt" 2>/dev/null
   rm -f "$d/ca.key" "$d/ca.srl" "$d/listener.csr" "$d/ca.cnf" "$d/leaf.cnf"
   chmod 600 "$d"/*
   # The digest the supervisor compares is the digest of the FILE it reads (the PEM bytes).

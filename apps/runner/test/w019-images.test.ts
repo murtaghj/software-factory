@@ -2,7 +2,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const ROOT = join(import.meta.dirname, '..', '..', '..');
@@ -20,6 +20,34 @@ describe('W-019 images and the local tier\'s files', () => {
       'app/packages/runner-protocol/package.json', ...['exit-codes', 'index', 'pod-api'].map((f) => `app/packages/runner-protocol/src/${f}.ts`)].sort());
     expect(list.filter((f) => /(^|\/)test(\/|$)|\.test\.ts$|test-entry|\/scripts\//.test(f))).toEqual([]);
     expect(list.some((f) => f.endsWith('launcher.ts'))).toBe(false); // control for the filter above: named files only
+  });
+
+  it('every relative import in every staged context resolves inside that context, so an image cannot ship a module whose import is missing (W-019b shipped materializer.ts without internal/pod-mode.ts)', () => {
+    const ctxRoot = join(out, 'ctx');
+    const contexts = readdirSync(ctxRoot).sort();
+    expect(contexts).toContain('materializer'); // control: the walk sees the context that broke
+    // A context built FROM another image sees that image's files too, at the paths its Containerfile copies to.
+    const layered: Record<string, { base: string; from: string; to: string }> = { 'materializer-test': { base: 'materializer', from: 'test-app', to: 'app/apps/runner/test' } };
+    const missing: string[] = [];
+    let checked = 0;
+    for (const name of contexts) {
+      const ctx = join(ctxRoot, name);
+      const layer = layered[name];
+      const inImage = (rel: string): string => (layer !== undefined && (rel === layer.from || rel.startsWith(layer.from + '/')) ? layer.to + rel.slice(layer.from.length) : rel);
+      const present = (rel: string): boolean => existsSync(join(ctx, rel)) || (layer !== undefined && (existsSync(join(ctxRoot, layer.base, rel)) || files(ctx).some((x) => inImage(x) === rel)));
+      // Source files only (not node_modules), and runtime imports only: `import type` is erased when Node strips types, so it needs no file.
+      for (const f of files(ctx).filter((x) => x.endsWith('.ts') && !x.endsWith('.d.ts') && !x.includes('node_modules/'))) {
+        const text = readFileSync(join(ctx, f), 'utf8');
+        for (const m of text.matchAll(/^\s*(?:import|export)\s+(?!type\b)[^;]*?\bfrom\s*['"](\.{1,2}\/[^'"]+)['"]|\bimport\s*\(\s*['"](\.{1,2}\/[^'"]+)['"]|^\s*import\s+['"](\.{1,2}\/[^'"]+)['"]/gm)) {
+          const spec = (m[1] ?? m[2] ?? m[3]) as string;
+          checked += 1;
+          const target = join(dirname(inImage(f)), spec); // a path inside the image, relative to its root
+          if (target.startsWith('..') || target.startsWith('/') || !present(target)) missing.push(`${name}: ${f} -> ${spec}`);
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(0);
+    expect(missing).toEqual([]);
   });
 
   it('each scripted harness image has its own context: the launcher, its group helper and ONE script, no program chooser and no test entry; the Containerfile labels it a test harness and bakes the script in', () => {

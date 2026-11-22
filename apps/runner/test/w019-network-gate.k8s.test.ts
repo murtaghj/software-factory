@@ -2,7 +2,7 @@
 // and the harness started after the gate's last round. A probe pod cannot connect to the gateway's Postgres and Temporal ports and can complete a handshake with the listener.
 // The control: a run whose deny list also names the listener never passes the gate (exit 68, no permit requested, the workspace still allocated).
 // This shows those rules active on this CNI, as D11 says, and nothing about any other rule.
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { getWorkspace } from '@factory/database';
 import { hex, until } from './harness.ts';
 import net from 'node:net';
@@ -11,7 +11,8 @@ import { supervisedRig, standingDenyTargets, type Supervised } from './k8s/super
 import type { KubePod } from '../src/index.ts';
 
 const rigs: Supervised[] = [];
-afterAll(async () => {
+// Each rig binds the fixed listener port, so it is closed after its own test, not at the end of the file.
+afterEach(async () => {
   for (const x of rigs.splice(0)) {
     try {
       await x.admin.clean('factory.local/org'); await x.admin.clean('factory-test=w019-gate');
@@ -52,14 +53,20 @@ describe('W-019 the network gate on k3s', () => {
     expect(report.targets?.map((t) => t.target).sort()).toEqual([...x.denyTargets].sort());
     expect(report.targets?.every((t) => t.result === 'denied')).toBe(true); // every target listed as failed
     const pod = await podOf(x, a.jobName);
-    const log = (await x.admin.logs(pod.metadata.name, 'supervisor')).split('\n').filter(Boolean).map((l) => JSON.parse(l) as { event: string });
+    // The row is `running` once the permit is granted; the supervisor logs `running` only after its preparing step, so wait for that line.
+    let log: Array<{ event: string }> = [];
+    await until('the supervisor logged running', async () => { log = (await x.admin.logs(pod.metadata.name, 'supervisor')).split('\n').filter(Boolean).map((l) => JSON.parse(l) as { event: string }); return log.some((l) => l.event === 'running'); }, 60_000);
     expect(log.findIndex((l) => l.event === 'gate')).toBeLessThan(log.findIndex((l) => l.event === 'running')); // the harness's start is later than the gate's last round
     // a probe pod in the namespace, under the same policy
     const probe = `probe-${a.id.slice(0, 6)}`;
     const targets = x.denyTargets.filter((t) => t.endsWith(':55432') || t.endsWith(':57233'));
+    // A new pod's egress policy takes effect within a short start-up window (SI-15; step 0 item 5 claims denial only after it), so the probe first waits until
+    // the first target is refused or times out, at most 60 tries 500 ms apart, and only then measures.
     const script = `const net=require('net'),tls=require('tls'),fs=require('fs');const out=[];let n=0;const done=()=>{if(++n===${String(targets.length + 1)})console.log(JSON.stringify(out))};`
+      + `const run=()=>{`
       + `for(const t of ${JSON.stringify(targets)}){const [h,p]=t.split(':');const s=net.connect({host:h,port:+p});s.setTimeout(5000,()=>{out.push({t,r:'timeout'});s.destroy();done()});s.on('connect',()=>{out.push({t,r:'open'});s.destroy();done()});s.on('error',(e)=>{out.push({t,r:e.code});done()})}`
-      + `const c=tls.connect({host:'${x.env.listenerAddress}',port:${String(x.env.listenerPort)},ca:fs.readFileSync('/ca/runner-ca.crt'),servername:''},()=>{out.push({t:'listener',r:c.authorized?'handshake':'unauthorized'});c.destroy();done()});c.on('error',(e)=>{out.push({t:'listener',r:e.code??e.message});done()})`;
+      + `const c=tls.connect({host:'${x.env.listenerAddress}',port:${String(x.env.listenerPort)},ca:fs.readFileSync('/ca/runner-ca.crt'),servername:''},()=>{out.push({t:'listener',r:c.authorized?'handshake':'unauthorized'});c.destroy();done()});c.on('error',(e)=>{out.push({t:'listener',r:e.code??e.message});done()})};`
+      + `let tries=0;const settle=()=>{const [h,p]=${JSON.stringify(targets[0] ?? '')}.split(':');const s=net.connect({host:h,port:+p});let ended=false;const next=(open)=>{if(ended)return;ended=true;s.destroy();if(open&&++tries<60)setTimeout(settle,500);else run()};s.setTimeout(2000,()=>next(false));s.on('connect',()=>next(true));s.on('error',()=>next(false))};settle();`;
     await x.admin.ok('POST', x.admin.ns('pods'), { apiVersion: 'v1', kind: 'Pod', metadata: { name: probe, labels: { 'factory-test': 'w019-gate' } }, spec: {
       restartPolicy: 'Never', serviceAccountName: 'factory-allocation-supervisor', automountServiceAccountToken: false, securityContext: { runAsNonRoot: true, seccompProfile: { type: 'RuntimeDefault' } },
       containers: [{ name: 'c', image: 'factory-stub:local', command: ['node', '-e', script], securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: ['ALL'] }, runAsUser: 10001 }, volumeMounts: [{ name: 'ca', mountPath: '/ca' }] }],
