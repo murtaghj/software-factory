@@ -67,7 +67,7 @@ stage_materializer() {
   cp "$ROOT/apps/runner/package.json" "$c/app/apps/runner/package.json"
   for f in materialize-entry.ts materialize-run.ts receipt.ts; do cp "$ROOT/apps/runner/src/pod/$f" "$c/app/apps/runner/src/pod/$f"; done
   cp "$ROOT/packages/workspace/package.json" "$c/app/packages/workspace/package.json"
-  for f in pod-exports materializer errors git paths tree-digest internal/pod-mode; do cp "$ROOT/packages/workspace/src/$f.ts" "$c/app/packages/workspace/src/$f.ts"; done
+  for f in pod-exports materializer errors git paths tree-digest containment internal/pod-mode; do cp "$ROOT/packages/workspace/src/$f.ts" "$c/app/packages/workspace/src/$f.ts"; done
   cp "$ROOT/packages/domain/package.json" "$c/app/packages/domain/package.json"; cp -R "$ROOT/packages/domain/src" "$c/app/packages/domain/src"
   cp -R "$ROOT/deploy/images/materializer/stubs/database" "$c/app/stubs/database"
   noble="$(ls -d "$ROOT"/node_modules/.pnpm/@noble+hashes@*/node_modules/@noble/hashes | head -1)"

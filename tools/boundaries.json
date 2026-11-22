@@ -313,6 +313,20 @@
         "@factory/workspace/test/"
       ],
       "reason": "W-019: only the pod entry may make 0750 checkouts (L6); a host caller would widen every checkout to the user's group"
+    },
+    {
+      "module": "@factory/workspace/git-reader",
+      "allowFromPaths": [
+        "@factory/workspace/test/"
+      ],
+      "reason": "W-020a: the untrusted-Git reader has no caller until 20b; only the package's own tests import it, and 20b adds the checkpoint child's read entry"
+    },
+    {
+      "module": "@factory/workspace/git-reader/testing",
+      "allowFromPaths": [
+        "@factory/workspace/test/"
+      ],
+      "reason": "W-020a: the reader's test seams (a spy, a swap between lstat and open, a switch that turns a check off) never reach a production caller"
     }
   ]
 }
